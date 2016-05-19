@@ -38,7 +38,6 @@ namespace DiscordSharpTest
         public void Login()
         {
             Client = new DiscordClient(tokenOverride: @"MTQ0ODU2MDA0NzcxNzA4OTI5.Cecd8g.RaYmOns1l9G2BxmVA9KVz2Jstt0", isBotAccount: true);
-            //Client = new DiscordClient(tokenOverride: @"MTQ0ODU2MDA0NzcxNzA4OTI5.CebbSw.Gy6jCsqr3gyQOGsbmxNJXAd1uPY", isBotAccount: true);
             //Client = new DiscordClient();
             Client.RequestAllUsersOnStartup = true;
 
@@ -70,15 +69,18 @@ namespace DiscordSharpTest
         {
             Console.WriteLine($"[{DateTime.Now}] {message}");
             
-            DiscordChannel chan = Client.GetChannelByName(LogChannelName);
-            if (chan != null)
+            if ((Client != null) && (Client.GetServersList() != null))
             {
-                if (LogChannelName.Length > 0)
-                    SendMessage(message, chan);
-
-                if (LogFile != null)
+                DiscordChannel chan = Client.GetChannelByName(LogChannelName);
+                if (chan != null)
                 {
-                    //LogFile.
+                    if (LogChannelName.Length > 0)
+                        SendMessage(message, chan);
+
+                    if (LogFile != null)
+                    {
+                        //LogFile.
+                    }
                 }
             }
         }
