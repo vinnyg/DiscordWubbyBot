@@ -3,44 +3,23 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Text.RegularExpressions;
 
 namespace DiscordSharpTest
 {
-    class WarframeAlert
+    class WarframeAlert : WarframeEvent
     {
-        public string DestinationName { get; internal set; }
-        public string Faction { get; internal set; }
-        public string Mission { get; internal set; }
-        public int Credits { get; internal set; }
-        public string Loot { get; internal set; }
+        public MissionInfo MissionDetails { get; private set; }
 
-        [Obsolete]
-        public int TimeTilStart { get; internal set; }
+        public DateTime ExpireTime { get; internal set; }
 
-        //Remaining time in minutes until the alert expires
-        public int MinutesRemaining { get; internal set; }
-
-        /*--*///public string _expireTime { get; internal set; }
-
-        public DateTime ExpirationTime { get; internal set; }
-        public string AssociatedMessageID { get; set; }
-
-        public WarframeAlert(string destinationName, string factionName, string missionTypeName, int credits, string lootName, int minutesToExpire)
+        public WarframeAlert(MissionInfo info, string guid, string destinationName, DateTime startTime, DateTime expireTime) : base(guid, destinationName, startTime)
         {
-            DestinationName = destinationName;
-            Faction = factionName;
-            Mission = missionTypeName;
-            Credits = credits;
-            Loot = lootName;
-            MinutesRemaining = minutesToExpire;
-
-            TimeSpan timeToExpire = new TimeSpan(0, minutesToExpire, 0);
-            ExpirationTime = DateTime.Now + timeToExpire;
+            MissionDetails = info;
+            ExpireTime = expireTime;
         }
 
-        [Obsolete]
-        public WarframeAlert(string alert)
+        /*[Obsolete]
+        public WarframeAlert(string alert) : base("", "")
         {
             string[] splitAlert = alert.Split('|');
             DestinationName = splitAlert[0];
@@ -61,7 +40,7 @@ namespace DiscordSharpTest
             MinutesRemaining = j;
             TimeSpan expireTimeSpan = new TimeSpan(0, i + j, 0);
 
-            ExpirationTime = DateTime.Now + expireTimeSpan;
+            ExpireTime = DateTime.Now + expireTimeSpan;
             //_expireTime = String.Format($"{(ExpirationTime):HH:mm}");
 
             //Capture digits suffixed with 'cr'
@@ -70,18 +49,23 @@ namespace DiscordSharpTest
             Loot = splitAlert[5].Split('-')[1];
 
 
-            UpdateStatus();
-        }
+            //GetMinutesRemaining();
+        }*/
 
-        public void UpdateStatus()
+        public int GetMinutesRemaining(bool untilStart)
         {
-            TimeSpan ts = ExpirationTime.Subtract(DateTime.Now);
+            TimeSpan ts = untilStart ? StartTime.Subtract(DateTime.Now) : ExpireTime.Subtract(DateTime.Now);
             int days = ts.Days;
             int hours = ts.Hours;
             int mins = ts.Minutes;
-            MinutesRemaining = (days * 1440) + (hours * 60) + ts.Minutes;
+            return (days * 1440) + (hours * 60) + ts.Minutes;
 
             //return string.Format($"Destination: **{_destinationName}\n**Mission: **{Mission} ({Faction})\n**Reward: **{_loot}, {Credits}\n**Status: **{_expireTime}**");
+        }
+
+        override public bool HasExpired()
+        {
+            return (GetMinutesRemaining(false) <= 0);
         }
     }
 }
