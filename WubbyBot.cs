@@ -16,6 +16,9 @@ using Tweetinvi.Core.Interfaces.Streaminvi;
 using System.Collections.Concurrent;
 using Newtonsoft.Json.Linq;
 using System.Data.SQLite;
+using System.Net;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace DiscordSharpTest
 {
@@ -30,18 +33,30 @@ namespace DiscordSharpTest
         //Twitter
         private TwitterCredentials _credentials { get; set; }
         private IFilteredStream _alertsStream { get; set; }
-        //Alerts
-        private Timer _alertMinuteInterval { get; set; }
-        private List<Tuple<WarframeAlert, DiscordMessage>> _activeAlerts { get; set; }
+
+        //Events
+        private Timer _eventUpdateInterval { get; set; }
+        private Dictionary<WarframeAlert, DiscordMessage> _activeAlerts { get; set; }
+        private Dictionary<WarframeInvasion, DiscordMessage> _activeInvasions { get; set; }
+
         //Miscellaneous
         private string _currentGame { get; set; }
 
         private SQLiteConnection _dbConnection { get; set; }
 
+        //Cut out the middle-man "helper" class.
+        private WarframeEventsContainer eventsContainer;
+        private WarframeEventMessageBuilder messageBuilder;
+        private Dictionary<WarframeAlert, DiscordMessage> alertMessageAssociations;
+
         //Give the bot a name
         public WubbyBot(string name, string devLogName = "") : base(name, devLogName)
         {
             _randomNumGen = new Random((int)DateTime.Now.Ticks);
+
+            eventsContainer = new WarframeEventsContainer();
+            messageBuilder = new WarframeEventMessageBuilder();
+            alertMessageAssociations = new Dictionary<WarframeAlert, DiscordMessage>();
 
             /*string credentialsFile = string.Format("{0}.txt", _name);
             if (File.Exists(credentialsFile))
@@ -68,23 +83,25 @@ namespace DiscordSharpTest
             var logger = Client.GetTextClientLogger;
             logger.EnableLogging = true;
             logger.Log("hi");
-            
+
 #if DEBUG
             Log("DEBUG MODE");
 #endif
             if (File.Exists("gameslist.json"))
             {
                 var gamesList = JsonConvert.DeserializeObject<string[]>(File.ReadAllText("gameslist.json"));
-                _currentGame = gamesList != null ? gamesList[_randomNumGen.Next(0, gamesList.Length)] : "";
+                _currentGame = gamesList != null ? gamesList[_randomNumGen.Next(0, gamesList.Length)] : "null!";
             }
 
-            _activeAlerts = new List<Tuple<WarframeAlert, DiscordMessage>>();
+            //_activeAlerts = new List<Tuple<WarframeEvent, DiscordMessage>>();
+            _activeAlerts = new Dictionary<WarframeAlert, DiscordMessage>();
+            _activeInvasions = new Dictionary<WarframeInvasion, DiscordMessage>();
 
-            _alertMinuteInterval = new Timer((e) => UpdateAlerts(), null, 0, (int)(TimeSpan.FromMinutes(1).TotalMilliseconds));
+            _eventUpdateInterval = new Timer((e) => UpdateAlerts(), null, 0, (int)(TimeSpan.FromMinutes(1).TotalMilliseconds));
             //SendMessage($"*{_name} is now online*", _client.GetChannelByName(ALERTS_CHANNEL));
 
             Auth.SetUserCredentials(BotConfig.consumerKey, BotConfig.consumerSecret, BotConfig.accessToken, BotConfig.accessTokenSecret);
-            _alertsStream = Tweetinvi.Stream.CreateFilteredStream();
+            _alertsStream = Tweetinvi.Stream.CreateFilteredStream(); 
             _alertsStream.AddFollow(1966470036);
 #if DEBUG
             _alertsStream.AddFollow(708307281436397568);
@@ -92,8 +109,11 @@ namespace DiscordSharpTest
             ConnectToSQLDatabase();
             //ReadDatabase();
 
-            SetupTwitterStreamEvents();
+            eventsContainer = new WarframeEventsContainer();
+
+            //SetupTwitterStreamEvents();
             SetupEvents();
+            SetupWarframeEventsTask();
         }
 
         void ConnectToSQLDatabase()
@@ -114,7 +134,7 @@ namespace DiscordSharpTest
         }
 
         //Deal with all the expired entries!
-        private void ReadDatabase()
+        /*private void ReadDatabase()
         {
             if (_dbConnection != null)
             {
@@ -123,7 +143,8 @@ namespace DiscordSharpTest
                  while(reader.Read())
                 {
                     TimeSpan timeToExpire = (DateTime.Parse(reader["expirationTime"].ToString()).Subtract(DateTime.Now));
-                    WarframeAlert alertData = new WarframeAlert(
+                    WarframeEvent alertData = new WarframeEvent(
+                        reader["giud"].ToString(),
                         reader["destinationName"].ToString(),
                         reader["factionName"].ToString(),
                         reader["missionName"].ToString(),
@@ -166,16 +187,16 @@ namespace DiscordSharpTest
 
                     alertData.AssociatedMessageID = associatedMessage.ID;
 
-                    _activeAlerts.Add(new Tuple<WarframeAlert, DiscordMessage>(alertData, associatedMessage));
+                    _activeAlerts.Add(new Tuple<WarframeEvent, DiscordMessage>(alertData, associatedMessage));
                 }
 
-                _activeAlerts.Sort((Tuple<WarframeAlert, DiscordMessage> a, Tuple<WarframeAlert, DiscordMessage> b) =>
+                _activeAlerts.Sort((Tuple<WarframeEvent, DiscordMessage> a, Tuple<WarframeEvent, DiscordMessage> b) =>
                 {
                     return a.Item1.ExpirationTime.CompareTo(b.Item1.ExpirationTime);
                 }
                );
             }
-        }
+        }*/
 
         private int ExecuteSQLNonQuery(string sql, SQLiteConnection dbConnection)
         {
@@ -188,7 +209,9 @@ namespace DiscordSharpTest
 #if DEBUG
             Log("UpdateAlerts()");
 #endif
-            foreach (var alert in _activeAlerts.ToList())
+            
+
+            /*foreach (var alert in _activeAlerts.ToList())
             {
                 alert.Item1.UpdateStatus();
                 ProcessAlertMessage(alert.Item1);
@@ -198,10 +221,12 @@ namespace DiscordSharpTest
             {
                 ProcessAlertMessage(_activeAlerts.First().Item1);
                 _activeAlerts.Remove(_activeAlerts.First());
-            }
+            }*/
         }
         
-        private DiscordMessage ProcessAlertMessage(WarframeAlert alert)
+        
+
+        /*private DiscordMessage ProcessAlertMessage(WarframeEvent alert)
         {
             if (!string.IsNullOrEmpty(alert.AssociatedMessageID))
             {
@@ -237,7 +262,7 @@ namespace DiscordSharpTest
 
                 return SendMessage($"Destination: **{alert.DestinationName}** \nMission: **{alert.Mission} ({alert.Faction})**\nReward: **{alert.Loot}, {alert.Credits}**\nExpires: **{alert.ExpirationTime:HH:mm} ({alert.MinutesRemaining}m)**", Client.GetChannelByName(ALERTS_CHANNEL));
             }
-        }
+        }*/
 
         public void Shutdown()
         {
@@ -249,11 +274,11 @@ namespace DiscordSharpTest
 
         public void StartStream()
         {
-            Log("Starting stream...");
+            //Log("Starting stream...");
             _alertsStream.StartStreamMatchingAnyCondition();
         }
 
-        public void RestartStream()
+        public void RestartStream() 
         {
             throw new NotImplementedException();
 
@@ -272,14 +297,14 @@ namespace DiscordSharpTest
             }
         }
 
-        private Task SetupTwitterStreamEvents()
+        /*private Task SetupTwitterStreamEvents()
         {
             return Task.Run(() =>
             {
 
             _alertsStream.StreamStarted += (sender, args) =>
             {
-                Log("Stream started");
+                //Log("Stream started");
             };
 
             _alertsStream.StreamStopped += (sender, args) =>
@@ -312,8 +337,8 @@ namespace DiscordSharpTest
                         _dbConnection);
                 }
 
-                _activeAlerts.Add(new Tuple<WarframeAlert, DiscordMessage>(newAlert, alertMessage));
-                _activeAlerts.Sort((Tuple<WarframeAlert, DiscordMessage> a, Tuple<WarframeAlert, DiscordMessage> b) =>
+                _activeAlerts.Add(new Tuple<WarframeEvent, DiscordMessage>(newAlert, alertMessage));
+                _activeAlerts.Sort((Tuple<WarframeEvent, DiscordMessage> a, Tuple<WarframeEvent, DiscordMessage> b) =>
                 {
                     return a.Item1.ExpirationTime.CompareTo(b.Item1.ExpirationTime);
                 }
@@ -323,7 +348,7 @@ namespace DiscordSharpTest
                 StartStream();
             }
             );
-        }
+        }*/
 
         private Task SetupEvents()
         {
@@ -334,7 +359,7 @@ namespace DiscordSharpTest
                 {
                     //Don't log messages posted in the log channel
                     if (e.Channel.Name != LogChannelName)
-                        Log($"Message from {e.author.Username} in #{e.Channel.Name} on {e.Channel.parent.Name}: {e.message.ID}");
+                        Log($"Message from {e.Author.Username} in #{e.Channel.Name} on {e.Channel.Parent.Name}: {e.Message.ID}");
 
                     /*if (doingInitialRun)
                     {
@@ -356,9 +381,9 @@ namespace DiscordSharpTest
                     }
                     else*/
                     {
-                        if (e.message.Content.Length > 0 && (e.message.Content[0] == BotConfig.commandPrefix))
+                        if (e.Message.Content.Length > 0 && (e.Message.Content[0] == BotConfig.commandPrefix))
                         {
-                            string rawCommand = e.message.Content.Substring(1);
+                            string rawCommand = e.Message.Content.Substring(1);
 
                             /*if (e.message.content.StartsWith("!dice"))
                             {
@@ -434,9 +459,9 @@ namespace DiscordSharpTest
                 };*/
                 Client.Connected += (sender, e) =>
                 {
-                    Log($"Connected as {e.user.Username}");
+                    Log($"Connected as {e.User.Username}");
                     //ExecuteSQLNonQuery($"DELETE FROM alerts", _dbConnection);
-                    ReadDatabase();
+                    //ReadDatabase();
                     //loginDate = DateTime.Now;
 
                     /*if (!String.IsNullOrEmpty(config.OwnerID))
@@ -474,7 +499,7 @@ namespace DiscordSharpTest
                 };
 #endif
 
-                Client.MessageDeleted += (sender, e) =>
+                /*Client.MessageDeleted += (sender, e) =>
                 {
                     JToken token;
                     string messageID = "";
@@ -491,7 +516,7 @@ namespace DiscordSharpTest
                             _activeAlerts.Remove(alert);
                         }
                     }
-                };
+                };*/
 
                 if (Client.SendLoginRequest() != null)
                 {
@@ -499,7 +524,6 @@ namespace DiscordSharpTest
                 }
                 Thread.Sleep(3000);
                 Client.UpdateCurrentGame(_currentGame);
-                Client.GetServersList().ForEach(s => Console.WriteLine(s.Name));
             }
             );
         }
@@ -521,6 +545,42 @@ namespace DiscordSharpTest
         private int RollDice(int min, int max)
         {
             return _randomNumGen.Next(min, max);
+        }
+
+        private Task SetupWarframeEventsTask()
+        {
+            return Task.Run(() =>
+            {
+                eventsContainer.AlertScraped += (sender, e) =>
+                {
+                    if (Client.ReadyComplete == true)
+                    {
+                        DiscordMessage targetMessage = alertMessageAssociations.ContainsKey(e.Alert) ? alertMessageAssociations[e.Alert] : null;
+
+                        if (targetMessage == null)
+                        {
+                            targetMessage = SendMessage(messageBuilder.BuildMessage(e.Alert, false), Client.GetChannelByName(ALERTS_CHANNEL));
+                            alertMessageAssociations.Add(e.Alert, targetMessage);
+                        }
+
+                        Client.EditMessage(targetMessage.ID, messageBuilder.BuildMessage(e.Alert, true), Client.GetChannelByName(ALERTS_CHANNEL));
+                    }
+                };
+
+                eventsContainer.InvasionScraped += (sender, e) =>
+                {
+
+                };
+
+                /*eventsContainer.AlertUpdated += (sender, e) =>
+                {
+                    DiscordMessage targetMessage = alertMessageAssociations[e.Alert];
+#if DEBUG
+                    Console.WriteLine("AlertUpdated EditMessage");
+#endif
+                    Client.EditMessage(targetMessage.ID, messageBuilder.BuildMessage(e.Alert, true), Client.GetChannelByName(ALERTS_CHANNEL));
+                };*/
+            });
         }
 
         private Task ClientTask(DiscordClient client)
@@ -552,13 +612,13 @@ namespace DiscordSharpTest
                         client.DisconnectFromVoice();
                     }
                     else */
-                    if (e.message.Content.StartsWith("!help"))
+                    if (e.Message.Content.StartsWith("!help"))
                     {
-                        client.SendMessageToUser("I am helping :)", e.message.Author);
+                        client.SendMessageToUser("I am helping :)", e.Message.Author);
                     }
-                    else if (e.message.Content.StartsWith("!proxymsg"))
+                    else if (e.Message.Content.StartsWith("!proxymsg"))
                     {
-                        string[] split = e.message.Content.Split(new char[] { ' ' }, 3);
+                        string[] split = e.Message.Content.Split(new char[] { ' ' }, 3);
                         if (split[1] != "")
                         {
                             /*DiscordChannel toJoin = e.Channel.parent.channels.Find(x => (x.name.ToLower() == split[1].ToLower()) && (x.type == DiscordSharp.ChannelType.Voice));
@@ -571,10 +631,10 @@ namespace DiscordSharpTest
                     /*else if (e.message.content.StartsWith("!announce"))
                     {
                     }*/
-                    else if (e.message.Content.StartsWith("!dice"))
+                    else if (e.Message.Content.StartsWith("!dice"))
                     {
                         int max = 1, r;
-                        string[] split = e.message.Content.Split(new char[] { ' ' }, 2);
+                        string[] split = e.Message.Content.Split(new char[] { ' ' }, 2);
 
                         if (int.TryParse(split[1], out max))
                         {
@@ -585,22 +645,22 @@ namespace DiscordSharpTest
 
                                 if (max > 2)
                                 {
-                                    client.SendMessageToChannel(String.Format("@{0} D{1} rolled **{2}**", e.author.Username, max, r), e.Channel);
+                                    client.SendMessageToChannel(String.Format("@{0} D{1} rolled **{2}**", e.Author.Username, max, r), e.Channel);
                                 }
                                 else
                                 {
                                     string coin_result = (r == 1) ? "**heads**" : "**tails**";
-                                    client.SendMessageToChannel(String.Format("@{0} Luckiest penny yielded {1}!", e.author.Username, coin_result), e.Channel);
+                                    client.SendMessageToChannel(String.Format("@{0} Luckiest penny yielded {1}!", e.Author.Username, coin_result), e.Channel);
                                 }
                             }
                             else
                             {
-                                client.SendMessageToChannel(String.Format("@{0} Try a larger number, you big dummy.", e.author.Username), e.Channel);
+                                client.SendMessageToChannel(String.Format("@{0} Try a larger number, you big dummy.", e.Author.Username), e.Channel);
                             }
                         }
                         else
                         {
-                            client.SendMessageToChannel(String.Format("@{0} Enter a number larger than 2.", e.author.Username), e.Channel);
+                            client.SendMessageToChannel(String.Format("@{0} Enter a number larger than 2.", e.Author.Username), e.Channel);
                         }
                     }
                     /*else if (e.message.content.StartsWith("!privileges"))
@@ -641,12 +701,12 @@ namespace DiscordSharpTest
 
                 client.MessageEdited += (sender, e) =>
                 {
-                    Console.WriteLine(string.Format("I detected that a message was editted by {0}", e.author.Username));
+                    Console.WriteLine(string.Format("I detected that a message was editted by {0}", e.Author.Username));
                 };
 
                 client.Connected += (sender, e) =>
                 {
-                    Console.WriteLine("Connected as " + e.user.Username);
+                    Console.WriteLine("Connected as " + e.User.Username);
                     client.UpdateCurrentGame("With Your Emotions!");
                 };
                 client.Connect();
