@@ -21,7 +21,7 @@ namespace DiscordSharpTest
         public int CompareTo(object obj)
         {
             WarframeAlertHandler alert = obj as WarframeAlertHandler;
-            return this._alert.ExpirationTime.CompareTo(obj);
+            return this._alert.ExpireTime.CompareTo(obj);
         }
     }
 }
