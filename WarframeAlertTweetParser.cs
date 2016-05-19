@@ -10,7 +10,7 @@ namespace DiscordSharpTest
 {
     static class WarframeAlertTweetParser
     {
-        static public WarframeAlert ParseTweet(string tweetText)
+        static public WarframeEvent ParseTweet(string tweetText)
         {
             string[] splitAlert = tweetText.Split('|');
             string destinationName = splitAlert[0];
@@ -27,8 +27,9 @@ namespace DiscordSharpTest
             //The time that the alert will expire is all we will pass for now
             /*TimeSpan timeToExpire = new TimeSpan(0, i + j, 0);
             DateTime expirationTime = DateTime.Now + timeToExpire;*/
-            
-            return new WarframeAlert(destinationName, faction, mission, credits, loot, i + j);
+
+            //return new WarframeAlert("", destinationName, faction, mission, credits, loot, i + j, );
+            return new WarframeAlert(null, "", "", DateTime.Now, DateTime.Now);
         }
     }
 }
