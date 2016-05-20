@@ -38,4 +38,16 @@ namespace DiscordSharpTest.Events
             Alert = alert;
         }
     }
+
+    class WarframeAlertExpiredArgs : EventArgs
+    {
+        public WarframeAlert Alert { get; private set; }
+        public string MessageID { get; private set; }
+
+        public WarframeAlertExpiredArgs(WarframeAlert alert, string messageID)
+        {
+            Alert = alert;
+            MessageID = messageID;
+        }
+    }
 }

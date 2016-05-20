@@ -31,12 +31,21 @@ namespace DiscordSharpTest
         #region Events
         public event EventHandler<WarframeAlertScrapedArgs> AlertScraped;
         public event EventHandler<WarframeInvasionScrapedArgs> InvasionScraped;
+        public event EventHandler<WarframeAlertExpiredArgs> AlertExpired;
         #endregion
 
         public WarframeEventsContainer()
         {
             //Establish event update interval (every minute)
-            _eventUpdateInterval = new Timer((e) => { ScrapeWorldState(); ParseJsonEvents(); }, null, 0, (int)(TimeSpan.FromMinutes(1.0).TotalMilliseconds));
+            _eventUpdateInterval = new Timer((e) =>
+            {
+                ScrapeWorldState();
+                ParseJsonEvents();
+            }
+            ,
+            null,
+            0,
+            (int)(TimeSpan.FromMinutes(1.0).TotalMilliseconds));
 
             AlertsList = new List<WarframeAlert>();
             InvasionsList = new List<WarframeInvasion>();
@@ -161,12 +170,12 @@ namespace DiscordSharpTest
             }
         }
 
-        WarframeAlert GetAlert(string alertID)
+        public WarframeAlert GetAlert(string alertID)
         {
             return AlertsList.Find(x => x.GUID == alertID);
         }
 
-        WarframeInvasion GetInvasion(string invasionID)
+        public WarframeInvasion GetInvasion(string invasionID)
         {
             return InvasionsList.Find(x => x.GUID == invasionID);
         }
@@ -182,6 +191,37 @@ namespace DiscordSharpTest
 
             if (handler != null)    //Check if there are any subscribers
                 handler(this, e);
+        }
+
+        private void CreateAlertExpiredEvent(WarframeAlert expiredAlert, string messageID)
+        {
+            // Make a temporary copy of the event to avoid possibility of
+            // a race condition if the last subscriber unsubscribes
+            // immediately after the null check and before the event is raised.
+            EventHandler<WarframeAlertExpiredArgs> handler = AlertExpired;
+
+            WarframeAlertExpiredArgs e = new WarframeAlertExpiredArgs(expiredAlert, messageID);
+
+            if (handler != null)    //Check if there are any subscribers
+                handler(this, e);
+        }
+
+        public bool AlertExists(WarframeAlert alert)
+        {
+            return !(AlertsList.Find(x => x.GUID == alert.GUID) == null);
+        }
+
+        public void HandleExpiredAlerts(Dictionary<WarframeAlert, string> alerts)
+        {
+            //Iterate through the dictionary of events and identify any alerts which have expired.
+            //WubbyBot will handle accordingly.
+            foreach(KeyValuePair<WarframeAlert, string> entry in alerts)
+            {
+                if (entry.Key.ExpireTime > DateTime.Now)
+                {
+                    CreateAlertExpiredEvent(entry.Key, entry.Value);
+                }
+            }
         }
 
         /*private void CreateAlertUpdatedEvent(WarframeAlert existingAlert)
