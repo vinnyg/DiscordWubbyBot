@@ -9,7 +9,6 @@ namespace DiscordSharpTest
     class WarframeAlert : WarframeEvent
     {
         public MissionInfo MissionDetails { get; private set; }
-
         public DateTime ExpireTime { get; internal set; }
 
         public WarframeAlert(MissionInfo info, string guid, string destinationName, DateTime startTime, DateTime expireTime) : base(guid, destinationName, startTime)
@@ -55,9 +54,7 @@ namespace DiscordSharpTest
         public int GetMinutesRemaining(bool untilStart)
         {
             TimeSpan ts = untilStart ? StartTime.Subtract(DateTime.Now) : ExpireTime.Subtract(DateTime.Now);
-            int days = ts.Days;
-            int hours = ts.Hours;
-            int mins = ts.Minutes;
+            int days = ts.Days, hours = ts.Hours, mins = ts.Minutes;
             return (days * 1440) + (hours * 60) + ts.Minutes;
 
             //return string.Format($"Destination: **{_destinationName}\n**Mission: **{Mission} ({Faction})\n**Reward: **{_loot}, {Credits}\n**Status: **{_expireTime}**");
