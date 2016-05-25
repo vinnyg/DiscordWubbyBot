@@ -17,6 +17,12 @@ namespace DiscordSharpTest
             ExpireTime = expireTime;
         }
 
+        public WarframeAlert(WarframeAlert alert) : base(alert.GUID, alert.DestinationName, alert.StartTime)
+        {
+            MissionDetails = new MissionInfo(alert.MissionDetails);
+            ExpireTime = alert.ExpireTime;
+        }
+
         /*[Obsolete]
         public WarframeAlert(string alert) : base("", "")
         {
@@ -60,7 +66,7 @@ namespace DiscordSharpTest
             //return string.Format($"Destination: **{_destinationName}\n**Mission: **{Mission} ({Faction})\n**Reward: **{_loot}, {Credits}\n**Status: **{_expireTime}**");
         }
 
-        override public bool HasExpired()
+        override public bool IsExpired()
         {
             return (GetMinutesRemaining(false) <= 0);
         }
