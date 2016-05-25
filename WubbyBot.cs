@@ -147,7 +147,7 @@ namespace DiscordSharpTest
             StringBuilder finalMsg = new StringBuilder();
             bool postWillNotify = false;
             //Build all alert strings into a single message
-            finalMsg.Append("**ACTIVE ALERTS**" + Environment.NewLine);
+            finalMsg.Append("```ACTIVE ALERTS```" + Environment.NewLine);
 
             foreach (var m in alertMessagePostQueue)
             {
@@ -182,15 +182,14 @@ namespace DiscordSharpTest
                 //SaveState();
             }
 
-            /*if (alertIsNew)
-                database.AddAlert(e.Alert, alertMessage.ID);*/
-
             alertMessagePostQueue.Clear();
         }
 
         private void AddToAlertPostQueue(string message, bool notifyClient, bool alertHasExpired)
         {
+#if DEBUG
             Log("Added message to post queue");
+#endif
             alertMessagePostQueue.Add(new MessageQueueEntry(message, notifyClient, alertHasExpired));
         }
 
@@ -540,32 +539,11 @@ namespace DiscordSharpTest
             {
                 eventsContainer.AlertScraped += (sender, e) =>
                 {
+#if DEBUG
                     Log("Alert Scraped!");
-                    //if (Client.ReadyComplete == true)
-                    //{
-                    /*DiscordMessage targetMessage = null;
-                    if (alertMessageAssociations.ContainsKey(e.Alert))
-                        targetMessage = alertMessageAssociations[e.Alert];
-
-                    if (e.MessageID != null)
-                        targetMessage = GetMessageByID(e.MessageID, Client.GetChannelByName(ALERTS_CHANNEL));
-
-                    if (targetMessage == null)
-                    {
-                        //targetMessage = SendMessage(messageBuilder.BuildMessage(e.Alert, false), Client.GetChannelByName(ALERTS_CHANNEL));
-                        //alertMessageAssociations.Add(e.Alert, targetMessage);
-                        //database.AddAlert(e.Alert, targetMessage.ID);
-                    }*/
-
-                    //Thread.Sleep(5000);
-
-                    //Add formatting in message so that it appears properly in the Discord client.
-                    //Client.EditMessage(targetMessage.ID, messageBuilder.BuildMessage(e.Alert, true), Client.GetChannelByName(ALERTS_CHANNEL));
-
+#endif
                     bool alertIsNew = eventsContainer.IsAlertNew(e.Alert);
-
-                        AddToAlertPostQueue(messageBuilder.BuildMessage(e.Alert, false), alertIsNew, e.Alert.IsExpired());
-                    //}
+                    AddToAlertPostQueue(messageBuilder.BuildMessage(e.Alert, false), alertIsNew, e.Alert.IsExpired());
                 };
 
                 eventsContainer.InvasionScraped += (sender, e) =>
@@ -617,7 +595,7 @@ namespace DiscordSharpTest
                     }
                 };
 
-                DeleteOldEventMessages();
+                //DeleteOldEventMessages();
                 //eventsContainer.HandleOldAlerts(database.ReadDatabase());
                 eventsContainer.Start();
             });
