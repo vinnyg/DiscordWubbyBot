@@ -21,10 +21,21 @@ namespace DiscordSharpTest
             Faction = DiscordSharpTest.Faction.GetName(factionName);
             MissionType = DiscordSharpTest.MissionType.GetName(missionType);
             Credits = credits;
-            Reward = DiscordSharpTest.Reward.GetName(reward);
+            Reward = reward; //DiscordSharpTest.Reward.GetName(reward);
             RewardQuantity = rewardQuantity;
             MinimumLevel = minLevel;
             MaximumLevel = maxLevel;
+        }
+
+        public MissionInfo(MissionInfo info)
+        {
+            Faction = info.Faction;
+            MissionType = info.MissionType;
+            Credits = info.Credits;
+            Reward = info.Reward;
+            RewardQuantity = info.RewardQuantity;
+            MinimumLevel = info.MinimumLevel;
+            MaximumLevel = info.MaximumLevel;
         }
     }
 }
