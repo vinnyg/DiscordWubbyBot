@@ -37,7 +37,7 @@ namespace DiscordSharpTest
 
         public void Login()
         {
-            Client = new DiscordClient(tokenOverride: @"MTQ0ODU2MDA0NzcxNzA4OTI5.Cecd8g.RaYmOns1l9G2BxmVA9KVz2Jstt0", isBotAccount: true);
+            Client = new DiscordClient(tokenOverride: @"MTgzOTIyMjAwNTMxNjk3NjY2.CiM6ZQ.YRhWFuuqAQ0ZOJ8iOKWGkfMDl8Q", isBotAccount: true);
             //Client = new DiscordClient();
             Client.RequestAllUsersOnStartup = true;
 
@@ -54,9 +54,9 @@ namespace DiscordSharpTest
         public abstract void Init();
 
         //Send a message to the specified channel
-        virtual public DiscordMessage SendMessage(string message, DiscordChannel channel)
+        virtual public DiscordMessage SendMessage(string content, DiscordChannel channel)
         {
-            return Client.SendMessageToChannel(message, channel);
+            return Client.SendMessageToChannel(content, channel);
         }
 
         //Send a message to the specified user
@@ -65,11 +65,47 @@ namespace DiscordSharpTest
             return Client.SendMessageToUser(message, user);
         }
 
+        virtual public DiscordMessage EditMessage(string newContent, DiscordMessage targetMessage, DiscordChannel channel)
+        {
+            return Client.EditMessage(targetMessage.ID, newContent, channel);
+        }
+
+        virtual public void DeleteMessage(DiscordMessage target)
+        {
+            Client.DeleteMessage(target);
+        }
+
+        virtual public DiscordMessage GetMessageByID(string messageID, DiscordChannel channel)
+        {
+            List<DiscordMessage> messageHistory = new List<DiscordMessage>();
+            DiscordMessage targetMessage = null;
+            String lastDiscordMessage = String.Empty;
+            int messageBatch = 0;
+
+            do
+            {
+                messageHistory = Client.GetMessageHistory(channel, 40, lastDiscordMessage);
+#if DEBUG
+                Log($"Looping for message ({messageID}) in batch {messageBatch * 40}-{((messageBatch * 40) + 39)}");
+#endif
+
+                targetMessage = messageHistory.Find(x => x.ID == messageID);
+                if (messageHistory.Count > 0)
+                    lastDiscordMessage = messageHistory.Last().ID;
+
+                ++messageBatch;
+            } while ((targetMessage == null) && (messageHistory.Count > 0));
+
+            return targetMessage;
+        }
+
         virtual public void Log(string message)
         {
             Console.WriteLine($"[{DateTime.Now}] {message}");
-            
-            if ((Client != null) && (Client.GetServersList() != null))
+
+            var r = Client.GetServersList();
+
+            if ((Client != null) && (Client.GetServersList() != null) && (Client.GetServersList().Count > 0))
             {
                 DiscordChannel chan = Client.GetChannelByName(LogChannelName);
                 if (chan != null)
