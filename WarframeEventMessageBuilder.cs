@@ -12,18 +12,25 @@ namespace DiscordSharpTest
         const string ITALIC = "*";
         const string NO_STYLE = "";
 
-        public string BuildMessage(WarframeAlert alert, bool isFormatted)
+        public string BuildMessage(WarframeAlert alert, bool formatMessage)
         {
             WarframeEventMessageInfo msgInfo = ParseAlert(alert);
-            string styleStr = isFormatted ? (alert.HasExpired() ? ITALIC : BOLD) : NO_STYLE;
+            string styleStr = formatMessage ? (alert.IsExpired() ? ITALIC : BOLD) : NO_STYLE;
 
             StringBuilder returnMessage;
-            
-            returnMessage = new StringBuilder(
+
+            /*returnMessage = new StringBuilder(
                 "Destination: " + styleStr + msgInfo.Destination + styleStr + Environment.NewLine +
                 "Mission: " + styleStr + msgInfo.Faction + styleStr + Environment.NewLine +
                 "Reward: " + styleStr + msgInfo.Reward + styleStr + Environment.NewLine +
                 "Status: " + styleStr + msgInfo.Status + styleStr
+                );*/
+
+            returnMessage = new StringBuilder(
+                msgInfo.Destination + Environment.NewLine +
+                msgInfo.Faction + Environment.NewLine +
+                msgInfo.Reward + Environment.NewLine +
+                msgInfo.Status
                 );
 
             return returnMessage.ToString();
@@ -33,7 +40,7 @@ namespace DiscordSharpTest
         {
             throw new NotImplementedException();
 
-            return "";
+            //return "";
         }
 
         private WarframeEventMessageInfo ParseAlert(WarframeAlert alert)
@@ -41,15 +48,15 @@ namespace DiscordSharpTest
             MissionInfo info = alert.MissionDetails;
             string rewardMessage = (!String.IsNullOrEmpty(info.Reward) ? info.Reward : String.Empty),
                 rewardQuantityMessage = (info.RewardQuantity > 1 ? info.RewardQuantity + " x " : ""),
-                creditMessage = (/*info.RewardQuantity > 0*/ !String.IsNullOrEmpty(rewardQuantityMessage) ? ", " : "") + (info.Credits > 0 ? info.Credits + "cr" : "");
+                creditMessage = (/*info.RewardQuantity > 0*/ !String.IsNullOrEmpty(rewardMessage) ? ", " : "") + (info.Credits > 0 ? info.Credits + "cr" : "");
 
             string statusString =
-                (!alert.HasExpired()) ? (DateTime.Now < alert.StartTime ? $"Starts {alert.StartTime: HH:mm} ({alert.GetMinutesRemaining(true)}m)" :
-                $"Expires {alert.ExpireTime : HH:mm} ({alert.GetMinutesRemaining(false)}m)") : $"Expired ({alert.ExpireTime: HH:mm})";
+                (!alert.IsExpired()) ? (DateTime.Now < alert.StartTime ? $"Starts {alert.StartTime:HH:mm} ({alert.GetMinutesRemaining(true)}m)" :
+                $"Expires {alert.ExpireTime:HH:mm} ({alert.GetMinutesRemaining(false)}m)") : $"Expired ({alert.ExpireTime:HH:mm})";
             
             WarframeEventMessageInfo msgInfo = new WarframeEventMessageInfo(
-                $"{alert.DestinationName} ({info.MinimumLevel}-{info.MaximumLevel})",
-                $"{info.MissionType} ({info.Faction})",
+                $"{alert.DestinationName}",
+                $"{info.Faction} {info.MissionType} ({info.MinimumLevel}-{info.MaximumLevel})",
                 $"{rewardQuantityMessage + rewardMessage + creditMessage}",
                 $"{statusString}"
                 );
