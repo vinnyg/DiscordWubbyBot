@@ -25,7 +25,7 @@ namespace DiscordSharpTest
 
         public static string GetName(string faction)
         {
-            return FactionNames.ContainsKey(faction) ? FactionNames[faction] : "Unknown Faction";
+            return FactionNames.ContainsKey(faction) ? FactionNames[faction] : faction;
         }
     };
 
@@ -41,7 +41,7 @@ namespace DiscordSharpTest
             { "MT_EXTERMINATION", "Extermination" },
             { "MT_RETRIEVAL", "Hijack" },
             { "MT_TERRITORY", "Interception" },
-            { "MT_INFESTED_SABOTAGE", "Hive" },
+            { "MT_HIVE", "Hive" },
             { "MT_MOBILE_DEFENSE", "Mobile Defense" },
             { "MT_RESCUE", "Rescue" },
             { "MT_SABOTAGE", "Sabotage" },
@@ -51,7 +51,7 @@ namespace DiscordSharpTest
 
         public static string GetName(string missionType)
         {
-            return MissionTypes.ContainsKey(missionType) ? MissionTypes[missionType] : "Unknown Mission";
+            return MissionTypes.ContainsKey(missionType) ? MissionTypes[missionType] : missionType;
         }
     };
 
@@ -73,7 +73,7 @@ namespace DiscordSharpTest
 
         public static string GetName(string rewardName)
         {
-            return RewardNames.ContainsKey(rewardName) ? RewardNames[rewardName] : rewardName.Split('/').Last();
+            return RewardNames.ContainsKey(rewardName) ? RewardNames[rewardName] : rewardName;
         }
     }
 
