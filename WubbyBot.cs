@@ -22,42 +22,51 @@ using System.Xml.Linq;
 
 namespace DiscordSharpTest
 {
+    struct MessageQueueEntry
+    {
+        public string Content;
+        public bool NotifyClient;
+        public bool AlertHasExpired;
+
+        public MessageQueueEntry(string content, bool notify, bool alertHasExpired)
+        {
+            NotifyClient = notify;
+            Content = content;
+            AlertHasExpired = alertHasExpired;
+        }
+    };
+
     class WubbyBot : DiscordBot
     {
 #if DEBUG
-        const string ALERTS_CHANNEL = "dev";
+        const string ALERTS_CHANNEL = "wf-dev";
 #else
-        const string ALERTS_CHANNEL = "warframealerts";
+        const string ALERTS_CHANNEL = "wf-worldstate";
 #endif
+        const string ALERTS_ARCHIVE_CHANNEL = "wf-alert-archive";
+
         private Random _randomNumGen;
-        //Twitter
-        private TwitterCredentials _credentials { get; set; }
-        private IFilteredStream _alertsStream { get; set; }
 
         //Events
         private Timer _eventUpdateInterval { get; set; }
-        private Dictionary<WarframeAlert, DiscordMessage> _activeAlerts { get; set; }
-        private Dictionary<WarframeInvasion, DiscordMessage> _activeInvasions { get; set; }
 
         //Miscellaneous
         private string _currentGame { get; set; }
-
-        private SQLiteConnection _dbConnection { get; set; }
 
         //Cut out the middle-man "helper" class.
         private WarframeEventsContainer eventsContainer;
         private WarframeEventMessageBuilder messageBuilder;
         private Dictionary<WarframeAlert, DiscordMessage> alertMessageAssociations;
+        private EventsDatabase database;
+        private List<MessageQueueEntry> alertMessagePostQueue;
+
+        private DiscordMessage alertMessage = null;
 
         //Give the bot a name
         public WubbyBot(string name, string devLogName = "") : base(name, devLogName)
         {
             _randomNumGen = new Random((int)DateTime.Now.Ticks);
-
-            eventsContainer = new WarframeEventsContainer();
-            messageBuilder = new WarframeEventMessageBuilder();
-            alertMessageAssociations = new Dictionary<WarframeAlert, DiscordMessage>();
-
+            
             /*string credentialsFile = string.Format("{0}.txt", _name);
             if (File.Exists(credentialsFile))
             {
@@ -79,11 +88,6 @@ namespace DiscordSharpTest
         //Initialise the bot
         override public void Init()
         {
-            Client.EnableVerboseLogging = true;
-            var logger = Client.GetTextClientLogger;
-            logger.EnableLogging = true;
-            logger.Log("hi");
-
 #if DEBUG
             Log("DEBUG MODE");
 #endif
@@ -92,116 +96,126 @@ namespace DiscordSharpTest
                 var gamesList = JsonConvert.DeserializeObject<string[]>(File.ReadAllText("gameslist.json"));
                 _currentGame = gamesList != null ? gamesList[_randomNumGen.Next(0, gamesList.Length)] : "null!";
             }
+            
+            /*_activeAlerts = new Dictionary<WarframeAlert, DiscordMessage>();
+            _activeInvasions = new Dictionary<WarframeInvasion, DiscordMessage>();*/
 
-            //_activeAlerts = new List<Tuple<WarframeEvent, DiscordMessage>>();
-            _activeAlerts = new Dictionary<WarframeAlert, DiscordMessage>();
-            _activeInvasions = new Dictionary<WarframeInvasion, DiscordMessage>();
+            //_eventUpdateInterval = new Timer((e) => UpdateAlerts(), null, 0, (int)(TimeSpan.FromMinutes(1).TotalMilliseconds));
 
-            _eventUpdateInterval = new Timer((e) => UpdateAlerts(), null, 0, (int)(TimeSpan.FromMinutes(1).TotalMilliseconds));
-            //SendMessage($"*{_name} is now online*", _client.GetChannelByName(ALERTS_CHANNEL));
-
-            Auth.SetUserCredentials(BotConfig.consumerKey, BotConfig.consumerSecret, BotConfig.accessToken, BotConfig.accessTokenSecret);
-            _alertsStream = Tweetinvi.Stream.CreateFilteredStream(); 
-            _alertsStream.AddFollow(1966470036);
+            //Auth.SetUserCredentials(BotConfig.consumerKey, BotConfig.consumerSecret, BotConfig.accessToken, BotConfig.accessTokenSecret);
+            //_alertsStream = Tweetinvi.Stream.CreateFilteredStream(); 
+            //_alertsStream.AddFollow(1966470036);
 #if DEBUG
-            _alertsStream.AddFollow(708307281436397568);
+            //_alertsStream.AddFollow(708307281436397568);
 #endif
-            ConnectToSQLDatabase();
-            //ReadDatabase();
-
-            eventsContainer = new WarframeEventsContainer();
-
             //SetupTwitterStreamEvents();
             SetupEvents();
-            SetupWarframeEventsTask();
         }
 
-        void ConnectToSQLDatabase()
+        private void InitSubsystems()
         {
-#if DEBUG
-            //SQLiteConnection.CreateFile("WarframeAlerts.sqlite");
-#endif
-            _dbConnection = new SQLiteConnection("Data Source=WarframeAlerts.sqlite;Version=3;");
-            _dbConnection.Open();
-            //if (_dbConnection != null) CreateDatabase();
-        }
-        
-        private void CreateDatabase()
-        {
-            //ExecuteSQLNonQuery(sql, _dbConnection);
-            string sql = "CREATE TABLE alerts (destinationName VARCHAR(40), factionName VARCHAR(20), missionName VARCHAR(20), credits INT, lootName VARCHAR(30), expirationTime DATETIME, alertID VARCHAR(30))";
-            ExecuteSQLNonQuery(sql, _dbConnection);
+            Log("Initialising sub-systems");
+            eventsContainer = new WarframeEventsContainer();
+            messageBuilder = new WarframeEventMessageBuilder();
+            alertMessageAssociations = new Dictionary<WarframeAlert, DiscordMessage>();
+            database = new EventsDatabase();
+
+            //eventsContainer.HandleOldAlerts(database.ReadDatabase());
+            //eventsContainer.Start();
+
+            alertMessagePostQueue = new List<MessageQueueEntry>();
+            //alertMessagePostQueue.Add(new MessageQueueEntry("Alerts", false, false));
+            _eventUpdateInterval = new Timer((e) => PostAlertMessage(), null, 0, (int)(TimeSpan.FromMinutes(1).TotalMilliseconds));
+
+            Log("Sub-systems initialised");
         }
 
-        //Deal with all the expired entries!
-        /*private void ReadDatabase()
+        private void DeleteOldEventMessages()
         {
-            if (_dbConnection != null)
+            Dictionary<WarframeAlert, string> oldAlerts = database.ReadDatabase();
+            
+            foreach(var item in oldAlerts)
             {
-                SQLiteCommand query = new SQLiteCommand("SELECT * FROM alerts", _dbConnection);
-                SQLiteDataReader reader = query.ExecuteReader();
-                 while(reader.Read())
-                {
-                    TimeSpan timeToExpire = (DateTime.Parse(reader["expirationTime"].ToString()).Subtract(DateTime.Now));
-                    WarframeEvent alertData = new WarframeEvent(
-                        reader["giud"].ToString(),
-                        reader["destinationName"].ToString(),
-                        reader["factionName"].ToString(),
-                        reader["missionName"].ToString(),
-                        int.Parse(reader["credits"].ToString()),
-                        reader["lootName"].ToString(),
-                        timeToExpire.Minutes);
-
-                    List<DiscordMessage> messageHistory = new List<DiscordMessage>();
-                    
-                    DiscordMessage associatedMessage = null;
-                    String lastDiscordMessage = String.Empty;
-
-                    int messageBatch = 0;
-
-                    do
-                    {
-
-                        messageHistory = Client.GetMessageHistory(Client.GetChannelByName(ALERTS_CHANNEL), 20, lastDiscordMessage);
-
-                        Log($"Looping for message ({reader["alertID"].ToString()}) in batch {messageBatch * 20}-{((messageBatch * 20) + 19)}");
-
-                        associatedMessage = messageHistory.Find(x => x.ID == reader["alertID"].ToString());
-                        if (messageHistory.Count > 0)
-                            lastDiscordMessage = messageHistory.Last().ID;
-
-                        ++messageBatch;
-                    } while ((associatedMessage == null) && (messageHistory.Count > 0));
-                    //string id = Client.GetMessageHistory(Client.GetChannelByName(ALERTS_CHANNEL), 1, reader["alertID"].ToString()).First().ID;
-
-                    if ((associatedMessage == null) && (messageHistory.Count == 0))
-                    {
-                        Log($"Message {reader["alertID"].ToString()} could not be found and will subsequently be deleted from database.");
-                        ExecuteSQLNonQuery($"DELETE FROM alerts WHERE alertID = '{reader["alertID"].ToString()}'", _dbConnection);
-                    }
-#if DEBUG
-                    else
-                        Log($"Message {reader["alertID"].ToString()} was found.");
-#endif
-
-
-                    alertData.AssociatedMessageID = associatedMessage.ID;
-
-                    _activeAlerts.Add(new Tuple<WarframeEvent, DiscordMessage>(alertData, associatedMessage));
-                }
-
-                _activeAlerts.Sort((Tuple<WarframeEvent, DiscordMessage> a, Tuple<WarframeEvent, DiscordMessage> b) =>
-                {
-                    return a.Item1.ExpirationTime.CompareTo(b.Item1.ExpirationTime);
-                }
-               );
+                DiscordMessage m = GetMessageByID(item.Value, Client.GetChannelByName(ALERTS_CHANNEL));
+                if (m != null)
+                    Client.DeleteMessage(m);
             }
-        }*/
+        }
 
-        private int ExecuteSQLNonQuery(string sql, SQLiteConnection dbConnection)
+        private void PostAlertMessage()
         {
-            SQLiteCommand command = new SQLiteCommand(sql, _dbConnection);
-            return command.ExecuteNonQuery();
+            StringBuilder finalMsg = new StringBuilder();
+            bool postWillNotify = false;
+            //Build all alert strings into a single message
+            finalMsg.Append("**ACTIVE ALERTS**" + Environment.NewLine);
+
+            foreach (var m in alertMessagePostQueue)
+            {
+                string heading = (m.AlertHasExpired) ? "```" : "```xl";
+                finalMsg.Append(heading);
+                finalMsg.Append(Environment.NewLine);
+                finalMsg.Append(m.Content);
+                finalMsg.Append("```");
+                finalMsg.Append(Environment.NewLine);
+                postWillNotify = m.NotifyClient;
+            }
+
+            /*if (alertMessage != null)
+                Client.DeleteMessage(alertMessage);*/
+            /*if (alertMessage != null)
+            {
+                if (!postWillNotify)
+                    EditMessage(finalMsg.ToString(), alertMessage, Client.GetChannelByName(ALERTS_CHANNEL));
+                else
+                    alertMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
+            }
+            else
+                alertMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));*/
+
+            if ((!postWillNotify) && (alertMessage != null))
+                EditMessage(finalMsg.ToString(), alertMessage, Client.GetChannelByName(ALERTS_CHANNEL));
+            else
+            {
+                if (alertMessage != null)
+                    Client.DeleteMessage(alertMessage);
+                alertMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
+                //SaveState();
+            }
+
+            /*if (alertIsNew)
+                database.AddAlert(e.Alert, alertMessage.ID);*/
+
+            alertMessagePostQueue.Clear();
+        }
+
+        private void AddToAlertPostQueue(string message, bool notifyClient, bool alertHasExpired)
+        {
+            Log("Added message to post queue");
+            alertMessagePostQueue.Add(new MessageQueueEntry(message, notifyClient, alertHasExpired));
+        }
+
+        private void SaveState()
+        {
+            System.IO.StreamWriter file = new System.IO.StreamWriter(@"wubbybot-state.txt");
+            file.WriteLine(alertMessage.ID);
+            file.Close();
+        }
+
+        private void LoadState()
+        {
+            try
+            {
+                alertMessage = GetMessageByID(File.ReadAllLines(@"wubbybot-state.txt")[0], Client.GetChannelByName(ALERTS_CHANNEL));
+                DeleteMessage(alertMessage);
+            }
+            catch (FileNotFoundException e)
+            {
+                Log($"{e.FileName} could not be found.");
+            }
+            catch (IndexOutOfRangeException)
+            {
+                Log($"No message ID found");
+            }
         }
 
         private void UpdateAlerts()
@@ -209,7 +223,6 @@ namespace DiscordSharpTest
 #if DEBUG
             Log("UpdateAlerts()");
 #endif
-            
 
             /*foreach (var alert in _activeAlerts.ToList())
             {
@@ -223,8 +236,6 @@ namespace DiscordSharpTest
                 _activeAlerts.Remove(_activeAlerts.First());
             }*/
         }
-        
-        
 
         /*private DiscordMessage ProcessAlertMessage(WarframeEvent alert)
         {
@@ -267,34 +278,9 @@ namespace DiscordSharpTest
         public void Shutdown()
         {
             Log("Shutting down...");
-            StopStream();
-            _dbConnection.Close();
-            SendMessage($"*{Name} is now offline*", Client.GetChannelByName(ALERTS_CHANNEL));
-        }
-
-        public void StartStream()
-        {
-            //Log("Starting stream...");
-            _alertsStream.StartStreamMatchingAnyCondition();
-        }
-
-        public void RestartStream() 
-        {
-            throw new NotImplementedException();
-
-            Log("Restarting stream...");
-            if (_alertsStream.StreamState == Tweetinvi.Core.Enum.StreamState.Running)
-                StopStream();
-        }
-
-        public void StopStream()
-        {
-            if (_alertsStream != null)
-            {
-                Log("Stopping stream");
-                _alertsStream.StopStream();
-                //_alertsStream = null;
-            }
+            DeleteMessage(alertMessage);
+            //StopStream();
+            //SendMessage($"*{Name} is now offline*", Client.GetChannelByName(ALERTS_CHANNEL));
         }
 
         /*private Task SetupTwitterStreamEvents()
@@ -425,7 +411,7 @@ namespace DiscordSharpTest
                             //{
                             //e.Channel.SendMessage(ex.Message);
                             //}
-                            //c/atch(Exception ex)
+                            //catch(Exception ex)
                             //{
                             //e.Channel.SendMessage("Exception occurred while running command:\n```" + ex.Message + "\n```");
                             //}
@@ -460,6 +446,7 @@ namespace DiscordSharpTest
                 Client.Connected += (sender, e) =>
                 {
                     Log($"Connected as {e.User.Username}");
+
                     //ExecuteSQLNonQuery($"DELETE FROM alerts", _dbConnection);
                     //ReadDatabase();
                     //loginDate = DateTime.Now;
@@ -522,8 +509,13 @@ namespace DiscordSharpTest
                 {
                     Client.Connect();
                 }
+
                 Thread.Sleep(3000);
-                Client.UpdateCurrentGame(_currentGame);
+                Client.UpdateCurrentGame(_currentGame, false);
+                InitSubsystems();
+                //LoadState();
+
+                SetupWarframeEventsTask();
             }
             );
         }
@@ -537,11 +529,6 @@ namespace DiscordSharpTest
             return x;
         }
 
-        /*private void Log(DiscordChannel chan)
-        {
-            //StreamWriter sw = new 
-        }*/
-
         private int RollDice(int min, int max)
         {
             return _randomNumGen.Next(min, max);
@@ -553,18 +540,32 @@ namespace DiscordSharpTest
             {
                 eventsContainer.AlertScraped += (sender, e) =>
                 {
-                    if (Client.ReadyComplete == true)
+                    Log("Alert Scraped!");
+                    //if (Client.ReadyComplete == true)
+                    //{
+                    /*DiscordMessage targetMessage = null;
+                    if (alertMessageAssociations.ContainsKey(e.Alert))
+                        targetMessage = alertMessageAssociations[e.Alert];
+
+                    if (e.MessageID != null)
+                        targetMessage = GetMessageByID(e.MessageID, Client.GetChannelByName(ALERTS_CHANNEL));
+
+                    if (targetMessage == null)
                     {
-                        DiscordMessage targetMessage = alertMessageAssociations.ContainsKey(e.Alert) ? alertMessageAssociations[e.Alert] : null;
+                        //targetMessage = SendMessage(messageBuilder.BuildMessage(e.Alert, false), Client.GetChannelByName(ALERTS_CHANNEL));
+                        //alertMessageAssociations.Add(e.Alert, targetMessage);
+                        //database.AddAlert(e.Alert, targetMessage.ID);
+                    }*/
 
-                        if (targetMessage == null)
-                        {
-                            targetMessage = SendMessage(messageBuilder.BuildMessage(e.Alert, false), Client.GetChannelByName(ALERTS_CHANNEL));
-                            alertMessageAssociations.Add(e.Alert, targetMessage);
-                        }
+                    //Thread.Sleep(5000);
 
-                        Client.EditMessage(targetMessage.ID, messageBuilder.BuildMessage(e.Alert, true), Client.GetChannelByName(ALERTS_CHANNEL));
-                    }
+                    //Add formatting in message so that it appears properly in the Discord client.
+                    //Client.EditMessage(targetMessage.ID, messageBuilder.BuildMessage(e.Alert, true), Client.GetChannelByName(ALERTS_CHANNEL));
+
+                    bool alertIsNew = eventsContainer.IsAlertNew(e.Alert);
+
+                        AddToAlertPostQueue(messageBuilder.BuildMessage(e.Alert, false), alertIsNew, e.Alert.IsExpired());
+                    //}
                 };
 
                 eventsContainer.InvasionScraped += (sender, e) =>
@@ -572,14 +573,53 @@ namespace DiscordSharpTest
 
                 };
 
-                /*eventsContainer.AlertUpdated += (sender, e) =>
+                eventsContainer.AlertExpired += (sender, e) =>
                 {
-                    DiscordMessage targetMessage = alertMessageAssociations[e.Alert];
+                    Log("Alert Expired");
+                    if (Client.ReadyComplete == true)
+                    {
+                        /*DiscordMessage targetMessage = null;
+                        targetMessage = GetMessageByID(e.MessageID, Client.GetChannelByName(ALERTS_CHANNEL));
+
+                        if (targetMessage == null)
+                        {
+                            Log($"Message {e.MessageID} could not be found.");
+                        }
+                        else
+                        {
 #if DEBUG
-                    Console.WriteLine("AlertUpdated EditMessage");
+                            Log($"Message {e.MessageID} was found.");
 #endif
-                    Client.EditMessage(targetMessage.ID, messageBuilder.BuildMessage(e.Alert, true), Client.GetChannelByName(ALERTS_CHANNEL));
-                };*/
+                            Client.EditMessage(targetMessage.ID, messageBuilder.BuildMessage(e.Alert, true), Client.GetChannelByName(ALERTS_CHANNEL));
+                        }*/
+
+                        
+                    }
+                    database.DeleteAlert(e.Alert);
+                };
+
+                eventsContainer.ExistingAlertFound += (sender, e) =>
+                {
+                    if (Client.ReadyComplete == true)
+                    {
+                        DiscordMessage targetMessage = null;
+                        targetMessage = GetMessageByID(e.MessageID, Client.GetChannelByName(ALERTS_CHANNEL));
+
+                        if (targetMessage == null)
+                            Log($"Message {e.MessageID} could not be found.");
+                        else
+                        {
+#if DEBUG
+                            Log($"Message {e.MessageID} was found.");
+#endif
+                            alertMessageAssociations.Add(e.Alert, targetMessage);
+                        }
+                    }
+                };
+
+                DeleteOldEventMessages();
+                //eventsContainer.HandleOldAlerts(database.ReadDatabase());
+                eventsContainer.Start();
             });
         }
 
@@ -707,7 +747,7 @@ namespace DiscordSharpTest
                 client.Connected += (sender, e) =>
                 {
                     Console.WriteLine("Connected as " + e.User.Username);
-                    client.UpdateCurrentGame("With Your Emotions!");
+                    //client.UpdateCurrentGame("With Your Emotions!", false);
                 };
                 client.Connect();
             });
