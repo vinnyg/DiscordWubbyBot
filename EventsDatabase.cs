@@ -12,17 +12,25 @@ namespace DiscordSharpTest
     {
         private SQLiteConnection _dbConnection { get; set; }
 
+        public EventsDatabase()
+        {
+            Connect();
+        }
+
         private void CreateDatabase()
         {
             //ExecuteSQLNonQuery(sql, _dbConnection);
-            string sql = "CREATE TABLE alerts (GUID VARCHAR(20), destinationName VARCHAR(40), factionName VARCHAR(30), missionName VARCHAR(20), credits INT, lootName VARCHAR(30), lootQuantity INT, minLevel INT, maxLevel INT, startTime DATETIME, expireTime DATETIME, alertID VARCHAR(30))";
+            string sql = "CREATE TABLE alerts (GUID VARCHAR(20), destinationName VARCHAR(40), factionName VARCHAR(30), missionName VARCHAR(20), credits INT, lootName VARCHAR(30), lootQuantity INT, minLevel INT, maxLevel INT, startTime DATETIME, expireTime DATETIME)";
+            ExecuteSQLNonQuery(sql);
+            //Table to hold message/alert associations, as well as the time which a message was originally posted.
+            sql = "CREATE TABLE alertMessageHistory (alertID VARCHAR(20), messageID VARCHAR(30), postTime DATETIME)";
             ExecuteSQLNonQuery(sql);
         }
 
-        void ConnectToSQLDatabase()
+        void Connect()
         {
 #if DEBUG
-            //SQLiteConnection.CreateFile("WarframeAlerts.sqlite");
+            //SQLiteConnection.CreateFile("WarframeEvents.sqlite");
 #endif
             _dbConnection = new SQLiteConnection("Data Source=WarframeEvents.sqlite;Version=3;");
             _dbConnection.Open();
@@ -35,13 +43,24 @@ namespace DiscordSharpTest
             return command.ExecuteNonQuery();
         }
 
+        public void AddAlert(WarframeAlert alert)
+        {
+            if (_dbConnection != null)
+            {
+                ExecuteSQLNonQuery(
+                    $"INSERT INTO alerts (GUID, destinationName, factionName, missionName, credits, lootName, lootQuantity, minLevel, maxLevel, startTime, expireTime)" +
+                    $" VALUES ('{alert.GUID}', '{alert.DestinationName}', '{alert.MissionDetails.Faction}', '{alert.MissionDetails.MissionType}', {alert.MissionDetails.Credits}, '{alert.MissionDetails.Reward}', {alert.MissionDetails.RewardQuantity}, {alert.MissionDetails.MinimumLevel}, {alert.MissionDetails.MaximumLevel}, '{alert.StartTime:yyyy-MM-dd HH:mm:ss}', '{alert.ExpireTime:yyyy-MM-dd HH:mm:ss}')");
+            }
+        }
+
+        [Obsolete]
         public void AddAlert(WarframeAlert alert, string messageID)
         {
             if (_dbConnection != null)
             {
                 ExecuteSQLNonQuery(
-                    $"INSERT INTO alerts (GUID, destinationName, factionName, missionName, credits, lootName, lootQuantity, startTime, expireTime, alertID)" +
-                    $" VALUES ('{alert.GUID}', '{alert.DestinationName}', '{alert.MissionDetails.Faction}', '{alert.MissionDetails.MissionType}', {alert.MissionDetails.Credits}, '{alert.MissionDetails.Reward}', {alert.MissionDetails.RewardQuantity}, '{alert.StartTime:yyyy-MM-dd HH:mm:ss}', '{alert.ExpireTime:yyyy-MM-dd HH:mm:ss}', '{messageID}')");
+                    $"INSERT INTO alerts (GUID, destinationName, factionName, missionName, credits, lootName, lootQuantity, minLevel, maxLevel, startTime, expireTime)" +
+                    $" VALUES ('{alert.GUID}', '{alert.DestinationName}', '{alert.MissionDetails.Faction}', '{alert.MissionDetails.MissionType}', {alert.MissionDetails.Credits}, '{alert.MissionDetails.Reward}', {alert.MissionDetails.RewardQuantity}, {alert.MissionDetails.MinimumLevel}, {alert.MissionDetails.MaximumLevel}, '{alert.StartTime:yyyy-MM-dd HH:mm:ss}', '{alert.ExpireTime:yyyy-MM-dd HH:mm:ss}')");
             }
         }
 
@@ -53,12 +72,15 @@ namespace DiscordSharpTest
             }
         }
 
-        private Dictionary<WarframeAlert, string> ReadDatabase()
+        public Dictionary<WarframeAlert, string> ReadDatabase()
         {
+            Console.WriteLine("Reading database!");
+
             Dictionary<WarframeAlert, string> resultDictionary = new Dictionary<WarframeAlert, string>();
 
             if (_dbConnection != null)
             {
+                Console.WriteLine("_dbConnection != null");
                 SQLiteCommand query = new SQLiteCommand("SELECT * FROM alerts", _dbConnection);
                 SQLiteDataReader reader = query.ExecuteReader();
                 while (reader.Read())
@@ -111,14 +133,15 @@ namespace DiscordSharpTest
                     alertData.AssociatedMessageID = associatedMessage.ID;
                     */
                     #endregion
+
+                    Console.WriteLine($"Reading {alert.GUID}, {messageID}");
+
                     resultDictionary.Add(alert, messageID);
                 }
-
-                /*_activeAlerts.Sort((Tuple<WarframeEvent, DiscordMessage> a, Tuple<WarframeEvent, DiscordMessage> b) =>
-                {
-                    return a.Item1.ExpirationTime.CompareTo(b.Item1.ExpirationTime);
-                }*/
+                Console.WriteLine("Read Complete");
             }
+            else
+                Console.WriteLine("_dbConnection = null;");
             return resultDictionary;
         }
     }
