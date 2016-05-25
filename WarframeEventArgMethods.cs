@@ -8,12 +8,13 @@ namespace DiscordSharpTest.Events
 {
     class WarframeAlertScrapedArgs : EventArgs
     {
-        /*public WarframeEventMessage Message { get { return this.Message; } private set { this.Message = value; } }*/
         public WarframeAlert Alert { get; private set; }
+        public string MessageID { get; private set; }
 
-        public WarframeAlertScrapedArgs(WarframeAlert newAlert)
+        public WarframeAlertScrapedArgs(WarframeAlert newAlert, string messageID = "")
         {
             Alert = newAlert;
+            MessageID = messageID;
         }
     }
 
@@ -29,13 +30,15 @@ namespace DiscordSharpTest.Events
         }
     }
 
-    class WarframeAlertUpdatedEventArgs : EventArgs
+    class ExistingAlertFoundArgs : EventArgs
     {
         public WarframeAlert Alert { get; private set; }
+        public string MessageID { get; private set; }
 
-        public WarframeAlertUpdatedEventArgs(WarframeAlert alert)
+        public ExistingAlertFoundArgs(WarframeAlert alert, string messageID = "")
         {
             Alert = alert;
+            MessageID = messageID;
         }
     }
 
@@ -44,7 +47,7 @@ namespace DiscordSharpTest.Events
         public WarframeAlert Alert { get; private set; }
         public string MessageID { get; private set; }
 
-        public WarframeAlertExpiredArgs(WarframeAlert alert, string messageID)
+        public WarframeAlertExpiredArgs(WarframeAlert alert, string messageID = "")
         {
             Alert = alert;
             MessageID = messageID;
