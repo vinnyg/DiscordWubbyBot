@@ -96,19 +96,6 @@ namespace DiscordSharpTest
                 var gamesList = JsonConvert.DeserializeObject<string[]>(File.ReadAllText("gameslist.json"));
                 _currentGame = gamesList != null ? gamesList[_randomNumGen.Next(0, gamesList.Length)] : "null!";
             }
-            
-            /*_activeAlerts = new Dictionary<WarframeAlert, DiscordMessage>();
-            _activeInvasions = new Dictionary<WarframeInvasion, DiscordMessage>();*/
-
-            //_eventUpdateInterval = new Timer((e) => UpdateAlerts(), null, 0, (int)(TimeSpan.FromMinutes(1).TotalMilliseconds));
-
-            //Auth.SetUserCredentials(BotConfig.consumerKey, BotConfig.consumerSecret, BotConfig.accessToken, BotConfig.accessTokenSecret);
-            //_alertsStream = Tweetinvi.Stream.CreateFilteredStream(); 
-            //_alertsStream.AddFollow(1966470036);
-#if DEBUG
-            //_alertsStream.AddFollow(708307281436397568);
-#endif
-            //SetupTwitterStreamEvents();
             SetupEvents();
         }
 
@@ -120,14 +107,14 @@ namespace DiscordSharpTest
             alertMessageAssociations = new Dictionary<WarframeAlert, DiscordMessage>();
             database = new EventsDatabase();
 
-            //eventsContainer.HandleOldAlerts(database.ReadDatabase());
-            //eventsContainer.Start();
-
             alertMessagePostQueue = new List<MessageQueueEntry>();
-            //alertMessagePostQueue.Add(new MessageQueueEntry("Alerts", false, false));
-            _eventUpdateInterval = new Timer((e) => PostAlertMessage(), null, 0, (int)(TimeSpan.FromMinutes(1).TotalMilliseconds));
 
             Log("Sub-systems initialised");
+        }
+
+        private void StartPostTimer()
+        {
+            _eventUpdateInterval = new Timer((e) => PostAlertMessage(), null, 2000, (int)(TimeSpan.FromMinutes(1).TotalMilliseconds));
         }
 
         private void DeleteOldEventMessages()
@@ -144,33 +131,33 @@ namespace DiscordSharpTest
 
         private void PostAlertMessage()
         {
+            //StringBuilder finalMsg;// = new StringBuilder();
             StringBuilder finalMsg = new StringBuilder();
             bool postWillNotify = false;
             //Build all alert strings into a single message
             finalMsg.Append("```ACTIVE ALERTS```" + Environment.NewLine);
 
+            //Log(alertMessagePostQueue.Count.ToString());
+
             foreach (var m in alertMessagePostQueue)
             {
                 string heading = (m.AlertHasExpired) ? "```" : "```xl";
+
+                //finalMsg = new StringBuilder(heading + Environment.NewLine + m.Content + "```" + Environment.NewLine);
                 finalMsg.Append(heading);
                 finalMsg.Append(Environment.NewLine);
                 finalMsg.Append(m.Content);
                 finalMsg.Append("```");
                 finalMsg.Append(Environment.NewLine);
                 postWillNotify = m.NotifyClient;
-            }
-
-            /*if (alertMessage != null)
-                Client.DeleteMessage(alertMessage);*/
-            /*if (alertMessage != null)
-            {
-                if (!postWillNotify)
-                    EditMessage(finalMsg.ToString(), alertMessage, Client.GetChannelByName(ALERTS_CHANNEL));
+#if DEBUG
+                if (String.IsNullOrWhiteSpace(m.Content))
+                    Log("Message has empty content");
                 else
-                    alertMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
+                    Log(m.Content + " WAS APPENDED!");
+#endif
             }
-            else
-                alertMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));*/
+            //Log(alertMessagePostQueue.Count.ToString());
 
             if ((!postWillNotify) && (alertMessage != null))
                 EditMessage(finalMsg.ToString(), alertMessage, Client.GetChannelByName(ALERTS_CHANNEL));
@@ -187,9 +174,7 @@ namespace DiscordSharpTest
 
         private void AddToAlertPostQueue(string message, bool notifyClient, bool alertHasExpired)
         {
-#if DEBUG
-            Log("Added message to post queue");
-#endif
+            //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
             alertMessagePostQueue.Add(new MessageQueueEntry(message, notifyClient, alertHasExpired));
         }
 
@@ -217,123 +202,12 @@ namespace DiscordSharpTest
             }
         }
 
-        private void UpdateAlerts()
-        {
-#if DEBUG
-            Log("UpdateAlerts()");
-#endif
-
-            /*foreach (var alert in _activeAlerts.ToList())
-            {
-                alert.Item1.UpdateStatus();
-                ProcessAlertMessage(alert.Item1);
-            }
-
-            if ((_activeAlerts.Count() > 0) && (_activeAlerts.First().Item1.MinutesRemaining <= 0))
-            {
-                ProcessAlertMessage(_activeAlerts.First().Item1);
-                _activeAlerts.Remove(_activeAlerts.First());
-            }*/
-        }
-
-        /*private DiscordMessage ProcessAlertMessage(WarframeEvent alert)
-        {
-            if (!string.IsNullOrEmpty(alert.AssociatedMessageID))
-            {
-                if (alert.MinutesRemaining > 0)
-                {
-#if DEBUG
-                    Log($"Updating Alert Message ({alert.AssociatedMessageID})");
-
-                    if (!String.IsNullOrEmpty(alert.AssociatedMessageID))
-                        SendMessage(alert.AssociatedMessageID, Client.GetChannelByName(ALERTS_CHANNEL));
-                    else
-                        SendMessage("No associated message ID set!", Client.GetChannelByName(ALERTS_CHANNEL));
-#endif
-                    return Client.EditMessage(alert.AssociatedMessageID, $"Destination: **{alert.DestinationName}**\nMission: **{alert.Mission} ({alert.Faction})**\nReward: **{alert.Loot}, {alert.Credits}**\nExpires: **{alert.ExpirationTime:HH:mm} ({alert.MinutesRemaining}m)**", Client.GetChannelByName(ALERTS_CHANNEL));
-                }
-                else
-                {
-                    //Delete the entry from the database
-                    ExecuteSQLNonQuery($"DELETE FROM alerts WHERE alertID = '{alert.AssociatedMessageID}'", _dbConnection);
-                    return Client.EditMessage(_activeAlerts.First().Item1.AssociatedMessageID,
-                    $"Destination: {_activeAlerts.First().Item1.DestinationName}\nMission: {_activeAlerts.First().Item1.Mission} ({_activeAlerts.First().Item1.Faction})\nReward: {_activeAlerts.First().Item1.Loot}, {_activeAlerts.First().Item1.Credits}\nStatus: *Expired {_activeAlerts.First().Item1.ExpirationTime:HH:mm}*",
-                    Client.GetChannelByName(ALERTS_CHANNEL));
-                }
-            }
-            else
-            {
-#if DEBUG
-                if (!String.IsNullOrEmpty(alert.AssociatedMessageID))
-                    SendMessage(alert.AssociatedMessageID, Client.GetChannelByName(ALERTS_CHANNEL));
-                else
-                    SendMessage("No associated message ID set!", Client.GetChannelByName(ALERTS_CHANNEL));
-#endif
-
-                return SendMessage($"Destination: **{alert.DestinationName}** \nMission: **{alert.Mission} ({alert.Faction})**\nReward: **{alert.Loot}, {alert.Credits}**\nExpires: **{alert.ExpirationTime:HH:mm} ({alert.MinutesRemaining}m)**", Client.GetChannelByName(ALERTS_CHANNEL));
-            }
-        }*/
-
         public void Shutdown()
         {
             Log("Shutting down...");
             DeleteMessage(alertMessage);
-            //StopStream();
             //SendMessage($"*{Name} is now offline*", Client.GetChannelByName(ALERTS_CHANNEL));
         }
-
-        /*private Task SetupTwitterStreamEvents()
-        {
-            return Task.Run(() =>
-            {
-
-            _alertsStream.StreamStarted += (sender, args) =>
-            {
-                //Log("Stream started");
-            };
-
-            _alertsStream.StreamStopped += (sender, args) =>
-            {
-                var exception = args.Exception;
-                var disconnectMessage = args.DisconnectMessage;
-                if (args != null)
-                {
-                    Log($"Stream has stopped: {args.Exception}, \n{args.DisconnectMessage}");
-                    SendMessage($"@Wubby STREAM HAS STOPPED: {args.Exception} \n-{args.DisconnectMessage}", Client.GetChannelByName("dev"));
-                }
-            };
-
-            _alertsStream.MatchingTweetReceived += (sender, args) =>
-            {
-#if DEBUG
-                Log("_userStream.MatchingTweetReceived");
-#endif
-                //var newAlert = new WarframeAlert(args.Tweet.Text);
-                var newAlert = WarframeAlertTweetParser.ParseTweet(args.Tweet.Text);
-
-                DiscordMessage alertMessage = ProcessAlertMessage(newAlert);
-                newAlert.AssociatedMessageID = alertMessage.ID;
-                //Insert this entry into the database
-                if (_dbConnection != null)
-                {
-                    ExecuteSQLNonQuery(
-                        $"INSERT INTO alerts (destinationName, factionName, missionName, credits, lootName, expirationTime, alertID)" +
-                        $" VALUES ('{newAlert.DestinationName}', '{newAlert.Faction}', '{newAlert.Mission}', {newAlert.Credits}, '{newAlert.Loot}', '{newAlert.ExpirationTime:yyyy-MM-dd HH:mm:ss}', '{newAlert.AssociatedMessageID}')",
-                        _dbConnection);
-                }
-
-                _activeAlerts.Add(new Tuple<WarframeEvent, DiscordMessage>(newAlert, alertMessage));
-                _activeAlerts.Sort((Tuple<WarframeEvent, DiscordMessage> a, Tuple<WarframeEvent, DiscordMessage> b) =>
-                {
-                    return a.Item1.ExpirationTime.CompareTo(b.Item1.ExpirationTime);
-                }
-                );
-            };
-                //ReadDatabase();
-                StartStream();
-            }
-            );
-        }*/
 
         private Task SetupEvents()
         {
@@ -471,6 +345,11 @@ namespace DiscordSharpTest
                         CommandsManager.OverridePermissionsDictionary(permissionsDictionary);
                     }*/
                     //SetupCommands();
+
+                    InitSubsystems();
+                    //LoadState();
+
+                    SetupWarframeEventsTask();
                 };
 
 #if DEBUG
@@ -511,26 +390,8 @@ namespace DiscordSharpTest
 
                 Thread.Sleep(3000);
                 Client.UpdateCurrentGame(_currentGame, false);
-                InitSubsystems();
-                //LoadState();
-
-                SetupWarframeEventsTask();
             }
             );
-        }
-
-        //Send a log in request
-        public async Task<bool> Connect()
-        {
-            bool x = false;
-            if (Client.SendLoginRequest() != null)
-                await ClientTask(Client);
-            return x;
-        }
-
-        private int RollDice(int min, int max)
-        {
-            return _randomNumGen.Next(min, max);
         }
 
         private Task SetupWarframeEventsTask()
@@ -598,6 +459,8 @@ namespace DiscordSharpTest
                 //DeleteOldEventMessages();
                 //eventsContainer.HandleOldAlerts(database.ReadDatabase());
                 eventsContainer.Start();
+                //Thread.Sleep(2000);
+                StartPostTimer();
             });
         }
 
@@ -729,6 +592,20 @@ namespace DiscordSharpTest
                 };
                 client.Connect();
             });
+        }
+
+        //Send a log in request
+        public async Task<bool> Connect()
+        {
+            bool x = false;
+            if (Client.SendLoginRequest() != null)
+                await ClientTask(Client);
+            return x;
+        }
+
+        private int RollDice(int min, int max)
+        {
+            return _randomNumGen.Next(min, max);
         }
     }
 }
