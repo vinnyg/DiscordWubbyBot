@@ -121,12 +121,12 @@ namespace DiscordSharpTest
 #endif
                     }
                 }
-                else
+                /*else
                 {
 #if DEBUG
                     Console.WriteLine("Update Alert Event");
 #endif
-                }
+                }*/
 
                 if (currentAlert.ExpireTime > DateTime.Now)
                     CreateNewAlertReceivedEvent(currentAlert);
