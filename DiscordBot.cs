@@ -72,7 +72,8 @@ namespace DiscordSharpTest
 
         virtual public void DeleteMessage(DiscordMessage target)
         {
-            Client.DeleteMessage(target);
+            if (target != null)
+                Client.DeleteMessage(target);
         }
 
         virtual public DiscordMessage GetMessageByID(string messageID, DiscordChannel channel)
