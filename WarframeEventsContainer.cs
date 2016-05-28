@@ -23,10 +23,11 @@ namespace DiscordSharpTest
 
         private bool isRunning;
 
-        private WarframeDataMapper mapper;
+        private WarframeDataMapper wfDataMapper;
 
         //When an alert is read more than once, it will be added to this list. Alerts in this list are no longer new.
         private List<WarframeAlert> NewAlerts;
+        private List<WarframeInvasion> NewInvasions;
 
         #region Events
         public event EventHandler<WarframeAlertScrapedArgs> AlertScraped;
@@ -40,7 +41,7 @@ namespace DiscordSharpTest
             AlertsList = new List<WarframeAlert>();
             InvasionsList = new List<WarframeInvasion>();
             NewAlerts = new List<WarframeAlert>();
-            mapper = new WarframeDataMapper();
+            wfDataMapper = new WarframeDataMapper();
         }
 
         public void Start(/*Dictionary<WarframeAlert, string> alertsToCheck*/)
@@ -93,8 +94,8 @@ namespace DiscordSharpTest
                         nonCountables = (jsonAlert["MissionInfo"]["missionReward"]["items"]);
 
                     string rewardStr = (countables != null ?
-                        mapper.GetItemName(countables[0]["ItemType"].ToString()) :
-                        (nonCountables != null ? mapper.GetItemName(nonCountables[0].ToString()) : ""));
+                        wfDataMapper.GetItemName(countables[0]["ItemType"].ToString()) :
+                        (nonCountables != null ? wfDataMapper.GetItemName(nonCountables[0].ToString()) : ""));
 
                     double secondsUntilStart = double.Parse(jsonAlert["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
                     double secondsUntilExpire = double.Parse(jsonAlert["Expiry"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
@@ -113,7 +114,7 @@ namespace DiscordSharpTest
                             int.Parse(jsonAlert["MissionInfo"]["minEnemyLevel"].ToString()),
                             int.Parse(jsonAlert["MissionInfo"]["maxEnemyLevel"].ToString()));
 
-                        currentAlert = new WarframeAlert(alertInfo, id, mapper.GetNodeName(loc), startTime, expireTime);
+                        currentAlert = new WarframeAlert(alertInfo, id, wfDataMapper.GetNodeName(loc), startTime, expireTime);
                         AlertsList.Add(currentAlert);
                         NewAlerts.Add(currentAlert);
 #if DEBUG
@@ -121,12 +122,6 @@ namespace DiscordSharpTest
 #endif
                     }
                 }
-                /*else
-                {
-#if DEBUG
-                    Console.WriteLine("Update Alert Event");
-#endif
-                }*/
 
                 if (currentAlert.ExpireTime > DateTime.Now)
                     CreateNewAlertReceivedEvent(currentAlert);
@@ -135,40 +130,45 @@ namespace DiscordSharpTest
             }
 
             //Find Invasions
-            foreach (var invasion in _worldState["Invasions"])
+            foreach (var jsonInvasion in _worldState["Invasions"])
             {
-                if (InvasionsList.Find(x => x.GUID == invasion["_id"]["$id"].ToString()) == null)
+                if (InvasionsList.Find(x => x.GUID == jsonInvasion["_id"]["$id"].ToString()) == null)
                 {
-                    string id = invasion["_id"]["$id"].ToString();
-                    string loc = invasion["Node"].ToString();
+                    string id = jsonInvasion["_id"]["$id"].ToString();
+                    string loc = jsonInvasion["Node"].ToString();
 
-                    JToken attackerLootResult = (invasion["DefenderReward"]["countedItems"]), 
-                        defenderLootResult = (invasion["AttackerReward"]["countedItems"]);
+                    JToken attackerCountables = (jsonInvasion["AttackerReward"]["countedItems"]),
+                        attackerCredits = (jsonInvasion["AttackerReward"]["credits"]),
+                        defenderCountables = (jsonInvasion["DefenderReward"]["countedItems"]),
+                        defenderCredits = (jsonInvasion["DefenderReward"]["credits"]);
+
+                    string attackerRewardStr = (attackerCountables != null ? wfDataMapper.GetItemName(attackerCountables[0]["ItemType"].ToString()) : ""),
+                        defenderRewardStr = (defenderCountables != null ? wfDataMapper.GetItemName(defenderCountables[0]["ItemType"].ToString()) : "");
 
                     //Mission Info corresponds to the faction to fight against.
-                    MissionInfo attackerInfo = new MissionInfo(invasion["AttackerMissionInfo"]["faction"].ToString(),
-                        invasion["DefenderMissionInfo"]["missionType"].ToString(), int.Parse(invasion["DefenderMissionInfo"]["missionReward"]["credits"].ToString()),
-                        (attackerLootResult != null ? attackerLootResult[0]["ItemType"] : "").ToString(),
-                        int.Parse((attackerLootResult != null ? attackerLootResult[0]["ItemCount"] ?? 1 : 0).ToString()),
-                        int.Parse(invasion["DefenderMissionInfo"]["minEnemyLevel"].ToString()),
-                        int.Parse(invasion["DefenderMissionInfo"]["maxEnemyLevel"].ToString()));
+                    MissionInfo attackerInfo = new MissionInfo(jsonInvasion["AttackerMissionInfo"]["faction"].ToString(),
+                        jsonInvasion["DefenderMissionInfo"]["missionType"].ToString(),
+                        defenderCredits != null ? int.Parse(defenderCredits.ToString()) : 0,
+                        String.IsNullOrEmpty(defenderRewardStr) ? "" : defenderRewardStr,
+                        defenderCountables != null ? (defenderCountables[0]["ItemCount"] != null ? int.Parse(defenderCountables[0]["ItemCount"].ToString()) : 1) : 0,
+                        int.Parse(jsonInvasion["DefenderMissionInfo"]["minEnemyLevel"].ToString()),
+                        int.Parse(jsonInvasion["DefenderMissionInfo"]["maxEnemyLevel"].ToString()));
 
-                    (attackerLootResult != null ? attackerLootResult[0]["ItemType"] : "").ToString();
-                    int.Parse((attackerLootResult != null ? (attackerLootResult[0]["ItemCount"] ?? 1) : 0).ToString());
+                    /*(attackerLootResult != null ? attackerLootResult[0]["ItemType"] : "").ToString();
+                    int.Parse((attackerLootResult != null ? (attackerLootResult[0]["ItemCount"] ?? 1) : 0).ToString());*/
 
-                    MissionInfo defenderInfo = new MissionInfo(invasion["DefenderMissionInfo"]["faction"].ToString(),
-                        invasion["AttackerMissionInfo"]["missionType"].ToString(),
-                        int.Parse(invasion["AttackerMissionInfo"]["missionReward"]["credits"].ToString()),
-                        (defenderLootResult != null ? defenderLootResult[0]["ItemType"] : "").ToString(),
-                        int.Parse((defenderLootResult != null ? defenderLootResult[0]["ItemCount"] ?? 1 : 0).ToString()),
-                        int.Parse(invasion["AttackerMissionInfo"]["minEnemyLevel"].ToString()),
-                        int.Parse(invasion["AttackerMissionInfo"]["maxEnemyLevel"].ToString()));
+                    MissionInfo defenderInfo = new MissionInfo(jsonInvasion["DefenderMissionInfo"]["faction"].ToString(),
+                        jsonInvasion["AttackerMissionInfo"]["missionType"].ToString(),
+                        attackerCredits != null ? int.Parse(attackerCredits.ToString()) : 0,
+                        String.IsNullOrEmpty(attackerRewardStr) ? "" : attackerRewardStr,
+                        attackerCountables != null ? (attackerCountables[0]["ItemCount"] != null ? int.Parse(attackerCountables[0]["ItemCount"].ToString()) : 1) : 0,
+                        int.Parse(jsonInvasion["AttackerMissionInfo"]["minEnemyLevel"].ToString()),
+                        int.Parse(jsonInvasion["AttackerMissionInfo"]["maxEnemyLevel"].ToString()));
 
-                    double secondsUntilStart = uint.Parse(invasion["Activation"]["sec"].ToString()) - uint.Parse(_worldState["Time"].ToString());
+                    double secondsUntilStart = uint.Parse(jsonInvasion["Activation"]["sec"].ToString()) - uint.Parse(_worldState["Time"].ToString());
                     DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
                     
                     InvasionsList.Add(new WarframeInvasion(attackerInfo, defenderInfo, id, loc, startTime));
-                    //NewestInvasions.Add(id);
                 }
             }
         }
