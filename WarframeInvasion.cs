@@ -19,17 +19,23 @@ namespace DiscordSharpTest
             Progress = .0f;
             AttackerDetails = attackerInfo;
             DefenderDetails = defenderInfo;
-            Type = AttackerDetails.Faction == Faction.INFESTATION ? InvasionType.OUTBREAK : InvasionType.INVASION;
+            //We check the defender information because the defender information contains information corresponding to the mission that they give and vice versa.
+            Type = DefenderDetails.Faction == Faction.INFESTATION ? InvasionType.OUTBREAK : InvasionType.INVASION;
         }
 
-        public void UpdateInvasionProgress(int progress, int goal)
+        public void UpdateProgress(int progress, int goal)
         {
             Progress = progress / goal;
         }
 
-        override public bool HasExpired()
+        public float GetProgress()
         {
-            return (Progress >= 100.0f);
+            return Progress;
+        }
+
+        override public bool IsExpired()
+        {
+            return (System.Math.Abs(Progress) >= 1.0f);
         }
     }
 }
