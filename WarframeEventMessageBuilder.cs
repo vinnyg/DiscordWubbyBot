@@ -36,18 +36,35 @@ namespace DiscordSharpTest
             return returnMessage.ToString();
         }
 
-        public string BuildMessage(WarframeInvasion invasion)
+        public string BuildMessage(WarframeInvasion invasion, bool formatMessage)
         {
-            throw new NotImplementedException();
+            WarframeEventMessageInfo msgInfo = ParseInvasion(invasion);
+            string styleStr = formatMessage ? (invasion.IsExpired() ? ITALIC : BOLD) : NO_STYLE;
 
-            //return "";
+            StringBuilder returnMessage;
+
+            /*returnMessage = new StringBuilder(
+                "Destination: " + styleStr + msgInfo.Destination + styleStr + Environment.NewLine +
+                "Mission: " + styleStr + msgInfo.Faction + styleStr + Environment.NewLine +
+                "Reward: " + styleStr + msgInfo.Reward + styleStr + Environment.NewLine +
+                "Status: " + styleStr + msgInfo.Status + styleStr
+                );*/
+
+            returnMessage = new StringBuilder(
+                msgInfo.Destination + Environment.NewLine +
+                msgInfo.Faction + Environment.NewLine +
+                msgInfo.Reward + Environment.NewLine +
+                msgInfo.Status
+                );
+
+            return returnMessage.ToString();
         }
 
         private WarframeEventMessageInfo ParseAlert(WarframeAlert alert)
         {
             MissionInfo info = alert.MissionDetails;
             string rewardMessage = (!String.IsNullOrEmpty(info.Reward) ? info.Reward : String.Empty),
-                rewardQuantityMessage = (info.RewardQuantity > 1 ? info.RewardQuantity + " x " : ""),
+                rewardQuantityMessage = (info.RewardQuantity > 1 ? info.RewardQuantity + "x" : ""),
                 creditMessage = (/*info.RewardQuantity > 0*/ !String.IsNullOrEmpty(rewardMessage) ? ", " : "") + (info.Credits > 0 ? info.Credits + "cr" : "");
 
             string statusString =
@@ -69,18 +86,20 @@ namespace DiscordSharpTest
             MissionInfo attackerInfo = invasion.AttackerDetails;
             MissionInfo defenderInfo = invasion.DefenderDetails;
 
-            //Check the invasion type - Invasions will have a reward but Outbreaks do not.
+            //Check the invasion type - Invasions will have a reward from both factions but Outbreaks only have a reward from the defending faction.
             //Check if there is a credit reward; reward can only either be a credit reward or loot reward
-            string attackerRewardMessage = invasion.Type == InvasionType.INVASION ? (attackerInfo.Credits > 0 ? invasion.AttackerDetails.Credits.ToString() : invasion.AttackerDetails.Reward) + " // " : "",
-                defenderRewardMessage = invasion.Type == InvasionType.INVASION ? (defenderInfo.Credits > 0 ? invasion.DefenderDetails.Credits.ToString() : invasion.DefenderDetails.Reward) : "",
-                attackerQuantityMessage = (attackerInfo.RewardQuantity > 1 ? attackerInfo.RewardQuantity + " x " : ""),
-                defenderQuantityMessage = (defenderInfo.RewardQuantity > 1 ? defenderInfo.RewardQuantity + " x " : "");
+            string attackerRewardMessage = invasion.Type == InvasionType.INVASION ? (attackerInfo.Credits > 0 ? invasion.AttackerDetails.Credits.ToString() + "cr" : invasion.AttackerDetails.Reward) : "",
+                defenderRewardMessage = (defenderInfo.Credits > 0 ? invasion.DefenderDetails.Credits.ToString() + "cr" : invasion.DefenderDetails.Reward),
+                attackerQuantityMessage = (attackerInfo.RewardQuantity > 1 ? attackerInfo.RewardQuantity + "x" : ""),
+                defenderQuantityMessage = (defenderInfo.RewardQuantity > 1 ? defenderInfo.RewardQuantity + "x" : "");
+
+            string winningFaction = (System.Math.Abs(invasion.GetProgress()) / invasion.GetProgress()) > 0 ? attackerInfo.Faction : defenderInfo.Faction;
 
             WarframeEventMessageInfo msgInfo = new WarframeEventMessageInfo(
                 $"{invasion.DestinationName}",
-                $"{attackerInfo.Faction} ({attackerInfo.MissionType}) vs {defenderInfo.Faction} ({defenderInfo.MissionType})",
-                $"{attackerQuantityMessage + attackerRewardMessage + defenderQuantityMessage + defenderRewardMessage}",
-                $"{0}% ({0})"
+                $"{defenderInfo.Faction} vs {attackerInfo.Faction}",
+                $"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{attackerQuantityMessage + attackerRewardMessage} ({attackerInfo.Faction + " " + defenderInfo.MissionType}) / ") : "")}{defenderQuantityMessage + defenderRewardMessage} ({defenderInfo.Faction + " " + attackerInfo.MissionType})",
+                $"{System.Math.Abs(invasion.GetProgress() * 100)}% ({winningFaction})"
                 );
 
             return msgInfo;
