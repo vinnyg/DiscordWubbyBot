@@ -26,13 +26,20 @@ namespace DiscordSharpTest
     {
         public string Content;
         public bool NotifyClient;
-        public bool AlertHasExpired;
+        public bool EventHasExpired;
 
-        public MessageQueueEntry(string content, bool notify, bool alertHasExpired)
+        public MessageQueueEntry(string content, bool notify, bool eventHasExpired)
         {
             NotifyClient = notify;
             Content = content;
-            AlertHasExpired = alertHasExpired;
+            EventHasExpired = eventHasExpired;
+        }
+
+        public MessageQueueEntry(MessageQueueEntry queue)
+        {
+            NotifyClient = queue.NotifyClient;
+            Content = queue.Content;
+            EventHasExpired = queue.EventHasExpired;
         }
     };
 
@@ -59,8 +66,10 @@ namespace DiscordSharpTest
         private Dictionary<WarframeAlert, DiscordMessage> alertMessageAssociations;
         private EventsDatabase database;
         private List<MessageQueueEntry> alertMessagePostQueue;
+        private List<MessageQueueEntry> invasionMessagePostQueue;
 
         private DiscordMessage alertMessage = null;
+        private DiscordMessage invasionMessage = null;
 
         //Give the bot a name
         public WubbyBot(string name, string devLogName = "") : base(name, devLogName)
@@ -108,13 +117,15 @@ namespace DiscordSharpTest
             database = new EventsDatabase();
 
             alertMessagePostQueue = new List<MessageQueueEntry>();
+            invasionMessagePostQueue = new List<MessageQueueEntry>();
 
             Log("Sub-systems initialised");
         }
 
         private void StartPostTimer()
         {
-            _eventUpdateInterval = new Timer((e) => PostAlertMessage(), null, 2000, (int)(TimeSpan.FromMinutes(1).TotalMilliseconds));
+            _eventUpdateInterval = new Timer((e) => { PostAlertMessage(); Thread.Sleep(5000); PostInvasionMessage(); }, null, 3000, (int)(TimeSpan.FromMinutes(1).TotalMilliseconds));
+            //_invasionUpdateInterval = new Timer((e) => { /*PostAlertMessage();*/ PostInvasionMessage(); }, null, 3000, (int)(TimeSpan.FromMinutes(1).TotalMilliseconds));
         }
 
         private void DeleteOldEventMessages()
@@ -137,11 +148,11 @@ namespace DiscordSharpTest
             //Build all alert strings into a single message
             finalMsg.Append("```ACTIVE ALERTS```" + Environment.NewLine);
 
-            //Log(alertMessagePostQueue.Count.ToString());
+            //Log(alertMessagePostQueue.Count.ToString() + " alerts!");
 
             foreach (var m in alertMessagePostQueue)
             {
-                string heading = (m.AlertHasExpired) ? "```" : "```xl";
+                string heading = (m.EventHasExpired) ? "```" : "```xl";
 
                 //finalMsg = new StringBuilder(heading + Environment.NewLine + m.Content + "```" + Environment.NewLine);
                 finalMsg.Append(heading);
@@ -157,7 +168,7 @@ namespace DiscordSharpTest
                     Log(m.Content + " WAS APPENDED!");
 #endif
             }
-            //Log(alertMessagePostQueue.Count.ToString());
+            //Log(alertMessagePostQueue.Count.ToString() + " alerts!");
 
             if ((!postWillNotify) && (alertMessage != null))
                 EditMessage(finalMsg.ToString(), alertMessage, Client.GetChannelByName(ALERTS_CHANNEL));
@@ -172,10 +183,63 @@ namespace DiscordSharpTest
             alertMessagePostQueue.Clear();
         }
 
+        private void PostInvasionMessage()
+        {
+            //StringBuilder finalMsg;// = new StringBuilder();
+            StringBuilder finalMsg = new StringBuilder();
+            bool postWillNotify = false;
+            //Build all alert strings into a single message
+            finalMsg.Append("```ACTIVE INVASIONS```" + Environment.NewLine);
+
+            //Log(invasionMessagePostQueue.Count.ToString() + " invasions!");
+
+            List<MessageQueueEntry> invQ = new List<MessageQueueEntry>(invasionMessagePostQueue);
+
+            foreach (var m in invQ)
+            {
+                string heading = (m.EventHasExpired) ? "```" : "```xl";
+
+                //finalMsg = new StringBuilder(heading + Environment.NewLine + m.Content + "```" + Environment.NewLine);
+                finalMsg.Append(heading);
+                finalMsg.Append(Environment.NewLine);
+                finalMsg.Append(m.Content);
+                finalMsg.Append("```");
+                finalMsg.Append(Environment.NewLine);
+                postWillNotify = m.NotifyClient;
+#if DEBUG
+                /*if (String.IsNullOrWhiteSpace(m.Content))
+                    Log("Message has empty content");
+                else
+                    Log(m.Content + " WAS APPENDED!");*/
+#endif
+            }
+            //Log(invasionMessagePostQueue.Count.ToString() + " invasions!");
+
+            if ((!postWillNotify) && (invasionMessage != null))
+                EditMessage(finalMsg.ToString(), invasionMessage, Client.GetChannelByName(ALERTS_CHANNEL));
+            else
+            {
+                if (invasionMessage != null)
+                    Client.DeleteMessage(invasionMessage);
+                invasionMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
+                //SaveState();
+            }
+
+            Log(finalMsg.Length + " characters long");
+
+            invasionMessagePostQueue.Clear();
+        }
+
         private void AddToAlertPostQueue(string message, bool notifyClient, bool alertHasExpired)
         {
             //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
             alertMessagePostQueue.Add(new MessageQueueEntry(message, notifyClient, alertHasExpired));
+        }
+
+        private void AddToInvasionPostQueue(string message, bool notifyClient, bool invasionHasExpired)
+        {
+            //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
+            invasionMessagePostQueue.Add(new MessageQueueEntry(message, notifyClient, invasionHasExpired));
         }
 
         private void SaveState()
@@ -206,6 +270,7 @@ namespace DiscordSharpTest
         {
             Log("Shutting down...");
             DeleteMessage(alertMessage);
+            DeleteMessage(invasionMessage);
             //SendMessage($"*{Name} is now offline*", Client.GetChannelByName(ALERTS_CHANNEL));
         }
 
@@ -409,12 +474,16 @@ namespace DiscordSharpTest
 
                 eventsContainer.InvasionScraped += (sender, e) =>
                 {
-
+#if DEBUG
+                    //Log("Invasion Scraped!");
+#endif
+                    bool invasionIsNew = eventsContainer.IsInvasionNew(e.Invasion);
+                    AddToInvasionPostQueue(messageBuilder.BuildMessage(e.Invasion, false), invasionIsNew, e.Invasion.IsExpired());
                 };
 
                 eventsContainer.AlertExpired += (sender, e) =>
                 {
-                    Log("Alert Expired");
+                    //Log("Alert Expired");
                     if (Client.ReadyComplete == true)
                     {
                         /*DiscordMessage targetMessage = null;
@@ -434,7 +503,7 @@ namespace DiscordSharpTest
 
                         
                     }
-                    database.DeleteAlert(e.Alert);
+                    //database.DeleteAlert(e.Alert);
                 };
 
                 eventsContainer.ExistingAlertFound += (sender, e) =>
