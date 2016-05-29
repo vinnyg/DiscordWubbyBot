@@ -93,13 +93,13 @@ namespace DiscordSharpTest
                 attackerQuantityMessage = (attackerInfo.RewardQuantity > 1 ? attackerInfo.RewardQuantity + "x" : ""),
                 defenderQuantityMessage = (defenderInfo.RewardQuantity > 1 ? defenderInfo.RewardQuantity + "x" : "");
 
-            string winningFaction = (System.Math.Abs(invasion.GetProgress()) / invasion.GetProgress()) > 0 ? attackerInfo.Faction : defenderInfo.Faction;
+            string winningFaction = (System.Math.Abs(invasion.GetProgress()) / invasion.GetProgress()) > 0 ? defenderInfo.Faction : attackerInfo.Faction;
 
             WarframeEventMessageInfo msgInfo = new WarframeEventMessageInfo(
                 $"{invasion.DestinationName}",
                 $"{defenderInfo.Faction} vs {attackerInfo.Faction}",
                 $"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{attackerQuantityMessage + attackerRewardMessage} ({attackerInfo.Faction + " " + defenderInfo.MissionType}) / ") : "")}{defenderQuantityMessage + defenderRewardMessage} ({defenderInfo.Faction + " " + attackerInfo.MissionType})",
-                $"{System.Math.Abs(invasion.GetProgress() * 100)}% ({winningFaction})"
+                $"{String.Format("{0:0.00}", System.Math.Abs(invasion.GetProgress() * 100.0f))}% ({winningFaction})"
                 );
 
             return msgInfo;
