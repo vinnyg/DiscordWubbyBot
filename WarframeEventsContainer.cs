@@ -71,11 +71,6 @@ namespace DiscordSharpTest
             }
         }
 
-        void UpdateInvasionProgress()
-        {
-            throw new NotImplementedException();
-        }
-
         void ParseJsonEvents()
         {
             NewAlerts.Clear();
@@ -130,6 +125,8 @@ namespace DiscordSharpTest
                     CreateAlertExpiredEvent(currentAlert, "");
             }
 
+            NewInvasions.Clear();
+
             //Find Invasions
             foreach (var jsonInvasion in _worldState["Invasions"])
             {
@@ -172,7 +169,7 @@ namespace DiscordSharpTest
 
                         //InvasionsList.Add(new WarframeInvasion(attackerInfo, defenderInfo, id, loc, startTime));
 
-                        currentInvasion = new WarframeInvasion(attackerInfo, defenderInfo, id, wfDataMapper.GetNodeName(loc), startTime);
+                        currentInvasion = new WarframeInvasion(attackerInfo, defenderInfo, id, wfDataMapper.GetNodeName(loc), startTime, int.Parse(jsonInvasion["Goal"].ToString()));
                         InvasionsList.Add(currentInvasion);
                         NewInvasions.Add(currentInvasion);
 #if DEBUG
@@ -181,12 +178,18 @@ namespace DiscordSharpTest
                     }
                     else
                     {
+#if DEBUG
                         Console.WriteLine("An Invasion was discarded due to its lack of rewards");
+#endif
                     }
                 }
 
                 if (currentInvasion != null && !currentInvasion.IsExpired())
+                {
+                    int b = int.Parse(jsonInvasion["Count"].ToString());
+                    currentInvasion.UpdateProgress(int.Parse(jsonInvasion["Count"].ToString()));
                     CreateNewInvasionReceivedEvent(currentInvasion);
+                }
             }
         }
 
