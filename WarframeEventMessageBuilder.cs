@@ -17,16 +17,7 @@ namespace DiscordSharpTest
             WarframeEventMessageInfo msgInfo = ParseAlert(alert);
             string styleStr = formatMessage ? (alert.IsExpired() ? ITALIC : BOLD) : NO_STYLE;
 
-            StringBuilder returnMessage;
-
-            /*returnMessage = new StringBuilder(
-                "Destination: " + styleStr + msgInfo.Destination + styleStr + Environment.NewLine +
-                "Mission: " + styleStr + msgInfo.Faction + styleStr + Environment.NewLine +
-                "Reward: " + styleStr + msgInfo.Reward + styleStr + Environment.NewLine +
-                "Status: " + styleStr + msgInfo.Status + styleStr
-                );*/
-
-            returnMessage = new StringBuilder(
+            StringBuilder returnMessage = new StringBuilder(
                 msgInfo.Destination + Environment.NewLine +
                 msgInfo.Faction + Environment.NewLine +
                 msgInfo.Reward + Environment.NewLine +
@@ -41,16 +32,7 @@ namespace DiscordSharpTest
             WarframeEventMessageInfo msgInfo = ParseInvasion(invasion);
             string styleStr = formatMessage ? (invasion.IsExpired() ? ITALIC : BOLD) : NO_STYLE;
 
-            StringBuilder returnMessage;
-
-            /*returnMessage = new StringBuilder(
-                "Destination: " + styleStr + msgInfo.Destination + styleStr + Environment.NewLine +
-                "Mission: " + styleStr + msgInfo.Faction + styleStr + Environment.NewLine +
-                "Reward: " + styleStr + msgInfo.Reward + styleStr + Environment.NewLine +
-                "Status: " + styleStr + msgInfo.Status + styleStr
-                );*/
-
-            returnMessage = new StringBuilder(
+            StringBuilder returnMessage = new StringBuilder(
                 msgInfo.Destination + Environment.NewLine +
                 msgInfo.Faction + Environment.NewLine +
                 msgInfo.Reward + Environment.NewLine +
@@ -58,6 +40,33 @@ namespace DiscordSharpTest
                 );
 
             return returnMessage.ToString();
+        }
+
+        public string BuildNotificationMessage(WarframeAlert alert)
+        {
+            WarframeEventMessageInfo msgInfo = ParseAlert(alert);
+            string expireMsg = $"Expires {alert.ExpireTime:HH:mm} ({alert.GetMinutesRemaining(false)}m)";
+
+            StringBuilder msg = new StringBuilder(
+                "New Alert" + Environment.NewLine +
+                msgInfo.Reward + Environment.NewLine +
+                expireMsg
+                );
+
+            return msg.ToString();
+        }
+
+        public string BuildNotificationMessage(WarframeInvasion invasion)
+        {
+            WarframeEventMessageInfo msgInfo = ParseInvasion(invasion);
+
+            StringBuilder msg = new StringBuilder(
+                "New Invasion" + Environment.NewLine +
+                msgInfo.Faction + Environment.NewLine +
+                msgInfo.Reward + Environment.NewLine
+                );
+
+            return msg.ToString();
         }
 
         private WarframeEventMessageInfo ParseAlert(WarframeAlert alert)
@@ -93,13 +102,15 @@ namespace DiscordSharpTest
                 attackerQuantityMessage = (attackerInfo.RewardQuantity > 1 ? attackerInfo.RewardQuantity + "x" : ""),
                 defenderQuantityMessage = (defenderInfo.RewardQuantity > 1 ? defenderInfo.RewardQuantity + "x" : "");
 
-            string winningFaction = (System.Math.Abs(invasion.GetProgress()) / invasion.GetProgress()) > 0 ? defenderInfo.Faction : attackerInfo.Faction;
-
+            string winningFaction = (System.Math.Abs(invasion.Progress) / invasion.Progress) > 0 ? defenderInfo.Faction : attackerInfo.Faction,
+                changeRateSign = (invasion.ChangeRate < 0 ? "" : "+");
+            
             WarframeEventMessageInfo msgInfo = new WarframeEventMessageInfo(
                 $"{invasion.DestinationName}",
                 $"{defenderInfo.Faction} vs {attackerInfo.Faction}",
-                $"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{attackerQuantityMessage + attackerRewardMessage} ({attackerInfo.Faction + " " + defenderInfo.MissionType}) / ") : "")}{defenderQuantityMessage + defenderRewardMessage} ({defenderInfo.Faction + " " + attackerInfo.MissionType})",
-                $"{String.Format("{0:0.00}", System.Math.Abs(invasion.GetProgress() * 100.0f))}% ({winningFaction})"
+                $"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{attackerQuantityMessage + attackerRewardMessage} ({defenderInfo.MissionType}) / ") : "")}{defenderQuantityMessage + defenderRewardMessage} ({attackerInfo.MissionType})",
+                //$"{String.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({changeRateSign + String.Format("{0:0.00}", invasion.ChangeRate)}%) ({winningFaction})"
+                $"{String.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({winningFaction})"
                 );
 
             return msgInfo;
