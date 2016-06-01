@@ -11,8 +11,9 @@ namespace DiscordSharpTest
         public string Type { get; private set; }
         public MissionInfo AttackerDetails { get; private set; }
         public MissionInfo DefenderDetails { get; private set; }
-        private float Progress { get; set; }
+        public float Progress { get; private set; }
         private int Goal { get; set; }
+        public float ChangeRate { get; private set; }
 
         public WarframeInvasion(MissionInfo attackerInfo, MissionInfo defenderInfo, string guid, string destinationName, DateTime startTime, int goal) : base(guid, destinationName, startTime)
         {
@@ -28,13 +29,15 @@ namespace DiscordSharpTest
         public void UpdateProgress(int progress)
         {
             int direction = progress != 0 ? (System.Math.Abs(progress) / progress) : 1;
-            Progress = (((float)System.Math.Abs(progress) / (float)Goal) * direction);
+            float prevProg = Progress;
+            Progress = (((float)Math.Abs(progress) / (float)Goal) * direction);
+            ChangeRate = (Progress - prevProg) * direction;
         }
 
-        public float GetProgress()
+        /*public float GetProgress()
         {
             return Progress;
-        }
+        }*/
 
         override public bool IsExpired()
         {
