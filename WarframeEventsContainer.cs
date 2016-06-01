@@ -118,6 +118,11 @@ namespace DiscordSharpTest
 #endif
                     }
                 }
+                else
+                {
+                    if (currentAlert.ExpireTime > DateTime.Now)
+                        AlertsList.Remove(currentAlert);
+                }
 
                 if (currentAlert.ExpireTime > DateTime.Now)
                     CreateNewAlertReceivedEvent(currentAlert);
@@ -169,6 +174,8 @@ namespace DiscordSharpTest
 
                         //InvasionsList.Add(new WarframeInvasion(attackerInfo, defenderInfo, id, loc, startTime));
 
+                        int goal = int.Parse(jsonInvasion["Goal"].ToString()), progress = int.Parse(jsonInvasion["Count"].ToString());
+
                         currentInvasion = new WarframeInvasion(attackerInfo, defenderInfo, id, wfDataMapper.GetNodeName(loc), startTime, int.Parse(jsonInvasion["Goal"].ToString()));
                         InvasionsList.Add(currentInvasion);
                         NewInvasions.Add(currentInvasion);
@@ -182,6 +189,11 @@ namespace DiscordSharpTest
                         Console.WriteLine("An Invasion was discarded due to its lack of rewards");
 #endif
                     }
+                }
+                else
+                {
+                    if (currentInvasion.IsExpired())
+                        InvasionsList.Remove(currentInvasion);
                 }
 
                 if (currentInvasion != null && !currentInvasion.IsExpired())
