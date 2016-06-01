@@ -12,6 +12,9 @@ namespace DiscordSharpTest
 {
     abstract class DiscordBot
     {
+        //Milliseconds which must pass before another Discord request can be made.
+        private const int REQUEST_TIME_LIMIT = 1000;
+
         public DiscordClient Client { get; internal set; }   //Client
         public string Name { get; set; }       //Name of bot
         public DiscordMember Owner { get; set; }
@@ -19,15 +22,17 @@ namespace DiscordSharpTest
         public StreamWriter LogFile { get; internal set; }          //File to log messages to
         public string LogChannelName { get; internal set; }     //Name of channel to post log messages to
 
-        public DiscordBot(string name, string logChannelName = "")
+        private DateTime timeOfLastDiscordRequest;
+
+        public DiscordBot(string name = "DiscordBot", string logChannelName = "")
         {
             Name = name;
             LogChannelName = logChannelName;
             BotConfig = new Config();
+            timeOfLastDiscordRequest = DateTime.Now;
+
             if (File.Exists(Name + ".json"))
-            {
                 BotConfig = JsonConvert.DeserializeObject<Config>(File.ReadAllText(Name + ".json"));
-            }
             else
             {
                 BotConfig = new Config();
@@ -37,9 +42,9 @@ namespace DiscordSharpTest
 
         public void Login()
         {
-            Client = new DiscordClient(tokenOverride: @"MTgzOTIyMjAwNTMxNjk3NjY2.CiM6ZQ.YRhWFuuqAQ0ZOJ8iOKWGkfMDl8Q", isBotAccount: true);
-            //Client = new DiscordClient();
+            Client = new DiscordClient(tokenOverride: BotConfig.DiscordToken, isBotAccount: true, enableLogging: true);
             Client.RequestAllUsersOnStartup = true;
+            Client.EnableVerboseLogging = true;
 
             if (BotConfig.email == null || BotConfig.password == null)
             {
@@ -56,25 +61,97 @@ namespace DiscordSharpTest
         //Send a message to the specified channel
         virtual public DiscordMessage SendMessage(string content, DiscordChannel channel)
         {
-            return Client.SendMessageToChannel(content, channel);
+#if DEBUG
+            //Log($"SendMessage({content})");
+            Console.WriteLine($"SendMessage({content})");
+#endif
+            DiscordMessage m = null;
+            try
+            {
+                System.Threading.Thread.Sleep(GetTimeUntilCanRequest());
+                m = Client.SendMessageToChannel(content, channel);
+                timeOfLastDiscordRequest = DateTime.Now;
+            }
+            catch (NullReferenceException)
+            {
+                Log("SendMessage threw a NullReferenceException.");
+            }
+            catch(Exception)
+            {
+                Log("SendMessage threw an exception.");
+            }
+
+            return m;
         }
 
         //Send a message to the specified user
-        virtual public DiscordMessage SendMessage(string message, DiscordMember user)
+        virtual public DiscordMessage SendMessage(string content, DiscordMember user)
         {
-            return Client.SendMessageToUser(message, user);
+            DiscordMessage m = null;
+            try
+            {
+                System.Threading.Thread.Sleep(GetTimeUntilCanRequest());
+                m = Client.SendMessageToUser(content, user);
+                timeOfLastDiscordRequest = DateTime.Now;
+            }
+            catch (NullReferenceException)
+            {
+                Log("SendMessage threw a NullReferenceException.");
+            }
+            catch (Exception)
+            {
+                Log("SendMessage threw an exception.");
+            }
+
+            return m;
         }
 
         virtual public DiscordMessage EditMessage(string newContent, DiscordMessage targetMessage, DiscordChannel channel)
         {
-            return Client.EditMessage(targetMessage.ID, newContent, channel);
+            DiscordMessage m = targetMessage;
+            try
+            {
+                System.Threading.Thread.Sleep(GetTimeUntilCanRequest());
+                m = Client.EditMessage(targetMessage.ID, newContent, channel);
+                timeOfLastDiscordRequest = DateTime.Now;
+            }
+            catch (NullReferenceException)
+            {
+                Log("EditMessage threw a NullReferenceException.");
+            }
+            catch (Exception)
+            {
+                Log("EditMessage threw an exception.");
+            }
+            return m;
         }
 
         virtual public void DeleteMessage(DiscordMessage target)
         {
-            if (target != null)
-                Client.DeleteMessage(target);
+            try
+            {
+                System.Threading.Thread.Sleep(GetTimeUntilCanRequest());
+                if (target != null)
+                {
+                    Client.DeleteMessage(target);
+                    timeOfLastDiscordRequest = DateTime.Now;
+                }
+            }
+            catch (NullReferenceException)
+            {
+                Log("EditMessage threw a NullReferenceException.");
+            }
+            catch (Exception)
+            {
+                Log("EditMessage threw an exception.");
+            }
         }
+
+        /*virtual public void Notify(string content, DiscordChannel channel)
+        {
+            DiscordMessage m = Client.SendMessageToChannel(content, channel);
+            System.Threading.Thread.Sleep(500);
+        }*/
 
         virtual public DiscordMessage GetMessageByID(string messageID, DiscordChannel channel)
         {
@@ -100,9 +177,16 @@ namespace DiscordSharpTest
             return targetMessage;
         }
 
+        virtual public void NotifyClient(string content, DiscordChannel channel)
+        {
+            DiscordMessage m = SendMessage(content, channel);
+            Client.DeleteMessage(m);
+        }
+
         virtual public void Log(string message)
         {
             Console.WriteLine($"[{DateTime.Now}] {message}");
+            return;
 
             var r = Client.GetServersList();
 
@@ -120,6 +204,13 @@ namespace DiscordSharpTest
                     }
                 }
             }
+        }
+
+        private int GetTimeUntilCanRequest()
+        {
+            DateTime timeOfNextAvailableRequest = timeOfLastDiscordRequest.AddMilliseconds(REQUEST_TIME_LIMIT);
+            double timeUntilNextAvailableRequest = timeOfNextAvailableRequest.Subtract(DateTime.Now).TotalMilliseconds;
+            return timeUntilNextAvailableRequest < 0 ? 0 : (int)timeUntilNextAvailableRequest;
         }
     }
 }
