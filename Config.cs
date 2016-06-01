@@ -18,15 +18,19 @@ namespace DiscordSharpTest
         [JsonProperty("command_prefix")]
         public char commandPrefix { get; internal set; }
 
+        [Obsolete]
         [JsonProperty("consumer_key")]
         public string consumerKey { get; internal set; }
 
+        [Obsolete]
         [JsonProperty("consumer_secret")]
         public string consumerSecret { get; internal set; }
 
+        [Obsolete]
         [JsonProperty("access_token")]
         public string accessToken { get; internal set; }
 
+        [Obsolete]
         [JsonProperty("access_token_secret")]
         public string accessTokenSecret { get; internal set; }
 
