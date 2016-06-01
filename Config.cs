@@ -29,5 +29,8 @@ namespace DiscordSharpTest
 
         [JsonProperty("access_token_secret")]
         public string accessTokenSecret { get; internal set; }
+
+        [JsonProperty("discord_token")]
+        public string DiscordToken { get; internal set; }
     }
 }
