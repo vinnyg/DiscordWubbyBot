@@ -30,6 +30,18 @@ namespace DiscordSharpTest.Events
         }
     }
 
+    class WarframeVoidTraderScrapedArgs : EventArgs
+    {
+        /*public WarframeEventMessage Message { get; set; }*/
+        public WarframeVoidTrader Trader { get; private set; }
+
+        public WarframeVoidTraderScrapedArgs(WarframeVoidTrader trader)
+        {
+            //Message = new WarframeEventMessage(content, unformattedContent);
+            Trader = trader;
+        }
+    }
+
     class ExistingAlertFoundArgs : EventArgs
     {
         public WarframeAlert Alert { get; private set; }
