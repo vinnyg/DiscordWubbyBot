@@ -8,7 +8,7 @@ namespace DiscordSharpTest
 {
     class WarframeInvasion : WarframeEvent
     {
-        private const CHANGE_RATE_MAX_HISTORY = 60;
+        private const float CHANGE_RATE_MAX_HISTORY = 60.0f;
         public string Type { get; private set; }
         public MissionInfo AttackerDetails { get; private set; }
         public MissionInfo DefenderDetails { get; private set; }
