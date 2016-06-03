@@ -70,9 +70,11 @@ namespace DiscordSharpTest
         private EventsDatabase database;
         private List<MessageQueueEntry> alertMessagePostQueue;
         private List<MessageQueueEntry> invasionMessagePostQueue;
+        private List<MessageQueueEntry> voidTraderMessagePostQueue;
 
         private DiscordMessage alertMessage = null;
         private DiscordMessage invasionMessage = null;
+        private DiscordMessage traderMessage = null;
 
         //Give the bot a name
         public WubbyBot(string name, string devLogName = "") : base(name, devLogName)
@@ -121,13 +123,14 @@ namespace DiscordSharpTest
 
             alertMessagePostQueue = new List<MessageQueueEntry>();
             invasionMessagePostQueue = new List<MessageQueueEntry>();
+            voidTraderMessagePostQueue = new List<MessageQueueEntry>();
 
             Log("Sub-systems initialised");
         }
 
         private void StartPostTimer()
         {
-            _eventUpdateInterval = new Timer((e) => { PostAlertMessage(); PostInvasionMessage(); }, null, 3000, (int)(TimeSpan.FromMinutes(1).TotalMilliseconds));
+            _eventUpdateInterval = new Timer((e) => { PostAlertMessage(); PostInvasionMessage(); PostVoidTraderMessage(); }, null, 3000, (int)(TimeSpan.FromMinutes(1).TotalMilliseconds));
         }
 
         private void DeleteOldEventMessages()
@@ -160,16 +163,10 @@ namespace DiscordSharpTest
 
                 if (postWillNotify)
                 {
-                    finalMsg.Append("( NEW )");
+                    finalMsg.Append("( new )");
                     messagesToNotify.Add(m.NotificationContent);
                 }
                 finalMsg.Append("```" + Environment.NewLine);
-#if DEBUG
-                if (String.IsNullOrWhiteSpace(m.Content))
-                    Log("Message has empty content");
-                else
-                    Log(m.Content + " WAS APPENDED!");
-#endif
             }
 
             if (alertMessage == null)
@@ -206,15 +203,9 @@ namespace DiscordSharpTest
                 if (postWillNotify)
                 {
                     messagesToNotify.Add(m.NotificationContent);
-                    finalMsg.Append("( NEW )");
+                    finalMsg.Append("( new )");
                 }
                 finalMsg.Append("```" + Environment.NewLine);
-#if DEBUG
-                /*if (String.IsNullOrWhiteSpace(m.Content))
-                    Log("Message has empty content");
-                else
-                    Log(m.Content + " WAS APPENDED!");*/
-#endif
             }
 
             if (invasionMessage == null)
@@ -233,6 +224,39 @@ namespace DiscordSharpTest
             invasionMessagePostQueue.Clear();
         }
 
+        private void PostVoidTraderMessage()
+        {
+            StringBuilder finalMsg = new StringBuilder();
+            bool postWillNotify = false;
+            List<string> messagesToNotify = new List<string>();
+            //Build all alert strings into a single message
+            finalMsg.Append("```VOID TRADER```" + Environment.NewLine);
+
+            foreach (var m in voidTraderMessagePostQueue)
+            {
+                string heading = (m.EventHasExpired) ? "```" : "```xl";
+
+                //finalMsg = new StringBuilder(heading + Environment.NewLine + m.Content + "```" + Environment.NewLine);
+                finalMsg.Append(heading + Environment.NewLine + m.Content + Environment.NewLine);
+                postWillNotify = m.NotifyClient;
+
+                finalMsg.Append("```" + Environment.NewLine);
+            }
+
+            if (traderMessage == null)
+                traderMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
+            else
+            {
+                EditMessage(finalMsg.ToString(), traderMessage, Client.GetChannelByName(ALERTS_CHANNEL));
+                foreach (var item in messagesToNotify)
+                {
+                    NotifyClient(item, Client.GetChannelByName(ALERTS_CHANNEL));
+                }
+            }
+
+            voidTraderMessagePostQueue.Clear();
+        }
+
         private void AddToAlertPostQueue(string message, bool notifyClient, string notificationContent, bool alertHasExpired)
         {
             //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
@@ -245,11 +269,18 @@ namespace DiscordSharpTest
             invasionMessagePostQueue.Add(new MessageQueueEntry(message, notifyClient, notificationContent, invasionHasExpired));
         }
 
+        private void AddToVoidTraderPostQueue(string message, bool notifyClient, string notificationContent, bool traderHasExpired)
+        {
+            //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
+            voidTraderMessagePostQueue.Add(new MessageQueueEntry(message, notifyClient, notificationContent, traderHasExpired));
+        }
+
         public void Shutdown()
         {
             Log("Shutting down...");
             DeleteMessage(alertMessage);
             DeleteMessage(invasionMessage);
+            DeleteMessage(traderMessage);
             //SendMessage($"*{Name} is now offline*", Client.GetChannelByName(ALERTS_CHANNEL));
         }
 
@@ -458,6 +489,15 @@ namespace DiscordSharpTest
 #endif
                     bool invasionIsNew = eventsContainer.IsInvasionNew(e.Invasion);
                     AddToInvasionPostQueue(messageBuilder.BuildMessage(e.Invasion, false), invasionIsNew, messageBuilder.BuildNotificationMessage(e.Invasion), e.Invasion.IsExpired());
+                };
+
+                eventsContainer.VoidTraderScraped += (sender, e) =>
+                {
+#if DEBUG
+                    Log("Void Trader Scraped!");
+#endif
+                    //bool invasionIsNew = eventsContainer.IsInvasionNew(e.VoidTraderScraped);
+                    AddToVoidTraderPostQueue(messageBuilder.BuildMessage(e.Trader, false), false, messageBuilder.BuildNotificationMessage(e.Trader), e.Trader.IsExpired());
                 };
 
                 eventsContainer.ExistingAlertFound += (sender, e) =>
