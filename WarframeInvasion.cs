@@ -34,6 +34,8 @@ namespace DiscordSharpTest
             int direction = progress != 0 ? (System.Math.Abs(progress) / progress) : 1;
             float prevProg = Progress;
             Progress = (((float)Math.Abs(progress) / (float)Goal) * direction);
+            if (ChangeRateHistory.Count() == 0)
+                prevProg = Progress;
             //Enqueue new entries every minute so that an more accurate average can be calculated.
             ChangeRateHistory.Enqueue((Progress - prevProg) * direction);
             //We are only measuring the past hour.

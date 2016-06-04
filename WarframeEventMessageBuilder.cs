@@ -132,7 +132,7 @@ namespace DiscordSharpTest
                 $"{invasion.DestinationName}",
                 $"{defenderInfo.Faction} vs {attackerInfo.Faction}",
                 $"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{attackerQuantityMessage + attackerRewardMessage} ({defenderInfo.MissionType}) / ") : "")}{defenderQuantityMessage + defenderRewardMessage} ({attackerInfo.MissionType})",
-                $"{String.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({changeRateSign + String.Format("{0:0.00}", invasion.ChangeRate)} p/hr){(defenderInfo.Faction != Faction.INFESTATION ? " (" + winningFaction + ")": "")}"
+                $"{String.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({changeRateSign + String.Format("{0:0.00}", invasion.ChangeRate * 100.0f)} p/hr){(defenderInfo.Faction != Faction.INFESTATION ? " (" + winningFaction + ")": "")}"
                 //$"{String.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({winningFaction})"
                 );
 
@@ -144,11 +144,6 @@ namespace DiscordSharpTest
             TimeSpan ts = (DateTime.Now < trader.StartTime) ? trader.GetTimeRemaining(true) : trader.GetTimeRemaining(false);
             int days = ts.Days, hours = ts.Hours, minutes = ts.Minutes;
             string traderName = "Baro Ki Teer";
-            //int totalHours = (ts.Days * 24) + ts.Hours,
-            //    totalMinutes = (totalHours * 60) + ts.Minutes;
-            //StringBuilder timeUnit = new StringBuilder((totalHours > 48) ? "Days" : "" + "Hours" + "Minutes");
-
-            //string statusString = (DateTime.Now < trader.StartTime) ? "arriving at" : "leaving";
 
             StringBuilder rewardString = new StringBuilder();
             
@@ -157,7 +152,6 @@ namespace DiscordSharpTest
                 rewardString.Append($"{i.Name} {i.Credits}cr + {i.Ducats}dc{Environment.NewLine}");
             }
 
-            //WarframeEventMessageInfo msgInfo = new WarframeEventMessageInfo($"Arriving at {trader.DestinationName} in {days} days {hours} hours and {minutes} minutes.", "", "", "");
             WarframeEventMessageInfo msgInfo = new WarframeEventMessageInfo(
                 trader.DestinationName,
                 traderName,
