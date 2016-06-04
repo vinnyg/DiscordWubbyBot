@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 
 namespace DiscordSharpTest
 {
+    [Obsolete]
     class TwitterClient
     {
         public string OAuthConsumerKey { get; set; }

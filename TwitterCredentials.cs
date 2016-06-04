@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 
 namespace DiscordSharpTest
 {
+    [Obsolete]
     class TwitterCredentials
     {
         [JsonProperty("consumer_key")]

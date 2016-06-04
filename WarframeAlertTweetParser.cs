@@ -8,6 +8,7 @@ using System.Globalization;
 
 namespace DiscordSharpTest
 {
+    [Obsolete]
     static class WarframeAlertTweetParser
     {
         static public WarframeEvent ParseTweet(string tweetText)

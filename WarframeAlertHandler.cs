@@ -7,6 +7,7 @@ using DiscordSharp.Objects;
 
 namespace DiscordSharpTest
 {
+    [Obsolete]
     class WarframeAlertHandler : IComparable
     {
         WarframeAlert _alert;

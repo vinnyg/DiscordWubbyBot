@@ -6,15 +6,15 @@ using System.Threading.Tasks;
 
 namespace DiscordSharpTest
 {
+    [Obsolete]
     class WarframeEventsMessageHelper
     {
         private Dictionary<string, StringBuilder> AlertMessages { get; set; }
         private Dictionary<string, StringBuilder> InvasionMessages { get; set; }
 
+        [Obsolete]
         string ParseEvent(WarframeAlert alert)
         {
-            throw new NotImplementedException();
-
             MissionInfo info = alert.MissionDetails;
             string rewardMessage = (!String.IsNullOrEmpty(info.Reward) ? info.Reward : String.Empty),
                 rewardQuantityMessage = (info.RewardQuantity > 1 ? info.RewardQuantity + " x " : ""),
@@ -36,6 +36,7 @@ namespace DiscordSharpTest
             return result.ToString();
         }
 
+        [Obsolete]
         string ParseEvent(WarframeInvasion invasion)
         {
             MissionInfo attackerInfo = invasion.AttackerDetails;
