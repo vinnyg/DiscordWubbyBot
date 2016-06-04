@@ -31,13 +31,27 @@ namespace DiscordSharpTest
 
         public void UpdateProgress(int progress)
         {
+            //Calculates the faction which has greater progression.
             int direction = progress != 0 ? (System.Math.Abs(progress) / progress) : 1;
             float prevProg = Progress;
+            //We want the absolute progress towards goal regardless of the direction.
             Progress = (((float)Math.Abs(progress) / (float)Goal) * direction);
+            //If there is no previous history, calculate an estimated progression rate based on when the invasion started.
             if (ChangeRateHistory.Count() == 0)
-                prevProg = Progress;
-            //Enqueue new entries every minute so that an more accurate average can be calculated.
-            ChangeRateHistory.Enqueue((Progress - prevProg) * direction);
+            {
+                //prevProg = Progress;
+                Console.WriteLine(DateTime.Now.ToString() + " :: " + StartTime.ToString());
+                TimeSpan timeElapsedSinceStart = (DateTime.Now).Subtract(StartTime);
+                //Calculate an estimated rate.
+                Console.WriteLine(timeElapsedSinceStart.Minutes + " minutes since start!");
+                Console.WriteLine((Progress / timeElapsedSinceStart.Minutes) * direction);
+
+                ChangeRateHistory.Enqueue((Progress / timeElapsedSinceStart.Minutes) * direction);
+                //ChangeRateHistory.Enqueue((Progress - prevProg) * direction);
+            }
+            else
+                //Enqueue new entries every minute so that a more accurate average can be calculated.
+                ChangeRateHistory.Enqueue((Progress - prevProg) * direction);
             //We are only measuring the past hour.
             if (ChangeRateHistory.Count > CHANGE_RATE_MAX_HISTORY)
                 ChangeRateHistory.Dequeue();
