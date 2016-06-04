@@ -153,7 +153,9 @@ namespace DiscordSharpTest
                     string attackerRewardStr = (attackerCountables != null ? wfDataMapper.GetItemName(attackerCountables[0]["ItemType"].ToString()) : ""),
                         defenderRewardStr = (defenderCountables != null ? wfDataMapper.GetItemName(defenderCountables[0]["ItemType"].ToString()) : "");
 
-                    if (!String.IsNullOrEmpty(attackerRewardStr) || !String.IsNullOrEmpty(defenderRewardStr))
+                    int goal = int.Parse(jsonInvasion["Goal"].ToString()), progress = int.Parse(jsonInvasion["Count"].ToString());
+
+                    if ((System.Math.Abs(progress) < goal) && (!String.IsNullOrEmpty(attackerRewardStr) || !String.IsNullOrEmpty(defenderRewardStr)))
                     {
                         //Mission Info corresponds to the faction to fight against.
                         MissionInfo attackerInfo = new MissionInfo(jsonInvasion["AttackerMissionInfo"]["faction"].ToString(),
@@ -177,7 +179,6 @@ namespace DiscordSharpTest
 
                         //InvasionsList.Add(new WarframeInvasion(attackerInfo, defenderInfo, id, loc, startTime));
 
-                        int goal = int.Parse(jsonInvasion["Goal"].ToString()), progress = int.Parse(jsonInvasion["Count"].ToString());
 
                         currentInvasion = new WarframeInvasion(attackerInfo, defenderInfo, id, wfDataMapper.GetNodeName(loc), startTime, int.Parse(jsonInvasion["Goal"].ToString()));
                         InvasionsList.Add(currentInvasion);
@@ -195,8 +196,8 @@ namespace DiscordSharpTest
                 }
                 else
                 {
-                    //if (currentInvasion.IsExpired())
-                    //    InvasionsList.Remove(currentInvasion);
+                    if (currentInvasion.IsExpired())
+                        InvasionsList.Remove(currentInvasion);
                 }
 
                 if (currentInvasion != null && !currentInvasion.IsExpired())
@@ -226,9 +227,15 @@ namespace DiscordSharpTest
                     {
                         currentTrader = new WarframeVoidTrader(id, wfDataMapper.GetNodeName(loc), startTime, expireTime);
                         VoidTraders.Add(currentTrader);
-#if DEBUG
-                        Console.WriteLine("Baro Event");
-#endif
+
+                        JToken traderInventory = jsonTrader["Manifest"];
+                        if (traderInventory != null)
+                        {
+                            foreach (var i in traderInventory)
+                            {
+                                currentTrader.AddTraderItem(wfDataMapper.GetItemName(i["ItemType"].ToString()), int.Parse(i["RegularPrice"].ToString()), int.Parse(i["PrimePrice"].ToString()));
+                            }
+                        }
                     }
                 }
                 else

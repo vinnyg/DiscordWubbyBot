@@ -45,7 +45,10 @@ namespace DiscordSharpTest
         public string BuildMessage(WarframeVoidTrader trader, bool formatMessage)
         {
             WarframeEventMessageInfo msgInfo = ParseVoidTrader(trader);
-            StringBuilder returnMessage = new StringBuilder($"{msgInfo.Faction} is {msgInfo.Status} {msgInfo.Destination} in {msgInfo.Reward}.");
+            string traderAction = (DateTime.Now < trader.StartTime) ? "arriving at" : "leaving";
+
+            StringBuilder returnMessage = new StringBuilder(
+                $"{msgInfo.Faction} is {traderAction} {msgInfo.Destination} in {msgInfo.Status}.{Environment.NewLine + Environment.NewLine + msgInfo.Reward}");
 
             return returnMessage.ToString();
         }
@@ -129,7 +132,7 @@ namespace DiscordSharpTest
                 $"{invasion.DestinationName}",
                 $"{defenderInfo.Faction} vs {attackerInfo.Faction}",
                 $"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{attackerQuantityMessage + attackerRewardMessage} ({defenderInfo.MissionType}) / ") : "")}{defenderQuantityMessage + defenderRewardMessage} ({attackerInfo.MissionType})",
-                $"{String.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({changeRateSign + String.Format("{0:0.00}", invasion.ChangeRate)} p/hr) ({winningFaction})"
+                $"{String.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({changeRateSign + String.Format("{0:0.00}", invasion.ChangeRate)} p/hr){(defenderInfo.Faction != Faction.INFESTATION ? " (" + winningFaction + ")": "")}"
                 //$"{String.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({winningFaction})"
                 );
 
@@ -145,14 +148,21 @@ namespace DiscordSharpTest
             //    totalMinutes = (totalHours * 60) + ts.Minutes;
             //StringBuilder timeUnit = new StringBuilder((totalHours > 48) ? "Days" : "" + "Hours" + "Minutes");
 
-            string statusString = (DateTime.Now < trader.StartTime) ? "arriving at" : "leaving";
+            //string statusString = (DateTime.Now < trader.StartTime) ? "arriving at" : "leaving";
+
+            StringBuilder rewardString = new StringBuilder();
+            
+            foreach(var i in trader.Inventory)
+            {
+                rewardString.Append($"{i.Name} {i.Credits}cr + {i.Ducats}dc{Environment.NewLine}");
+            }
 
             //WarframeEventMessageInfo msgInfo = new WarframeEventMessageInfo($"Arriving at {trader.DestinationName} in {days} days {hours} hours and {minutes} minutes.", "", "", "");
             WarframeEventMessageInfo msgInfo = new WarframeEventMessageInfo(
                 trader.DestinationName,
                 traderName,
-                $"{days} days {hours} hours and {minutes} minutes",
-                statusString);
+                rewardString.ToString(),
+                $"{days} days {hours} hours and {minutes} minutes");
 
             return msgInfo;
         }
