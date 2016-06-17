@@ -139,19 +139,13 @@ namespace DiscordSharpTest
             }
             catch (NullReferenceException)
             {
-                Log("EditMessage threw a NullReferenceException.");
+                Log("DeleteMessage threw a NullReferenceException.");
             }
             catch (Exception)
             {
-                Log("EditMessage threw an exception.");
+                Log("DeleteMessage threw an exception.");
             }
         }
-
-        /*virtual public void Notify(string content, DiscordChannel channel)
-        {
-            DiscordMessage m = Client.SendMessageToChannel(content, channel);
-            System.Threading.Thread.Sleep(500);
-        }*/
 
         virtual public DiscordMessage GetMessageByID(string messageID, DiscordChannel channel)
         {
@@ -180,6 +174,7 @@ namespace DiscordSharpTest
         virtual public void NotifyClient(string content, DiscordChannel channel)
         {
             DiscordMessage m = SendMessage(content, channel);
+            System.Threading.Thread.Sleep(REQUEST_TIME_LIMIT);
             Client.DeleteMessage(m);
         }
 
