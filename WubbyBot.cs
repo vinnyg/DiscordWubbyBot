@@ -10,9 +10,6 @@ using Newtonsoft.Json;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
-using Tweetinvi;
-using Tweetinvi.Streams;
-using Tweetinvi.Core.Interfaces.Streaminvi;
 using System.Collections.Concurrent;
 using Newtonsoft.Json.Linq;
 using System.Data.SQLite;
@@ -67,7 +64,7 @@ namespace DiscordSharpTest
         private WarframeEventsContainer eventsContainer;
         private WarframeEventMessageBuilder messageBuilder;
         private Dictionary<WarframeAlert, DiscordMessage> alertMessageAssociations;
-        private EventsDatabase database;
+        //private EventsDatabase database;
         private List<MessageQueueEntry> alertMessagePostQueue;
         private List<MessageQueueEntry> invasionMessagePostQueue;
         private List<MessageQueueEntry> voidTraderMessagePostQueue;
@@ -119,7 +116,7 @@ namespace DiscordSharpTest
             eventsContainer = new WarframeEventsContainer();
             messageBuilder = new WarframeEventMessageBuilder();
             alertMessageAssociations = new Dictionary<WarframeAlert, DiscordMessage>();
-            database = new EventsDatabase();
+            //database = new EventsDatabase();
 
             alertMessagePostQueue = new List<MessageQueueEntry>();
             invasionMessagePostQueue = new List<MessageQueueEntry>();
@@ -131,18 +128,6 @@ namespace DiscordSharpTest
         private void StartPostTimer()
         {
             _eventUpdateInterval = new Timer((e) => { PostAlertMessage(); PostInvasionMessage(); PostVoidTraderMessage(); }, null, 3000, (int)(TimeSpan.FromMinutes(1).TotalMilliseconds));
-        }
-
-        private void DeleteOldEventMessages()
-        {
-            Dictionary<WarframeAlert, string> oldAlerts = database.ReadDatabase();
-            
-            foreach(var item in oldAlerts)
-            {
-                DiscordMessage m = GetMessageByID(item.Value, Client.GetChannelByName(ALERTS_CHANNEL));
-                if (m != null)
-                    Client.DeleteMessage(m);
-            }
         }
 
         private void PostAlertMessage()
@@ -464,7 +449,7 @@ namespace DiscordSharpTest
                 }
 
                 Thread.Sleep(3000);
-                Client.UpdateCurrentGame(_currentGame, false);
+                Client.UpdateCurrentGame(_currentGame);
             }
             );
         }
