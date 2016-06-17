@@ -99,24 +99,35 @@ namespace DiscordSharpTest
                     DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
                     DateTime expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
 
-                    if (DateTime.Now < expireTime)
-                    {
-                        MissionInfo alertInfo = new MissionInfo(jsonAlert["MissionInfo"]["faction"].ToString(),
-                            jsonAlert["MissionInfo"]["missionType"].ToString(),
-                            int.Parse(jsonAlert["MissionInfo"]["missionReward"]["credits"].ToString()),
-                            //If for whatever reason, an alert returns both countables and non-countables, currently the countables will be returned.
-                            //In addition, if an alert returns multiple different countables, only the first instance will be returned. This affects invasions as well!
-                            rewardStr,
-                            int.Parse((countables != null ? countables[0]["ItemCount"] : 1).ToString()),
-                            int.Parse(jsonAlert["MissionInfo"]["minEnemyLevel"].ToString()),
-                            int.Parse(jsonAlert["MissionInfo"]["maxEnemyLevel"].ToString()));
+                    int creditReward = int.Parse(jsonAlert["MissionInfo"]["missionReward"]["credits"].ToString());
 
-                        currentAlert = new WarframeAlert(alertInfo, id, wfDataMapper.GetNodeName(loc), startTime, expireTime);
-                        AlertsList.Add(currentAlert);
-                        NewAlerts.Add(currentAlert);
+                    JToken rewardParam = null;
+                    if (countables != null) rewardParam = countables[0]["ItemType"].ToString();
+                    else if (nonCountables != null) rewardParam = nonCountables[0].ToString();
+
+                    // = countables ?? nonCountables;
+
+                    if (RewardIsNotIgnored(creditReward, (rewardParam != null) ? rewardParam.ToString() : null))
+                    {
+                        if (DateTime.Now < expireTime)
+                        {
+                            MissionInfo alertInfo = new MissionInfo(jsonAlert["MissionInfo"]["faction"].ToString(),
+                                jsonAlert["MissionInfo"]["missionType"].ToString(),
+                                creditReward,
+                                //If for whatever reason, an alert returns both countables and non-countables, currently only the countables will be returned.
+                                //In addition, if an alert returns multiple different countables, only the first instance will be returned. This affects invasions as well!
+                                rewardStr,
+                                int.Parse((countables != null ? countables[0]["ItemCount"] : 1).ToString()),
+                                int.Parse(jsonAlert["MissionInfo"]["minEnemyLevel"].ToString()),
+                                int.Parse(jsonAlert["MissionInfo"]["maxEnemyLevel"].ToString()));
+
+                            currentAlert = new WarframeAlert(alertInfo, id, wfDataMapper.GetNodeName(loc), startTime, expireTime);
+                            AlertsList.Add(currentAlert);
+                            NewAlerts.Add(currentAlert);
 #if DEBUG
-                        Console.WriteLine("New Alert Event");
+                            Console.WriteLine("New Alert Event");
 #endif
+                        }
                     }
                 }
                 else
@@ -125,12 +136,13 @@ namespace DiscordSharpTest
                         AlertsList.Remove(currentAlert);
                 }
 
-                if (currentAlert.ExpireTime > DateTime.Now)
+                if ((currentAlert != null) && (currentAlert.ExpireTime > DateTime.Now))
                     CreateNewAlertReceivedEvent(currentAlert);
                 else
                     CreateAlertExpiredEvent(currentAlert, "");
             }
         }
+
         private void ParseInvasions()
         {
             NewInvasions.Clear();
@@ -153,39 +165,47 @@ namespace DiscordSharpTest
                     string attackerRewardStr = (attackerCountables != null ? wfDataMapper.GetItemName(attackerCountables[0]["ItemType"].ToString()) : ""),
                         defenderRewardStr = (defenderCountables != null ? wfDataMapper.GetItemName(defenderCountables[0]["ItemType"].ToString()) : "");
 
+                    JToken attackerRewardParam = null;
+                    if (attackerCountables != null) attackerRewardParam = attackerCountables[0]["ItemType"].ToString();
+                    JToken defenderRewardParam = null;
+                    if (defenderCountables != null) defenderRewardParam = defenderCountables[0]["ItemType"].ToString();
+
+                    int attackerRewardQuantityParam = attackerCountables != null ? (attackerCountables[0]["ItemCount"] != null ? int.Parse(attackerCountables[0]["ItemCount"].ToString()) : 1) : 0;
+                    int defenderRewardQuantityParam = defenderCountables != null ? (defenderCountables[0]["ItemCount"] != null ? int.Parse(defenderCountables[0]["ItemCount"].ToString()) : 1) : 0;
+
                     int goal = int.Parse(jsonInvasion["Goal"].ToString()), progress = int.Parse(jsonInvasion["Count"].ToString());
 
                     if ((System.Math.Abs(progress) < goal) && (!String.IsNullOrEmpty(attackerRewardStr) || !String.IsNullOrEmpty(defenderRewardStr)))
                     {
-                        //Mission Info corresponds to the faction to fight against.
-                        MissionInfo attackerInfo = new MissionInfo(jsonInvasion["AttackerMissionInfo"]["faction"].ToString(),
-                            jsonInvasion["DefenderMissionInfo"]["missionType"].ToString(),
-                            defenderCredits != null ? int.Parse(defenderCredits.ToString()) : 0,
-                            String.IsNullOrEmpty(defenderRewardStr) ? "" : defenderRewardStr,
-                            defenderCountables != null ? (defenderCountables[0]["ItemCount"] != null ? int.Parse(defenderCountables[0]["ItemCount"].ToString()) : 1) : 0,
-                            int.Parse(jsonInvasion["DefenderMissionInfo"]["minEnemyLevel"].ToString()),
-                            int.Parse(jsonInvasion["DefenderMissionInfo"]["maxEnemyLevel"].ToString()));
+                        if (RewardIsNotIgnored(itemURI:(attackerRewardParam ?? "").ToString(), itemQuantity:attackerRewardQuantityParam) || RewardIsNotIgnored(itemURI:(defenderRewardParam ?? "").ToString(), itemQuantity:defenderRewardQuantityParam))
+                        {
+                            //Mission Info corresponds to the faction to fight against.
+                            MissionInfo attackerInfo = new MissionInfo(jsonInvasion["AttackerMissionInfo"]["faction"].ToString(),
+                                jsonInvasion["DefenderMissionInfo"]["missionType"].ToString(),
+                                defenderCredits != null ? int.Parse(defenderCredits.ToString()) : 0,
+                                String.IsNullOrEmpty(defenderRewardStr) ? "" : defenderRewardStr,
+                                defenderRewardQuantityParam,
+                                int.Parse(jsonInvasion["DefenderMissionInfo"]["minEnemyLevel"].ToString()),
+                                int.Parse(jsonInvasion["DefenderMissionInfo"]["maxEnemyLevel"].ToString()));
 
-                        MissionInfo defenderInfo = new MissionInfo(jsonInvasion["DefenderMissionInfo"]["faction"].ToString(),
-                            jsonInvasion["AttackerMissionInfo"]["missionType"].ToString(),
-                            attackerCredits != null ? int.Parse(attackerCredits.ToString()) : 0,
-                            String.IsNullOrEmpty(attackerRewardStr) ? "" : attackerRewardStr,
-                            attackerCountables != null ? (attackerCountables[0]["ItemCount"] != null ? int.Parse(attackerCountables[0]["ItemCount"].ToString()) : 1) : 0,
-                            int.Parse(jsonInvasion["AttackerMissionInfo"]["minEnemyLevel"].ToString()),
-                            int.Parse(jsonInvasion["AttackerMissionInfo"]["maxEnemyLevel"].ToString()));
+                            MissionInfo defenderInfo = new MissionInfo(jsonInvasion["DefenderMissionInfo"]["faction"].ToString(),
+                                jsonInvasion["AttackerMissionInfo"]["missionType"].ToString(),
+                                attackerCredits != null ? int.Parse(attackerCredits.ToString()) : 0,
+                                String.IsNullOrEmpty(attackerRewardStr) ? "" : attackerRewardStr,
+                                attackerRewardQuantityParam,
+                                int.Parse(jsonInvasion["AttackerMissionInfo"]["minEnemyLevel"].ToString()),
+                                int.Parse(jsonInvasion["AttackerMissionInfo"]["maxEnemyLevel"].ToString()));
 
-                        double secondsUntilStart = double.Parse(jsonInvasion["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
-                        DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
+                            double secondsUntilStart = double.Parse(jsonInvasion["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                            DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
 
-                        //InvasionsList.Add(new WarframeInvasion(attackerInfo, defenderInfo, id, loc, startTime));
-
-
-                        currentInvasion = new WarframeInvasion(attackerInfo, defenderInfo, id, wfDataMapper.GetNodeName(loc), startTime, int.Parse(jsonInvasion["Goal"].ToString()));
-                        InvasionsList.Add(currentInvasion);
-                        NewInvasions.Add(currentInvasion);
+                            currentInvasion = new WarframeInvasion(attackerInfo, defenderInfo, id, wfDataMapper.GetNodeName(loc), startTime, int.Parse(jsonInvasion["Goal"].ToString()));
+                            InvasionsList.Add(currentInvasion);
+                            NewInvasions.Add(currentInvasion);
 #if DEBUG
-                        //Console.WriteLine("New Invasion Event");
+                            //Console.WriteLine("New Invasion Event");
 #endif
+                        }
                     }
                     else
                     {
@@ -208,6 +228,7 @@ namespace DiscordSharpTest
                 }
             }
         }
+
         private void ParseVoidTrader()
         {
             foreach (var jsonTrader in _worldState["VoidTraders"])
@@ -246,16 +267,51 @@ namespace DiscordSharpTest
 
                 if (currentTrader.ExpireTime > DateTime.Now)
                     CreateNewVoidTraderReceivedEvent(currentTrader);
-                //else
-                //    CreateAlertExpiredEvent(currentTrader, "");
             }
         }
 
-        void ParseJsonEvents()
+        private void ParseJsonEvents()
         {
             ParseAlerts();
             ParseInvasions();
             ParseVoidTrader();
+        }
+
+        private bool RewardIsNotIgnored(int credits = 0, string itemURI = "", int itemQuantity = 1)
+        {
+            bool result = false;
+
+            //Check if the credit reward satisfies minimum
+            if (wfDataMapper.GetMinimumCredits() <= credits)
+                result = true;
+
+            if (!String.IsNullOrEmpty(itemURI))
+            {
+                WarframeItem item = wfDataMapper.GetItem(itemURI);
+                //Check if the category is ignored
+                if (item != null)
+                {
+                    var categories = wfDataMapper.GetItemCategories(item);
+                    foreach (var c in categories)
+                    {
+                        if (c.Ignore == 0)
+                            result = true;
+                    }
+                    //Check if the item is being ignored
+                    if ((item != null) && (item.Ignore == 0))
+                    {
+                        result = true;
+                        //Check that the item quantity satisfies the minimum quantity
+                        if (wfDataMapper.GetWarframeItemMinimumQuantity(item) <= itemQuantity)
+                            result = true;
+                        else result = false;
+                    }
+                    else
+                        result = false;
+                }
+            }
+
+            return result;
         }
 
         [Obsolete]
@@ -343,6 +399,7 @@ namespace DiscordSharpTest
                 handler(this, e);
         }
 
+        [Obsolete]
         public bool AlertExists(WarframeAlert alert)
         {
             return !(AlertsList.Find(x => x.GUID == alert.GUID) == null);
