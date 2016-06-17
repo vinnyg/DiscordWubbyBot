@@ -9,58 +9,138 @@ namespace DiscordSharpTest
 {
     class WarframeDataMapper
     {
+        private WarframeDataContext dbContext { get; set; }
         private Dictionary<string, string> itemList { get; set; }
         private Dictionary<string, string> mapList { get; set; }
 
         public WarframeDataMapper()
         {
-            itemList = new Dictionary<string, string>();
-            mapList = new Dictionary<string, string>();
+            dbContext = new WarframeDataContext();
+            dbContext.Database.EnsureCreated();
 
-            string line;
-            StreamReader file = new StreamReader("wf-solmap.txt");
-
-            while ((line = file.ReadLine()) != null)
-            {
-                var splText = line.Split('=');
-                try
-                {
-                    mapList.Add(splText[0], splText[1]);
-                }
-                catch(ArgumentException)
-                {
-                    Console.WriteLine($"Same key blah blah {splText[0]}");
-                }
-            }
-
-            file.Close();
-
-            file = new StreamReader("wf-items.txt");
-            while ((line = file.ReadLine()) != null)
-            {
-                var splText = line.Split('=');
-                //Get the mod name and the containing directory name to try and ensure uniqueness of keys.
-                string[] splitItem = splText[0].Split('/');
-                string target = splitItem[splitItem.Length - 3] + splitItem[splitItem.Length - 2] + splitItem.Last();
-
-                itemList.Add(target, splText[1]);
-            }
-
-            file.Close();
+            //SetMinimumQuantity(GetItem("/Lotus/Types/Items/Research/EnergyComponent"), 2);
+            //SetMinimumQuantity(GetItem("/Lotus/Types/Items/Research/EnergyFragment"), 2);
         }
 
-        public string GetItemName(string item)
+        public WarframeItem GetItem(string itemURI)
         {
-            string[] splitItem = item.Split('/');
-            string target = splitItem[splitItem.Length - 3] + splitItem[splitItem.Length - 2] + splitItem.Last();
-            return itemList.ContainsKey(target) ? itemList[target] : target;
+            WarframeItem result = null;
+            if (!String.IsNullOrEmpty(itemURI))
+            {
+                try
+                {
+                    result = dbContext.WarframeItems.Where(s => s.ItemURI == itemURI).Single();
+                }
+                catch (Exception)
+                {
+                    result = null;
+                }
+            }
+            return result;
+        }
+
+        public List<WarframeItemCategory> GetItemCategories(WarframeItem item)
+        {
+            List<WarframeItemCategory> categories = dbContext.ItemCategoryAssociations.Where(s => s.ItemID == item.ID).Select(s => s.Category).ToList();
+            return categories;
+        }
+
+        public int GetItemID(string itemURI)
+        {
+            if (dbContext != null)
+            {
+                try
+                {
+                    return dbContext.WarframeItems.Where(x => x.ItemURI == itemURI).Single().ID;
+                }
+                catch (Exception)
+                {
+                    return -1;
+                }
+            }
+            return -1;
+        }
+
+        public string GetItemName(string itemURI)
+        {
+            string result;
+            if (dbContext != null)
+            {
+                try
+                {
+                    result = dbContext.WarframeItems.Where(x => x.ItemURI == itemURI).Single().Name;
+                }
+                catch (Exception)
+                {
+                    result = itemURI;
+                }
+                return result;
+            }
+            return "";
         }
 
         public string GetNodeName(string node)
         {
-            //bool s = mapList.ContainsKey(node);
-            //string m = s ? mapList[node] : "nope";
-            return mapList.ContainsKey(node) ? mapList[node] : node;
+            string result;
+            if (dbContext != null)
+            {
+                try
+                {
+                    result = dbContext.SolarNodes.Where(x => x.NodeURI == node).Single().NodeName;
+                }
+                catch(Exception)
+                {
+                    result = node;
+                }
+                return result;
+            }
+            return "";
+        }
+
+        public int GetWarframeItemMinimumQuantity(WarframeItem item)
+        {
+            int res;
+            try
+            {
+                res = dbContext.WFMiscIgnoreOptions.Where(x => x.ItemID == item.ID).Single().MinQuantity;
+            }
+            catch (Exception)
+            {
+                res = 0;
+            }
+            return res;
+        }
+
+        public int GetMinimumCredits()
+        {
+            //Get WarframeItem entry for credits
+            var item = GetItem("/Lotus/Language/Menu/Monies");
+            int minCred = GetWarframeItemMinimumQuantity(item);
+            return minCred;
+        }
+
+        public void SetIgnoreOption(WarframeItem item, bool ignore)
+        {
+            item.Ignore = !ignore ? 0 : 1;
+        }
+
+        public void SetMinimumQuantity(WarframeItem item, int minimumQuantity)
+        {
+            try
+            {
+                WFMiscIgnoreSettings option = dbContext.WFMiscIgnoreOptions.Where(x => x.ItemID == item.ID).Single();
+                if (option != null)
+                {
+                    if (minimumQuantity > 0)
+                        option.MinQuantity = minimumQuantity;
+                }
+            }
+            catch (Exception)
+            {
+                //Do nothing
+                Console.WriteLine("Failed to set minimum quantity!");
+            }
+            
         }
     }
 }
