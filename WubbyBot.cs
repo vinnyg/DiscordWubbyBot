@@ -19,7 +19,7 @@ using System.Xml.Linq;
 
 namespace DiscordSharpTest
 {
-    struct MessageQueueEntry
+    class MessageQueueEntry
     {
         public string Content;
         public bool NotifyClient;
@@ -73,6 +73,8 @@ namespace DiscordSharpTest
         private DiscordMessage invasionMessage = null;
         private DiscordMessage traderMessage = null;
 
+        private List<DiscordMessage> invasionMessages = null;
+
         //Give the bot a name
         public WubbyBot(string name, string devLogName = "") : base(name, devLogName)
         {
@@ -122,6 +124,8 @@ namespace DiscordSharpTest
             invasionMessagePostQueue = new List<MessageQueueEntry>();
             voidTraderMessagePostQueue = new List<MessageQueueEntry>();
 
+            invasionMessages = new List<DiscordMessage>();
+
             Log("Sub-systems initialised");
         }
 
@@ -170,41 +174,72 @@ namespace DiscordSharpTest
 
         private void PostInvasionMessage()
         {
-            StringBuilder finalMsg = new StringBuilder();
-            bool postWillNotify = false;
+            //Build all invasion strings into a single message
+            List<StringBuilder> finalMessagesToPost = new List<StringBuilder>();
             List<string> messagesToNotify = new List<string>();
-            //Build all alert strings into a single message
-            finalMsg.Append("```ACTIVE INVASIONS```" + Environment.NewLine);
+            //Messages will append to this builder until the length reaches the MESSAGE_CHAR_LIMIT value
+            StringBuilder entryForFinalMsg = new StringBuilder();
+            finalMessagesToPost.Add(entryForFinalMsg);
+            //Append this before the loop so that it only appears once in the message
+            entryForFinalMsg.Append("```ACTIVE INVASIONS```" + Environment.NewLine);
 
-            List<MessageQueueEntry> invQ = new List<MessageQueueEntry>(invasionMessagePostQueue);
+            //Sometimes new invasions are added while the loop is still iterating, which causes problems.
+            List<MessageQueueEntry> invasionMessageQueue = new List<MessageQueueEntry>(invasionMessagePostQueue);
 
-            foreach (var m in invQ)
+            foreach (var messageItem in invasionMessageQueue)
             {
-                string heading = (m.EventHasExpired) ? "```" : "```xl";
-
-                finalMsg.Append(heading + Environment.NewLine + m.Content + Environment.NewLine);
-                postWillNotify = m.NotifyClient;
-
-                if (postWillNotify)
+                string heading = (messageItem.EventHasExpired) ? "```" : "```xl";
+                StringBuilder invasionMsgToAppend = new StringBuilder(heading + Environment.NewLine + messageItem.Content + Environment.NewLine);
+                
+                if (messageItem.NotifyClient)
                 {
-                    messagesToNotify.Add(m.NotificationContent);
-                    finalMsg.Append("( new )");
+                    messagesToNotify.Add(messageItem.NotificationContent);
+                    invasionMsgToAppend.Append("( new )");
                 }
-                finalMsg.Append("```" + Environment.NewLine);
+                invasionMsgToAppend.Append("```" + Environment.NewLine);
+
+                //Create a new entry in the post queue if the character length of the current message hits the character limit
+                if (entryForFinalMsg.Length + invasionMsgToAppend.Length < MESSAGE_CHAR_LIMIT) { entryForFinalMsg.Append(invasionMsgToAppend); } else
+                {
+                    entryForFinalMsg.Append(invasionMsgToAppend.ToString());
+                    finalMessagesToPost.Add(entryForFinalMsg);
+                }
             }
 
-            if (invasionMessage == null)
-                invasionMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
-            else
+            //Notify client for relevant messages
+            if (invasionMessages.Count > 0)
             {
-                EditMessage(finalMsg.ToString(), invasionMessage, Client.GetChannelByName(ALERTS_CHANNEL));
                 foreach (var item in messagesToNotify)
-                {
                     NotifyClient(item, Client.GetChannelByName(ALERTS_CHANNEL));
+            }
+
+            for (var i = 0; i < finalMessagesToPost.Count; ++i)
+            {
+                //If invasion messages already exist
+                if (i < invasionMessages.Count)
+                    EditMessage(finalMessagesToPost.ElementAt(i).ToString(), invasionMessages.ElementAt(i), Client.GetChannelByName(ALERTS_CHANNEL));
+                else //When we run out of available invasion messages to edit
+                    invasionMessages.Add(SendMessage(finalMessagesToPost.ElementAt(i).ToString(), Client.GetChannelByName(ALERTS_CHANNEL)));
+            }
+
+            //Get rid of any extra messages which have been created to deal with long character counts.
+            int totalInvasionMessages = invasionMessages.Count;
+            if (totalInvasionMessages > finalMessagesToPost.Count)
+            {
+                for (var i = finalMessagesToPost.Count; i < totalInvasionMessages; ++i)
+                {
+                    if (i > 0)
+                    {
+                        DeleteMessage(invasionMessages.ElementAt(i));
+                        invasionMessages.RemoveAt(i);
+                    }
                 }
             }
 #if DEBUG
-            Log(finalMsg.Length + " characters long");
+            foreach(var i in finalMessagesToPost)
+            {
+                Log(i.Length + " characters long");
+            }
 #endif
             invasionMessagePostQueue.Clear();
         }
@@ -266,6 +301,9 @@ namespace DiscordSharpTest
             DeleteMessage(alertMessage);
             DeleteMessage(invasionMessage);
             DeleteMessage(traderMessage);
+
+            foreach (var i in invasionMessages)
+                DeleteMessage(i);
             //SendMessage($"*{Name} is now offline*", Client.GetChannelByName(ALERTS_CHANNEL));
         }
 
