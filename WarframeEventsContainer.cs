@@ -105,8 +105,6 @@ namespace DiscordSharpTest
                     if (countables != null) rewardParam = countables[0]["ItemType"].ToString();
                     else if (nonCountables != null) rewardParam = nonCountables[0].ToString();
 
-                    // = countables ?? nonCountables;
-
                     if (RewardIsNotIgnored(creditReward, (rewardParam != null) ? rewardParam.ToString() : null))
                     {
                         if (DateTime.Now < expireTime)
@@ -175,9 +173,9 @@ namespace DiscordSharpTest
 
                     int goal = int.Parse(jsonInvasion["Goal"].ToString()), progress = int.Parse(jsonInvasion["Count"].ToString());
 
-                    if ((System.Math.Abs(progress) < goal) && (!String.IsNullOrEmpty(attackerRewardStr) || !String.IsNullOrEmpty(defenderRewardStr)))
+                    if ((System.Math.Abs(progress) < goal) /*&& (!String.IsNullOrEmpty(attackerRewardStr) || !String.IsNullOrEmpty(defenderRewardStr))*/)
                     {
-                        if (RewardIsNotIgnored(itemURI:(attackerRewardParam ?? "").ToString(), itemQuantity:attackerRewardQuantityParam) || RewardIsNotIgnored(itemURI:(defenderRewardParam ?? "").ToString(), itemQuantity:defenderRewardQuantityParam))
+                        if (RewardIsNotIgnored(int.Parse((attackerCredits ?? 0).ToString()), itemURI: (attackerRewardParam ?? "").ToString(), itemQuantity:attackerRewardQuantityParam) || RewardIsNotIgnored(int.Parse((defenderCredits ?? 0).ToString()), itemURI: (defenderRewardParam ?? "").ToString(), itemQuantity:defenderRewardQuantityParam))
                         {
                             //Mission Info corresponds to the faction to fight against.
                             MissionInfo attackerInfo = new MissionInfo(jsonInvasion["AttackerMissionInfo"]["faction"].ToString(),
@@ -202,9 +200,6 @@ namespace DiscordSharpTest
                             currentInvasion = new WarframeInvasion(attackerInfo, defenderInfo, id, wfDataMapper.GetNodeName(loc), startTime, int.Parse(jsonInvasion["Goal"].ToString()));
                             InvasionsList.Add(currentInvasion);
                             NewInvasions.Add(currentInvasion);
-#if DEBUG
-                            //Console.WriteLine("New Invasion Event");
-#endif
                         }
                     }
                     else
