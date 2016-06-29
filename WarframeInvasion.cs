@@ -45,8 +45,10 @@ namespace DiscordSharpTest
                 //Console.WriteLine(timeElapsedSinceStart.Minutes + " minutes since start!");
                 //Console.WriteLine((Progress / timeElapsedSinceStart.Minutes) * direction);
                 //Prevent divide by zero when a new invasion has started
-                if (timeElapsedSinceStart.Minutes > 0)
-                    ChangeRateHistory.Enqueue((Progress / timeElapsedSinceStart.Minutes) * direction);
+                int totalMins = timeElapsedSinceStart.Days * 24 * 60 + timeElapsedSinceStart.Hours * 60 + timeElapsedSinceStart.Minutes;
+
+                if (totalMins > 0)
+                    ChangeRateHistory.Enqueue((Progress / totalMins) * direction);
                 else
                     ChangeRateHistory.Enqueue(0);
             }
