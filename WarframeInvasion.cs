@@ -39,15 +39,16 @@ namespace DiscordSharpTest
             //If there is no previous history, calculate an estimated progression rate based on when the invasion started.
             if (ChangeRateHistory.Count() == 0)
             {
-                //prevProg = Progress;
                 Console.WriteLine(DateTime.Now.ToString() + " :: " + StartTime.ToString());
                 TimeSpan timeElapsedSinceStart = (DateTime.Now).Subtract(StartTime);
                 //Calculate an estimated rate.
-                Console.WriteLine(timeElapsedSinceStart.Minutes + " minutes since start!");
-                Console.WriteLine((Progress / timeElapsedSinceStart.Minutes) * direction);
-
-                ChangeRateHistory.Enqueue((Progress / timeElapsedSinceStart.Minutes) * direction);
-                //ChangeRateHistory.Enqueue((Progress - prevProg) * direction);
+                //Console.WriteLine(timeElapsedSinceStart.Minutes + " minutes since start!");
+                //Console.WriteLine((Progress / timeElapsedSinceStart.Minutes) * direction);
+                //Prevent divide by zero when a new invasion has started
+                if (timeElapsedSinceStart.Minutes > 0)
+                    ChangeRateHistory.Enqueue((Progress / timeElapsedSinceStart.Minutes) * direction);
+                else
+                    ChangeRateHistory.Enqueue(0);
             }
             else
                 //Enqueue new entries every minute so that a more accurate average can be calculated.
@@ -55,12 +56,12 @@ namespace DiscordSharpTest
             //We are only measuring the past hour.
             if (ChangeRateHistory.Count > CHANGE_RATE_MAX_HISTORY)
                 ChangeRateHistory.Dequeue();
-            float sigmaChangeRate = .0f;
+            float sigmaChange = .0f;
             foreach(var i in ChangeRateHistory)
             {
-                sigmaChangeRate = sigmaChangeRate + i;
+                sigmaChange = sigmaChange + i;
             }
-            ChangeRate = (sigmaChangeRate / ChangeRateHistory.Count()) * CHANGE_RATE_MAX_HISTORY;
+            ChangeRate = (sigmaChange / ChangeRateHistory.Count()) * CHANGE_RATE_MAX_HISTORY;
         }
 
         override public bool IsExpired()
