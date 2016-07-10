@@ -39,7 +39,7 @@ namespace DiscordSharpTest
             //If there is no previous history, calculate an estimated progression rate based on when the invasion started.
             if (ChangeRateHistory.Count() == 0)
             {
-                Console.WriteLine(DateTime.Now.ToString() + " :: " + StartTime.ToString());
+                //Console.WriteLine(DateTime.Now.ToString() + " :: " + StartTime.ToString());
                 TimeSpan timeElapsedSinceStart = (DateTime.Now).Subtract(StartTime);
                 //Calculate an estimated rate.
                 //Console.WriteLine(timeElapsedSinceStart.Minutes + " minutes since start!");
