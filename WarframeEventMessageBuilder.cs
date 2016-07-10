@@ -53,6 +53,20 @@ namespace DiscordSharpTest
             return returnMessage.ToString();
         }
 
+        public string BuildMessage(WarframeVoidFissure fissure, bool formatMessage)
+        {
+            WarframeEventMessageInfo msgInfo = ParseVoidFissure(fissure);
+            string styleStr = formatMessage ? (fissure.IsExpired() ? ITALIC : BOLD) : NO_STYLE;
+
+            StringBuilder returnMessage = new StringBuilder(
+                msgInfo.Destination + Environment.NewLine +
+                msgInfo.Reward + Environment.NewLine +
+                msgInfo.Status
+                );
+
+            return returnMessage.ToString();
+        }
+
         public string BuildNotificationMessage(WarframeAlert alert)
         {
             WarframeEventMessageInfo msgInfo = ParseAlert(alert);
@@ -87,6 +101,20 @@ namespace DiscordSharpTest
             StringBuilder msg = new StringBuilder(
                 msgInfo.Faction + Environment.NewLine +
                 msgInfo.Destination + Environment.NewLine
+                );
+
+            return msg.ToString();
+        }
+
+        public string BuildNotificationMessage(WarframeVoidFissure fissure)
+        {
+            WarframeEventMessageInfo msgInfo = ParseVoidFissure(fissure);
+            string expireMsg = $"Expires {fissure.ExpireTime:HH:mm} ({fissure.GetMinutesRemaining(false)}m)";
+
+            StringBuilder msg = new StringBuilder(
+                "New Void Fissure" + Environment.NewLine +
+                msgInfo.Reward + Environment.NewLine +
+                expireMsg
                 );
 
             return msg.ToString();
@@ -157,6 +185,25 @@ namespace DiscordSharpTest
                 traderName,
                 rewardString.ToString(),
                 $"{days} days {hours} hours and {minutes} minutes");
+
+            return msgInfo;
+        }
+
+        private WarframeEventMessageInfo ParseVoidFissure(WarframeVoidFissure fissure)
+        {
+            MissionInfo info = fissure.MissionDetails;
+            string rewardMessage = (!String.IsNullOrEmpty(info.Reward) ? info.Reward : String.Empty);
+
+            string statusString =
+                (!fissure.IsExpired()) ? (DateTime.Now < fissure.StartTime ? $"Starts {fissure.StartTime:HH:mm} ({fissure.GetMinutesRemaining(true)}m)" :
+                $"Expires {fissure.ExpireTime:HH:mm} ({fissure.GetMinutesRemaining(false)}m)") : $"Expired ({fissure.ExpireTime:HH:mm})";
+
+            WarframeEventMessageInfo msgInfo = new WarframeEventMessageInfo(
+                $"{fissure.DestinationName}",
+                $"{info.Faction}",
+                $"{rewardMessage}",
+                $"{statusString}"
+                );
 
             return msgInfo;
         }

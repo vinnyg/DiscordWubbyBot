@@ -16,6 +16,7 @@ namespace DiscordSharpTest
         public List<WarframeAlert> AlertsList { get; private set; }
         public List<WarframeInvasion> InvasionsList { get; private set; }
         public List<WarframeVoidTrader> VoidTraders { get; private set; }
+        public List<WarframeVoidFissure> VoidFissures { get; private set; }
 
         //private XDocument _rssFeed { get; set; }
         private JObject _worldState { get; set; }
@@ -29,13 +30,16 @@ namespace DiscordSharpTest
         //When an alert is read more than once, it will be added to this list. Alerts in this list are no longer new.
         private List<WarframeAlert> NewAlerts;
         private List<WarframeInvasion> NewInvasions;
+        private List<WarframeVoidFissure> NewVoidFissures;
 
         #region Events
         public event EventHandler<WarframeAlertScrapedArgs> AlertScraped;
         public event EventHandler<WarframeInvasionScrapedArgs> InvasionScraped;
         public event EventHandler<WarframeVoidTraderScrapedArgs> VoidTraderScraped;
+        public event EventHandler<WarframeVoidFissureScrapedArgs> VoidFissureScraped;
         public event EventHandler<WarframeAlertExpiredArgs> AlertExpired;
         public event EventHandler<ExistingAlertFoundArgs> ExistingAlertFound;
+        public event EventHandler<WarframeVoidFissureExpiredArgs> VoidFissureExpired;
         #endregion
 
         public WarframeEventsContainer()
@@ -43,8 +47,10 @@ namespace DiscordSharpTest
             AlertsList = new List<WarframeAlert>();
             InvasionsList = new List<WarframeInvasion>();
             VoidTraders = new List<WarframeVoidTrader>();
+            VoidFissures = new List<WarframeVoidFissure>();
             NewAlerts = new List<WarframeAlert>();
             NewInvasions = new List<WarframeInvasion>();
+            NewVoidFissures = new List<WarframeVoidFissure>();
             wfDataMapper = new WarframeDataMapper();
         }
 
@@ -67,7 +73,6 @@ namespace DiscordSharpTest
         {
             using (WebClient wc = new WebClient())
             {
-                //_rssFeed = XDocument.Parse(wc.DownloadString("http://content.warframe.com/dynamic/rss.php"));
                 _worldState = JObject.Parse(wc.DownloadString("http://content.warframe.com/dynamic/worldState.php"));
             }
         }
@@ -265,10 +270,60 @@ namespace DiscordSharpTest
             }
         }
 
+        private void ParseVoidFissures()
+        {
+            NewVoidFissures.Clear();
+
+            //Find Alerts
+            foreach (var jsonFissure in _worldState["ActiveMissions"])
+            {
+                WarframeVoidFissure currentVoidFissure = VoidFissures.Find(x => x.GUID == jsonFissure["_id"]["$id"].ToString());
+
+                if (currentVoidFissure == null)
+                {
+                    string id = jsonFissure["_id"]["$id"].ToString();
+                    string loc = jsonFissure["Node"].ToString();
+
+                    double secondsUntilStart = double.Parse(jsonFissure["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                    double secondsUntilExpire = double.Parse(jsonFissure["Expiry"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                    DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
+                    DateTime expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
+
+                    string fissure = wfDataMapper.GetFissureName(jsonFissure["Modifier"].ToString());
+
+                    if (DateTime.Now < expireTime)
+                    {
+                        MissionInfo fissureInfo = new MissionInfo(Faction.OROKIN,
+                            "",
+                            0, fissure,
+                            0, 0, 0);
+
+                        currentVoidFissure = new WarframeVoidFissure(fissureInfo, id, wfDataMapper.GetNodeName(loc), startTime, expireTime);
+                        VoidFissures.Add(currentVoidFissure);
+                        NewVoidFissures.Add(currentVoidFissure);
+#if DEBUG
+                        Console.WriteLine("New Fissure Event");
+#endif
+                    }
+                }
+                else
+                {
+                    if (currentVoidFissure.ExpireTime < DateTime.Now)
+                        VoidFissures.Remove(currentVoidFissure);
+                }
+
+                if ((currentVoidFissure != null) && (currentVoidFissure.ExpireTime > DateTime.Now))
+                    CreateNewVoidFissureReceivedEvent(currentVoidFissure);
+                else
+                    CreateVoidFissureExpiredEvent(currentVoidFissure, "");
+            }
+        }
+
         private void ParseJsonEvents()
         {
             ParseAlerts();
             ParseInvasions();
+            ParseVoidFissures();
             ParseVoidTrader();
         }
 
@@ -373,11 +428,31 @@ namespace DiscordSharpTest
                 handler(this, e);
         }
 
+        private void CreateNewVoidFissureReceivedEvent(WarframeVoidFissure newFissure)
+        {
+            EventHandler<WarframeVoidFissureScrapedArgs> handler = VoidFissureScraped;
+
+            WarframeVoidFissureScrapedArgs e = new WarframeVoidFissureScrapedArgs(newFissure);
+
+            if (handler != null)    //Check if there are any subscribers
+                handler(this, e);
+        }
+
         private void CreateAlertExpiredEvent(WarframeAlert expiredAlert, string messageID = "")
         {
             EventHandler<WarframeAlertExpiredArgs> handler = AlertExpired;
 
             WarframeAlertExpiredArgs e = new WarframeAlertExpiredArgs(expiredAlert, messageID);
+
+            if (handler != null)    //Check if there are any subscribers
+                handler(this, e);
+        }
+
+        private void CreateVoidFissureExpiredEvent(WarframeVoidFissure expiredFissure, string messageID = "")
+        {
+            EventHandler<WarframeVoidFissureExpiredArgs> handler = VoidFissureExpired;
+
+            WarframeVoidFissureExpiredArgs e = new WarframeVoidFissureExpiredArgs(expiredFissure, messageID);
 
             if (handler != null)    //Check if there are any subscribers
                 handler(this, e);

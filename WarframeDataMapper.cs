@@ -10,16 +10,11 @@ namespace DiscordSharpTest
     class WarframeDataMapper
     {
         private WarframeDataContext dbContext { get; set; }
-        private Dictionary<string, string> itemList { get; set; }
-        private Dictionary<string, string> mapList { get; set; }
 
         public WarframeDataMapper()
         {
             dbContext = new WarframeDataContext();
             dbContext.Database.EnsureCreated();
-
-            //SetMinimumQuantity(GetItem("/Lotus/Types/Items/Research/EnergyComponent"), 2);
-            //SetMinimumQuantity(GetItem("/Lotus/Types/Items/Research/EnergyFragment"), 2);
         }
 
         public WarframeItem GetItem(string itemURI)
@@ -63,20 +58,37 @@ namespace DiscordSharpTest
 
         public string GetItemName(string itemURI)
         {
-            string result;
+            string result = itemURI;
             if (dbContext != null)
             {
-                try
-                {
-                    result = dbContext.WarframeItems.Where(x => x.ItemURI == itemURI).Single().Name;
-                }
-                catch (Exception)
-                {
-                    result = itemURI;
-                }
-                return result;
+                var item = dbContext.WarframeItems.Where(x => x.ItemURI == itemURI);
+                if (item.Count() > 0)
+                    result = item.Single().Name;
+                else
+                    result = BandAidGetItemName(itemURI);
             }
-            return "";
+            return result;
+        }
+
+        private string BandAidGetItemName(string itemURI)
+        {
+            var splitString = itemURI.Split('/');
+             StringBuilder altItemURI = new StringBuilder();
+
+            //Rebuild the itemURI string, omitting the substring which contains StoreItems
+            foreach (var i in splitString)
+            {
+                if ((i != "StoreItems") && (!String.IsNullOrEmpty(i)))
+                {
+                    altItemURI.Append('/' + i);
+                }
+            }
+            var item = dbContext.WarframeItems.Where(x => x.ItemURI == altItemURI.ToString());
+
+            if (item.Count() > 0)
+                return item.Single().Name;
+            else
+                return itemURI;
         }
 
         public string GetNodeName(string node)
@@ -141,6 +153,20 @@ namespace DiscordSharpTest
                 Console.WriteLine("Failed to set minimum quantity!");
             }
             
+        }
+
+        public string GetFissureName(string fissureURI)
+        {
+            string result = fissureURI;
+            if (dbContext != null)
+            {
+                var item = dbContext.WFVoidFissures.Where(x => x.FissureURI == fissureURI);
+                if (item.Count() > 0)
+                    result = item.Single().FissureName;
+                else
+                    result = BandAidGetItemName(fissureURI);
+            }
+            return result;
         }
     }
 }

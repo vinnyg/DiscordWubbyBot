@@ -68,10 +68,12 @@ namespace DiscordSharpTest
         private List<MessageQueueEntry> alertMessagePostQueue;
         private List<MessageQueueEntry> invasionMessagePostQueue;
         private List<MessageQueueEntry> voidTraderMessagePostQueue;
+        private List<MessageQueueEntry> voidFissureMessagePostQueue;
 
         private DiscordMessage alertMessage = null;
         private DiscordMessage invasionMessage = null;
         private DiscordMessage traderMessage = null;
+        private DiscordMessage fissureMessage = null;
 
         private List<DiscordMessage> invasionMessages = null;
 
@@ -123,6 +125,7 @@ namespace DiscordSharpTest
             alertMessagePostQueue = new List<MessageQueueEntry>();
             invasionMessagePostQueue = new List<MessageQueueEntry>();
             voidTraderMessagePostQueue = new List<MessageQueueEntry>();
+            voidFissureMessagePostQueue = new List<MessageQueueEntry>();
 
             invasionMessages = new List<DiscordMessage>();
 
@@ -131,7 +134,7 @@ namespace DiscordSharpTest
 
         private void StartPostTimer()
         {
-            _eventUpdateInterval = new Timer((e) => { PostAlertMessage(); PostInvasionMessage(); PostVoidTraderMessage(); }, null, 3000, (int)(TimeSpan.FromMinutes(1).TotalMilliseconds));
+            _eventUpdateInterval = new Timer((e) => { PostAlertMessage(); PostInvasionMessage(); PostVoidFissureMessage();  PostVoidTraderMessage(); }, null, 3000, (int)(TimeSpan.FromMinutes(1).TotalMilliseconds));
         }
 
         private void PostAlertMessage()
@@ -140,7 +143,8 @@ namespace DiscordSharpTest
             bool postWillNotify = false;
             List<string> messagesToNotify = new List<string>();
             //Build all alert strings into a single message
-            finalMsg.Append("```ACTIVE ALERTS```" + Environment.NewLine);
+            if (alertMessagePostQueue.Count > 0) finalMsg.Append("```ACTIVE ALERTS```" + Environment.NewLine);
+            else finalMsg.Append("```NO ACTIVE ALERTS```" + Environment.NewLine);
 
             foreach (var m in alertMessagePostQueue)
             {
@@ -180,11 +184,14 @@ namespace DiscordSharpTest
             //Messages will append to this builder until the length reaches the MESSAGE_CHAR_LIMIT value
             StringBuilder entryForFinalMsg = new StringBuilder();
             finalMessagesToPost.Add(entryForFinalMsg);
-            //Append this before the loop so that it only appears once in the message
-            entryForFinalMsg.Append("```ACTIVE INVASIONS```" + Environment.NewLine);
 
             //Sometimes new invasions are added while the loop is still iterating, which causes problems.
             List<MessageQueueEntry> invasionMessageQueue = new List<MessageQueueEntry>(invasionMessagePostQueue);
+
+            //Append this before the loop so that it only appears once in the message
+            if (invasionMessageQueue.Count > 0) entryForFinalMsg.Append("```ACTIVE INVASIONS```" + Environment.NewLine);
+            else entryForFinalMsg.Append("```NO ACTIVE INVASIONS```" + Environment.NewLine);
+
 
             foreach (var messageItem in invasionMessageQueue)
             {
@@ -277,6 +284,45 @@ namespace DiscordSharpTest
             voidTraderMessagePostQueue.Clear();
         }
 
+        private void PostVoidFissureMessage()
+        {
+            StringBuilder finalMsg = new StringBuilder();
+            bool postWillNotify = false;
+            List<string> messagesToNotify = new List<string>();
+            //Build all alert strings into a single message
+            if (voidFissureMessagePostQueue.Count > 0) finalMsg.Append("```VOID FISSURES```" + Environment.NewLine);
+            else finalMsg.Append("```NO VOID FISSURES```" + Environment.NewLine);
+
+            foreach (var m in voidFissureMessagePostQueue)
+            {
+                string heading = (m.EventHasExpired) ? "```" : "```xl";
+
+                //finalMsg = new StringBuilder(heading + Environment.NewLine + m.Content + "```" + Environment.NewLine);
+                finalMsg.Append(heading + Environment.NewLine + m.Content + Environment.NewLine);
+                postWillNotify = m.NotifyClient;
+
+                if (postWillNotify)
+                {
+                    finalMsg.Append("( new )");
+                    messagesToNotify.Add(m.NotificationContent);
+                }
+                finalMsg.Append("```" + Environment.NewLine);
+            }
+
+            if (fissureMessage == null)
+                fissureMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
+            else
+            {
+                EditMessage(finalMsg.ToString(), fissureMessage, Client.GetChannelByName(ALERTS_CHANNEL));
+                foreach (var item in messagesToNotify)
+                {
+                    NotifyClient(item, Client.GetChannelByName(ALERTS_CHANNEL));
+                }
+            }
+
+            voidFissureMessagePostQueue.Clear();
+        }
+
         private void AddToAlertPostQueue(string message, bool notifyClient, string notificationContent, bool alertHasExpired)
         {
             //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
@@ -293,6 +339,12 @@ namespace DiscordSharpTest
         {
             //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
             voidTraderMessagePostQueue.Add(new MessageQueueEntry(message, notifyClient, notificationContent, traderHasExpired));
+        }
+
+        private void AddToVoidFissurePostQueue(string message, bool notifyClient, string notificationContent, bool fissureHasExpired)
+        {
+            //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
+            voidFissureMessagePostQueue.Add(new MessageQueueEntry(message, notifyClient, notificationContent, fissureHasExpired));
         }
 
         public void Shutdown()
@@ -521,6 +573,15 @@ namespace DiscordSharpTest
 #endif
                     //bool invasionIsNew = eventsContainer.IsInvasionNew(e.VoidTraderScraped);
                     AddToVoidTraderPostQueue(messageBuilder.BuildMessage(e.Trader, false), false, messageBuilder.BuildNotificationMessage(e.Trader), e.Trader.IsExpired());
+                };
+
+                eventsContainer.VoidFissureScraped += (sender, e) =>
+                {
+#if DEBUG
+                    Log("Void Trader Scraped!");
+#endif
+                    //bool invasionIsNew = eventsContainer.IsInvasionNew(e.VoidTraderScraped);
+                    AddToVoidFissurePostQueue(messageBuilder.BuildMessage(e.Fissure, false), false, messageBuilder.BuildNotificationMessage(e.Fissure), e.Fissure.IsExpired());
                 };
 
                 eventsContainer.ExistingAlertFound += (sender, e) =>

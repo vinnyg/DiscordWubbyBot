@@ -42,6 +42,18 @@ namespace DiscordSharpTest.Events
         }
     }
 
+    class WarframeVoidFissureScrapedArgs : EventArgs
+    {
+        public WarframeVoidFissure Fissure { get; private set; }
+        public string MessageID { get; private set; }
+
+        public WarframeVoidFissureScrapedArgs(WarframeVoidFissure newFissure, string messageID = "")
+        {
+            Fissure = newFissure;
+            MessageID = messageID;
+        }
+    }
+
     class ExistingAlertFoundArgs : EventArgs
     {
         public WarframeAlert Alert { get; private set; }
@@ -62,6 +74,18 @@ namespace DiscordSharpTest.Events
         public WarframeAlertExpiredArgs(WarframeAlert alert, string messageID = "")
         {
             Alert = alert;
+            MessageID = messageID;
+        }
+    }
+
+    class WarframeVoidFissureExpiredArgs : EventArgs
+    {
+        public WarframeVoidFissure Fissure { get; private set; }
+        public string MessageID { get; private set; }
+
+        public WarframeVoidFissureExpiredArgs(WarframeVoidFissure fissure, string messageID = "")
+        {
+            Fissure = fissure;
             MessageID = messageID;
         }
     }
