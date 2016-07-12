@@ -353,7 +353,9 @@ namespace DiscordSharpTest
             DeleteMessage(alertMessage);
             DeleteMessage(invasionMessage);
             DeleteMessage(traderMessage);
+            DeleteMessage(fissureMessage);
 
+            //Sometimes the invasions message may be split up over multiple Discord messages so each one needs to be deleted.
             foreach (var i in invasionMessages)
                 DeleteMessage(i);
             //SendMessage($"*{Name} is now offline*", Client.GetChannelByName(ALERTS_CHANNEL));
