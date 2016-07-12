@@ -14,6 +14,7 @@ namespace DiscordSharpTest
     {
         //Milliseconds which must pass before another Discord request can be made.
         private const int REQUEST_TIME_LIMIT = 1000;
+        public const int MESSAGE_CHAR_LIMIT = 2000;
 
         public DiscordClient Client { get; internal set; }   //Client
         public string Name { get; set; }       //Name of bot
