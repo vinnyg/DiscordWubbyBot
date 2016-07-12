@@ -20,16 +20,19 @@ namespace DiscordSharpTest
         public WarframeItem GetItem(string itemURI)
         {
             WarframeItem result = null;
-            if (!String.IsNullOrEmpty(itemURI))
+
+            string altItemURI = GetAltItemURI(itemURI);
+
+            if ((!String.IsNullOrEmpty(itemURI)) && (!String.IsNullOrEmpty(altItemURI)))
             {
-                try
+                var iQ = dbContext.WarframeItems.Where(s => s.ItemURI == itemURI);
+                if (iQ.Count() == 0)
                 {
-                    result = dbContext.WarframeItems.Where(s => s.ItemURI == itemURI).Single();
+                    iQ = dbContext.WarframeItems.Where(s => s.ItemURI == altItemURI);
                 }
-                catch (Exception)
-                {
-                    result = null;
-                }
+
+                if (iQ.Count() > 0)
+                    result = iQ.Single();
             }
             return result;
         }
@@ -72,8 +75,20 @@ namespace DiscordSharpTest
 
         private string BandAidGetItemName(string itemURI)
         {
-            var splitString = itemURI.Split('/');
-             StringBuilder altItemURI = new StringBuilder();
+            string altItemURI = GetAltItemURI(itemURI);
+
+            var item = dbContext.WarframeItems.Where(x => x.ItemURI == altItemURI);
+
+            if (item.Count() > 0)
+                return item.Single().Name;
+            else
+                return itemURI;
+        }
+
+        private string GetAltItemURI(string URI)
+        {
+            var splitString = URI.Split('/');
+            StringBuilder altItemURI = new StringBuilder();
 
             //Rebuild the itemURI string, omitting the substring which contains StoreItems
             foreach (var i in splitString)
@@ -83,12 +98,8 @@ namespace DiscordSharpTest
                     altItemURI.Append('/' + i);
                 }
             }
-            var item = dbContext.WarframeItems.Where(x => x.ItemURI == altItemURI.ToString());
 
-            if (item.Count() > 0)
-                return item.Single().Name;
-            else
-                return itemURI;
+            return altItemURI.ToString();
         }
 
         public string GetNodeName(string node)
