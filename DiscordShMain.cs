@@ -56,10 +56,12 @@ namespace DiscordSharpTest
                 Console.WriteLine(string.Format("{0} failed to connect.", bot._name));*/
             //if (client.SendLoginRequest() != null)
             //    ClientTask(client);
-            bot.Client.GetTextClientLogger.Save(@"C:\Users\Sam\Desktop\discord.txt");
             Console.ReadLine();
             //bot._client.GetTextClientLogger.Save(@"C:\Users\Sam\Documents\discord.txt");
+            bot.Client.GetTextClientLogger.Save(@"C:\Users\Sam\Desktop\discord.txt");
+
             bot.Shutdown();
+
         }
     }
 }

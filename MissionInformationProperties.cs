@@ -12,7 +12,7 @@ namespace DiscordSharpTest
         public const string GRINEER = "Grineer";
         public const string CORPUS = "Corpus";
         public const string INFESTATION = "Infestation";
-        public const string SENTINEL = "Sentinel";
+        public const string OROKIN = "Orokin";
 
         private static readonly Dictionary<string, string> FactionNames = new Dictionary<string, string>
         {
