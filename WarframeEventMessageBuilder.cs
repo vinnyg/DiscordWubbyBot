@@ -67,6 +67,29 @@ namespace DiscordSharpTest
             return returnMessage.ToString();
         }
 
+        public string BuildMessage(WarframeSortie sortie, bool formatMessage)
+        {
+            var msgInfo = ParseSortie(sortie);
+            string styleStr = formatMessage ? (sortie.IsExpired() ? ITALIC : BOLD) : NO_STYLE;
+
+            StringBuilder returnMessage = returnMessage = new StringBuilder();
+
+            //Stored boss name in Reward property for convenience.
+            returnMessage.Append(sortie.VariantDetails.First().Reward + Environment.NewLine);
+            returnMessage.Append(msgInfo.First().Status + Environment.NewLine + Environment.NewLine);
+            //Stored condition in parsed reward for convenience also.
+            foreach (var variant in msgInfo)
+            {
+                returnMessage.Append(
+                variant.Destination + Environment.NewLine +
+                variant.Faction + Environment.NewLine +
+                variant.Reward + Environment.NewLine + Environment.NewLine
+                );
+            }
+            
+            return returnMessage.ToString();
+        }
+
         public string BuildNotificationMessage(WarframeAlert alert)
         {
             WarframeEventMessageInfo msgInfo = ParseAlert(alert);
@@ -118,6 +141,36 @@ namespace DiscordSharpTest
                 );
 
             return msg.ToString();
+        }
+
+        public string BuildNotificationMessage(WarframeSortie sortie)
+        {
+            var msgInfo = ParseSortie(sortie);
+            string expireMsg = $"Expires {sortie.ExpireTime:HH:mm} ({sortie.GetMinutesRemaining(false)}m)";
+
+            //We only care about the faction for the sortie.
+            StringBuilder msg = new StringBuilder(
+                "New Sortie" + Environment.NewLine +
+                sortie.VariantDetails.First().Faction + Environment.NewLine +
+                expireMsg
+                );
+
+            return msg.ToString();
+        }
+
+        private string ParseTimeAsUnits(int minutes)
+        {
+            //TimeSpan ts = (DateTime.Now < trader.StartTime) ? trader.GetTimeRemaining(true) : trader.GetTimeRemaining(false);
+            //int days = ts.Days, hours = ts.Hours, minutes = ts.Minutes;
+
+            TimeSpan ts = TimeSpan.FromMinutes(minutes);
+            int days = ts.Days, hours = ts.Hours, mins = ts.Minutes;
+
+            var result = new StringBuilder((days > 0 ? $"{days} Days " : String.Empty) 
+                                        + ((hours > 0) || (days > 0) ? $"{hours}h and " : "")
+                                        + ($"{mins}m"));
+
+            return result.ToString();
         }
 
         private WarframeEventMessageInfo ParseAlert(WarframeAlert alert)
@@ -209,6 +262,33 @@ namespace DiscordSharpTest
                 $"{statusString}"
                 );
 
+            return msgInfo;
+        }
+
+        private List<WarframeEventMessageInfo> ParseSortie(WarframeSortie sortie)
+        {
+            var info = sortie.VariantDetails;
+            var varDest = sortie.VariantDestinations;
+            var varConditions = sortie.VariantConditions;
+
+            string rewardMessage = String.Empty;// (!String.IsNullOrEmpty(info.Reward) ? info.Reward : String.Empty);
+
+            string statusString =
+                (!sortie.IsExpired()) ? (DateTime.Now < sortie.StartTime ? $"Starts {sortie.StartTime:HH:mm} ({sortie.GetMinutesRemaining(true)}m)" :
+                $"Expires {sortie.ExpireTime:HH:mm} ({ParseTimeAsUnits(sortie.GetMinutesRemaining(false))})") : $"Expired ({sortie.ExpireTime:HH:mm})";
+
+            var msgInfo = new List<WarframeEventMessageInfo>();
+
+            for (var i = 0; i < sortie.VariantDetails.Count; ++i)
+            {
+                msgInfo.Add(new WarframeEventMessageInfo(
+                $"{varDest[i]}",
+                $"{info[i].Faction} {info[i].MissionType}",
+                $"{varConditions[i]}",
+                $"{statusString}"
+                ));
+            }
+            
             return msgInfo;
         }
     }
