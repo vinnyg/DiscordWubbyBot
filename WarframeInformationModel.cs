@@ -14,18 +14,20 @@ namespace DiscordSharpTest
         const string DEFAULT_DATASOURCE = "WarframeData.db";
         public WarframeDataContext(string dataSource = DEFAULT_DATASOURCE)
         {
-            
             DataSource = dataSource;
         }
+
         public DbSet<WarframeItemCategory> Categories { get; set; }
         public DbSet<WarframeItem> WarframeItems { get; set; }
         public DbSet<ItemCategoryAssociation> ItemCategoryAssociations { get; set; }
         public DbSet<SolarNode> SolarNodes { get; set; }
         public DbSet<WFMiscIgnoreSettings> WFMiscIgnoreOptions { get; set; }
         public DbSet<WFVoidFissure> WFVoidFissures { get; set; }
-        public DbSet<WFBossNames> WFBossNames { get; set; }
-        public DbSet<WFRegionNames> WFRegionNames { get; set; }
-        public DbSet<WFSortieConditions> WFSortieConditions { get; set; }
+        public DbSet<WFBoss> WFBossInfo { get; set; }
+        public DbSet<WFRegion> WFRegionNames { get; set; }
+        public DbSet<WFSortieMission> WFSortieMissions { get; set; }
+        public DbSet<WFSortieCondition> WFSortieConditions { get; set; }
+        public DbSet<WFPlanetRegionMissions> WFPlanetRegionMissions { get; set; }
         public string DataSource { get; private set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -85,27 +87,50 @@ namespace DiscordSharpTest
         public string FissureName { get; set; }
     }
 
-    public class WFBossNames
+    public class WFBoss
     {
         [Key]
         public int ID { get; set; }
         public int Index { get; set; }
         public string Name { get; set; }
+        public string FactionIndex { get; set; }
     }
 
-    public class WFRegionNames
+    public class WFRegion
     {
         [Key]
         public int ID { get; set; }
-        public int RegionIndex { get; set; }
         public string RegionName { get; set; }
     }
 
-    public class WFSortieConditions
+    public class WFSortieCondition
     {
         [Key]
         public int ID { get; set; }
         public int ConditionIndex { get; set; }
         public string ConditionName { get; set; }
+    }
+    
+    public class WFSortieMission
+    {
+        [Key]
+        public int ID { get; set; }
+        public string MissionType { get; set; }
+    }
+
+    public class WFPlanetRegionMissions
+    {
+        [Key]
+        public int ID { get; set; }
+        public int RegionID { get; set; }
+        virtual public WFRegion Region { get; set; }
+
+        //The order that mission indices appear in the Warframe source per region.
+        //e.g. Each region has a different set of available missions, therefore the index of each mission will be different depending on the region.
+        public int JSONIndexOrder { get; set; }
+
+        virtual public WFSortieMission Mission { get; set; }
+
+        public int MissionID { get; set; }
     }
 }

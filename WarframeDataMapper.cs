@@ -225,6 +225,23 @@ namespace DiscordSharpTest
             return result;
         }
 
+        public int GetRegionMission(int regionIndex, int missionIndex)
+        {
+            //11 is an unidentified mission type
+            var result = 11;
+
+            using (var dbCon = new WarframeDataContext())
+            {
+                if (dbCon != null)
+                {
+                    var index = dbCon.WFPlanetRegionMissions.Where(x => (x.RegionID == regionIndex) && (x.JSONIndexOrder == missionIndex));
+                    if (index.Count() > 0)
+                        result = index.Single().MissionID;
+                }
+            }
+            return result;
+        }
+
         public string GetSortieRegionName(int regionIndex)
         {
             var result = $"region{regionIndex}";
@@ -233,9 +250,24 @@ namespace DiscordSharpTest
             {
                 if (dbCon != null)
                 {
-                    var item = dbCon.WFRegionNames.Where(x => x.RegionIndex == regionIndex);
+                    var item = dbCon.WFRegionNames.Where(x => x.ID == regionIndex);
                     if (item.Count() > 0)
                         result = item.Single().RegionName;
+                }
+            }
+            return result;
+        }
+
+        public string GetSortieMissionName(int missionID)
+        {
+            var result = $"mission{missionID}";
+            using (var dbCon = new WarframeDataContext())
+            {
+                if (dbCon != null)
+                {
+                    var item = dbCon.WFSortieMissions.Where(x => x.ID == missionID);
+                    if (item.Count() > 0)
+                        result = item.Single().MissionType;
                 }
             }
             return result;
@@ -251,6 +283,38 @@ namespace DiscordSharpTest
                     var item = dbCon.WFSortieConditions.Where(x => x.ConditionIndex == conditionIndex);
                     if (item.Count() > 0)
                         result = item.Single().ConditionName;
+                }
+            }
+            return result;
+        }
+
+        public string GetBossName(int bossIndex)
+        {
+            var result = $"boss{bossIndex}";
+
+            using (var dbCon = new WarframeDataContext())
+            {
+                if (dbCon != null)
+                {
+                    var item = dbCon.WFBossInfo.Where(x => x.Index == bossIndex);
+                    if (item.Count() > 0)
+                        result = item.Single().Name;
+                }
+            }
+            return result;
+        }
+
+        public string GetBossFaction(int bossIndex)
+        {
+            var result = $"faction{bossIndex}";
+
+            using (var dbCon = new WarframeDataContext())
+            {
+                if (dbCon != null)
+                {
+                    var item = dbCon.WFBossInfo.Where(x => x.Index == bossIndex);
+                    if (item.Count() > 0)
+                        result = item.Single().FactionIndex;
                 }
             }
             return result;
