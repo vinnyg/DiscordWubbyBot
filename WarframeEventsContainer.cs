@@ -342,38 +342,45 @@ namespace DiscordSharpTest
                     string id = jsonSortie["_id"]["$id"].ToString();
 
                     //Variant details
-                    List<string> varDests = new List<string>();
-                    List<MissionInfo> varMissions = new List<MissionInfo>();
+                    var varDests = new List<string>();
+                    var varMissions = new List<MissionInfo>();
+                    var varConditions = new List<string>();
+
+                    double secondsUntilStart = double.Parse(jsonSortie["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                    double secondsUntilExpire = double.Parse(jsonSortie["Expiry"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                    DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
+                    DateTime expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
+
                     //If this sortie doesn't exist in the current list, then loop through the variant node to get mission info for all variants
-                    /*foreach (var variant in jsonSortie["Variants"])
+                    foreach (var variant in jsonSortie["Variants"])
                     {
                         string loc = variant["node"].ToString();
                         varDests.Add(wfDataMapper.GetNodeName(loc));
 
-                        double secondsUntilStart = double.Parse(jsonSortie["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
-                        double secondsUntilExpire = double.Parse(jsonSortie["Expiry"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
-                        DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
-                        DateTime expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
+                        //Mission type varies depending on the region
+                        int regionIndex = int.Parse(variant["regionIndex"].ToString());
+                        int regionMissionIndex = wfDataMapper.GetRegionMission(regionIndex ,int.Parse(variant["missionIndex"].ToString()));
+                        int bossIndex = int.Parse(variant["bossIndex"].ToString());
 
-                        string regionName = wfDataMapper.GetSortieRegionName(int.Parse(variant["regionIndex"].ToString()));
-                        string missionName = wfDataMapper.GetRegionMission(int.Parse(variant["missionIndex"]).ToString());
+                        string regionName = wfDataMapper.GetSortieRegionName(regionIndex);
+                        string missionName = wfDataMapper.GetSortieMissionName(regionMissionIndex);
                         string condition = wfDataMapper.GetSortieConditionName(int.Parse(variant["modifierIndex"].ToString()));
 
-                        if (DateTime.Now < expireTime)
-                        {
-                            MissionInfo fissureInfo = new MissionInfo(Faction.OROKIN,
-                                "",
-                                0, fissure,
-                                0, 0, 0);
+                        var varMission = new MissionInfo(wfDataMapper.GetBossFaction(bossIndex), missionName,
+                                0, "", 0, 0, 0);
 
-                            currentSortie = new WarframeSortie(fissureInfo, id, "", startTime, expireTime);
-                            VoidFissures.Add(currentVoidFissure);
-                            NewVoidFissures.Add(currentVoidFissure);
+                        varMissions.Add(varMission);
+                    }
+
+                    if (DateTime.Now < expireTime)
+                    {
+                        currentSortie = new WarframeSortie(varMissions, id, varDests, varConditions, startTime, expireTime);
+                        SortieList.Add(currentSortie);
+                        NewSorties.Add(currentSortie);
 #if DEBUG
-                        Console.WriteLine("New Fissure Event");
+                        Console.WriteLine("New Sortie Event");
 #endif
-                        }
-                    }*/
+                    }
                 }
                 else
                 {
@@ -393,6 +400,7 @@ namespace DiscordSharpTest
             ParseAlerts();
             ParseInvasions();
             ParseVoidFissures();
+            ParseSorties();
             ParseVoidTrader();
         }
 
