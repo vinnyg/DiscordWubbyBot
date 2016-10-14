@@ -377,6 +377,7 @@
     <Compile Include="WarframeInformationModel.cs" />
     <Compile Include="WarframeInvasion.cs" />
     <Compile Include="WarframeEventArgMethods.cs" />
+    <Compile Include="WarframeSortie.cs" />
     <Compile Include="WarframeVoidFissure.cs" />
     <Compile Include="WarframeVoidTrader.cs" />
     <Compile Include="WubbyBot.cs" />

@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordSharpTest", "DiscordSharpTest.csproj", "{FBE0D6C0-1614-4B40-B724-4C702B03F4BD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SortieRegionMissionParser", "..\..\SortieRegionMissionParser\SortieRegionMissionParser\SortieRegionMissionParser.csproj", "{8845BD23-AC09-4DA0-A012-007DB92A562C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{FBE0D6C0-1614-4B40-B724-4C702B03F4BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FBE0D6C0-1614-4B40-B724-4C702B03F4BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FBE0D6C0-1614-4B40-B724-4C702B03F4BD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8845BD23-AC09-4DA0-A012-007DB92A562C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8845BD23-AC09-4DA0-A012-007DB92A562C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8845BD23-AC09-4DA0-A012-007DB92A562C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8845BD23-AC09-4DA0-A012-007DB92A562C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

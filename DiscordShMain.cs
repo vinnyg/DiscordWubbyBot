@@ -41,9 +41,6 @@ namespace DiscordSharpTest
 
         static void Main(string[] args)
         {
-            /*DiscordChannel channel = new DiscordChannel();
-            channel.id = "144847610191151104";*/
-
             Console.Title = GetLinkerTime().ToString();
 
             WubbyBot bot = new WubbyBot("wubbybot", "log-wubby");
@@ -57,8 +54,7 @@ namespace DiscordSharpTest
             //if (client.SendLoginRequest() != null)
             //    ClientTask(client);
             Console.ReadLine();
-            //bot._client.GetTextClientLogger.Save(@"C:\Users\Sam\Documents\discord.txt");
-            bot.Client.GetTextClientLogger.Save(@"C:\Users\Sam\Desktop\discord.txt");
+            //bot.Client.GetTextClientLogger.Save(@"C:\Users\Sam\Desktop\discord.txt");
 
             bot.Shutdown();
 
