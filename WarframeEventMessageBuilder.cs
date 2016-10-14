@@ -175,9 +175,13 @@ namespace DiscordSharpTest
 
             StringBuilder rewardString = new StringBuilder();
             
-            foreach(var i in trader.Inventory)
+            //Ensure that the trader's inventory is not empty first.
+            if (trader.Inventory.Count() > 0)
             {
-                rewardString.Append($"{i.Name} {i.Credits}cr + {i.Ducats}dc{Environment.NewLine}");
+                foreach (var i in trader.Inventory)
+                {
+                    rewardString.Append($"{i.Name} {i.Credits}cr + {i.Ducats}dc{Environment.NewLine}");
+                }
             }
 
             WarframeEventMessageInfo msgInfo = new WarframeEventMessageInfo(
