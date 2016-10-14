@@ -39,7 +39,7 @@ namespace DiscordSharpTest
         public event EventHandler<WarframeInvasionScrapedArgs> InvasionScraped;
         public event EventHandler<WarframeVoidTraderScrapedArgs> VoidTraderScraped;
         public event EventHandler<WarframeVoidFissureScrapedArgs> VoidFissureScraped;
-        public event EventHandler<WarframeSortieScrapedArgs> VoidSortieScraped;
+        public event EventHandler<WarframeSortieScrapedArgs> SortieScraped;
         public event EventHandler<WarframeAlertExpiredArgs> AlertExpired;
         public event EventHandler<ExistingAlertFoundArgs> ExistingAlertFound;
         public event EventHandler<WarframeVoidFissureExpiredArgs> VoidFissureExpired;
@@ -356,6 +356,7 @@ namespace DiscordSharpTest
                     {
                         string loc = variant["node"].ToString();
                         varDests.Add(wfDataMapper.GetNodeName(loc));
+                        varConditions.Add(wfDataMapper.GetSortieConditionName(int.Parse(variant["modifierIndex"].ToString())));
 
                         //Mission type varies depending on the region
                         int regionIndex = int.Parse(variant["regionIndex"].ToString());
@@ -364,10 +365,10 @@ namespace DiscordSharpTest
 
                         string regionName = wfDataMapper.GetSortieRegionName(regionIndex);
                         string missionName = wfDataMapper.GetSortieMissionName(regionMissionIndex);
-                        string condition = wfDataMapper.GetSortieConditionName(int.Parse(variant["modifierIndex"].ToString()));
+                        //string condition = wfDataMapper.GetSortieConditionName(int.Parse(variant["modifierIndex"].ToString()));
 
                         var varMission = new MissionInfo(wfDataMapper.GetBossFaction(bossIndex), missionName,
-                                0, "", 0, 0, 0);
+                                0, wfDataMapper.GetBossName(bossIndex), 0, 0, 0);
 
                         varMissions.Add(varMission);
                     }
@@ -517,7 +518,7 @@ namespace DiscordSharpTest
 
         private void CreateNewSortieReceivedEvent(WarframeSortie newSortie)
         {
-            EventHandler<WarframeSortieScrapedArgs> handler = VoidSortieScraped;
+            EventHandler<WarframeSortieScrapedArgs> handler = SortieScraped;
 
             WarframeSortieScrapedArgs e = new WarframeSortieScrapedArgs(newSortie);
 
