@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Data.Entity;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,11 +10,11 @@ namespace DiscordSharpTest
 {
     public class WarframeDataMapper
     {
-        private WarframeDataContext dbContext { get; set; }
+        //private WarframeDataContext dbContext { get; set; }
 
         public WarframeDataMapper(WarframeDataContext wdc = null)
         {
-            if (wdc.Equals(null))
+            /*if (wdc.Equals(null))
             {
                 dbContext = new WarframeDataContext();
             }
@@ -21,7 +22,7 @@ namespace DiscordSharpTest
             {
                 dbContext = wdc;
             }
-            dbContext.Database.EnsureCreated();
+            dbContext.Database.EnsureCreated();*/
 
         }
 
@@ -33,51 +34,69 @@ namespace DiscordSharpTest
 
             if ((!String.IsNullOrEmpty(itemURI)) && (!String.IsNullOrEmpty(altItemURI)))
             {
-                var iQ = dbContext.WarframeItems.Where(s => s.ItemURI == itemURI);
-                if (iQ.Count() == 0)
+                using (var dbCon = new WarframeDataContext())
                 {
-                    iQ = dbContext.WarframeItems.Where(s => s.ItemURI == altItemURI);
+                    var iQ = dbCon.WarframeItems.Where(s => s.ItemURI == itemURI);
+                    if (iQ.Count() == 0)
+                    {
+                        iQ = dbCon.WarframeItems.Where(s => s.ItemURI == altItemURI);
+                    }
+
+                    if (iQ.Count() > 0)
+                        result = iQ.Single();
                 }
 
-                if (iQ.Count() > 0)
-                    result = iQ.Single();
+                    
             }
             return result;
         }
 
         public List<WarframeItemCategory> GetItemCategories(WarframeItem item)
         {
-            List<WarframeItemCategory> categories = dbContext.ItemCategoryAssociations.Where(s => s.ItemID == item.ID).Select(s => s.Category).ToList();
+            List<WarframeItemCategory> categories;
+
+            using (var dbCon = new WarframeDataContext())
+            {
+                categories = dbCon.ItemCategoryAssociations.Where(s => s.ItemID == item.ID).Select(s => s.Category).ToList();
+            }
             return categories;
         }
 
         public int GetItemID(string itemURI)
         {
-            if (dbContext != null)
+            using (var dbCon = new WarframeDataContext())
             {
-                try
+                if (dbCon != null)
                 {
-                    return dbContext.WarframeItems.Where(x => x.ItemURI == itemURI).Single().ID;
-                }
-                catch (Exception)
-                {
-                    return -1;
+                    try
+                    {
+                        return dbCon.WarframeItems.Where(x => x.ItemURI == itemURI).Single().ID;
+                    }
+                    catch (Exception)
+                    {
+                        return -1;
+                    }
                 }
             }
+                
             return -1;
         }
 
         public string GetItemName(string itemURI)
         {
             string result = itemURI;
-            if (dbContext != null)
+            using (var dbCon = new WarframeDataContext())
             {
-                var item = dbContext.WarframeItems.Where(x => x.ItemURI == itemURI);
-                if (item.Count() > 0)
-                    result = item.Single().Name;
-                else
-                    result = BandAidGetItemName(itemURI);
+                if (dbCon != null)
+                {
+                    var item = dbCon.WarframeItems.Where(x => x.ItemURI == itemURI);
+                    if (item.Count() > 0)
+                        result = item.Single().Name;
+                    else
+                        result = BandAidGetItemName(itemURI);
+                }
             }
+            
             return result;
         }
 
@@ -85,13 +104,16 @@ namespace DiscordSharpTest
         private string BandAidGetItemName(string itemURI)
         {
             string altItemURI = GetAltItemURI(itemURI);
+            string result = itemURI;
+            using (var dbCon = new WarframeDataContext())
+            {
+                var item = dbCon.WarframeItems.Where(x => x.ItemURI == altItemURI);
 
-            var item = dbContext.WarframeItems.Where(x => x.ItemURI == altItemURI);
+                if (item.Count() > 0)
+                    result = item.Single().Name;
+            }
 
-            if (item.Count() > 0)
-                return item.Single().Name;
-            else
-                return itemURI;
+            return result;
         }
 
         private string GetAltItemURI(string URI)
@@ -114,32 +136,40 @@ namespace DiscordSharpTest
         public string GetNodeName(string node)
         {
             string result;
-            if (dbContext != null)
+            using (var dbCon = new WarframeDataContext())
             {
-                try
+                if (dbCon != null)
                 {
-                    result = dbContext.SolarNodes.Where(x => x.NodeURI == node).Single().NodeName;
+                    try
+                    {
+                        result = dbCon.SolarNodes.Where(x => x.NodeURI == node).Single().NodeName;
+                    }
+                    catch (Exception)
+                    {
+                        result = node;
+                    }
+                    return result;
                 }
-                catch(Exception)
-                {
-                    result = node;
-                }
-                return result;
             }
+
             return "";
         }
 
         public int GetWarframeItemMinimumQuantity(WarframeItem item)
         {
             int res;
-            try
+            using (var dbCon = new WarframeDataContext())
             {
-                res = dbContext.WFMiscIgnoreOptions.Where(x => x.ItemID == item.ID).Single().MinQuantity;
+                try
+                {
+                    res = dbCon.WFMiscIgnoreOptions.Where(x => x.ItemID == item.ID).Single().MinQuantity;
+                }
+                catch (Exception)
+                {
+                    res = 0;
+                }
             }
-            catch (Exception)
-            {
-                res = 0;
-            }
+                
             return res;
         }
 
@@ -158,38 +188,39 @@ namespace DiscordSharpTest
 
         public void SetMinimumQuantity(WarframeItem item, int minimumQuantity)
         {
-            try
+            using (var dbCon = new WarframeDataContext())
             {
-                WFMiscIgnoreSettings option = dbContext.WFMiscIgnoreOptions.Where(x => x.ItemID == item.ID).Single();
-                if (option != null)
+                try
                 {
-                    if (minimumQuantity > 0)
-                        option.MinQuantity = minimumQuantity;
+                    WFMiscIgnoreSettings option = dbCon.WFMiscIgnoreOptions.Where(x => x.ItemID == item.ID).Single();
+                    if (option != null)
+                    {
+                        if (minimumQuantity > 0)
+                            option.MinQuantity = minimumQuantity;
+                    }
+                }
+                catch (Exception)
+                {
+                    //Do nothing
+                    Console.WriteLine("Failed to set minimum quantity!");
                 }
             }
-            catch (Exception)
-            {
-                //Do nothing
-                Console.WriteLine("Failed to set minimum quantity!");
-            }
-            
         }
 
         public string GetFissureName(string fissureURI)
         {
-            using (var c = new WarframeDataContext())
-            {
-                
-            }
+            string result = fissureURI;
 
-                string result = fissureURI;
-            if (dbContext != null)
+            using (var dbCon = new WarframeDataContext())
             {
-                var item = dbContext.WFVoidFissures.Where(x => x.FissureURI == fissureURI);
-                if (item.Count() > 0)
-                    result = item.Single().FissureName;
-                /*else
-                    result = BandAidGetItemName(fissureURI);*/
+                if (dbCon != null)
+                {
+                    var item = dbCon.WFVoidFissures.Where(x => x.FissureURI == fissureURI);
+                    if (item.Count() > 0)
+                        result = item.Single().FissureName;
+                    /*else
+                        result = BandAidGetItemName(fissureURI);*/
+                }
             }
             return result;
         }
@@ -197,11 +228,15 @@ namespace DiscordSharpTest
         public string GetSortieRegionName(int regionIndex)
         {
             var result = $"region{regionIndex}";
-            if (dbContext != null)
+
+            using (var dbCon = new WarframeDataContext())
             {
-                var item = dbContext.WFRegionNames.Where(x => x.RegionIndex == regionIndex);
-                if (item.Count() > 0)
-                    result = item.Single().RegionName;
+                if (dbCon != null)
+                {
+                    var item = dbCon.WFRegionNames.Where(x => x.RegionIndex == regionIndex);
+                    if (item.Count() > 0)
+                        result = item.Single().RegionName;
+                }
             }
             return result;
         }
@@ -209,11 +244,14 @@ namespace DiscordSharpTest
         public string GetSortieConditionName(int conditionIndex)
         {
             var result = $"ConditionIndex{conditionIndex}";
-            if (dbContext != null)
+            using (var dbCon = new WarframeDataContext())
             {
-                var item = dbContext.WFSortieConditions.Where(x => x.ConditionIndex == conditionIndex);
-                if (item.Count() > 0)
-                    result = item.Single().ConditionName;
+                if (dbCon != null)
+                {
+                    var item = dbCon.WFSortieConditions.Where(x => x.ConditionIndex == conditionIndex);
+                    if (item.Count() > 0)
+                        result = item.Single().ConditionName;
+                }
             }
             return result;
         }
