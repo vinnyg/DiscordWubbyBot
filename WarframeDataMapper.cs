@@ -7,14 +7,22 @@ using System.Threading.Tasks;
 
 namespace DiscordSharpTest
 {
-    class WarframeDataMapper
+    public class WarframeDataMapper
     {
         private WarframeDataContext dbContext { get; set; }
 
-        public WarframeDataMapper()
+        public WarframeDataMapper(WarframeDataContext wdc = null)
         {
-            dbContext = new WarframeDataContext();
+            if (wdc.Equals(null))
+            {
+                dbContext = new WarframeDataContext();
+            }
+            else
+            {
+                dbContext = wdc;
+            }
             dbContext.Database.EnsureCreated();
+
         }
 
         public WarframeItem GetItem(string itemURI)
@@ -73,6 +81,7 @@ namespace DiscordSharpTest
             return result;
         }
 
+        //It appears that the URI for items has changed so use this method to check for existing items under the new URI format if no items can be found for the old format 
         private string BandAidGetItemName(string itemURI)
         {
             string altItemURI = GetAltItemURI(itemURI);
@@ -168,14 +177,43 @@ namespace DiscordSharpTest
 
         public string GetFissureName(string fissureURI)
         {
-            string result = fissureURI;
+            using (var c = new WarframeDataContext())
+            {
+                
+            }
+
+                string result = fissureURI;
             if (dbContext != null)
             {
                 var item = dbContext.WFVoidFissures.Where(x => x.FissureURI == fissureURI);
                 if (item.Count() > 0)
                     result = item.Single().FissureName;
-                else
-                    result = BandAidGetItemName(fissureURI);
+                /*else
+                    result = BandAidGetItemName(fissureURI);*/
+            }
+            return result;
+        }
+
+        public string GetSortieRegionName(int regionIndex)
+        {
+            var result = $"region{regionIndex}";
+            if (dbContext != null)
+            {
+                var item = dbContext.WFRegionNames.Where(x => x.RegionIndex == regionIndex);
+                if (item.Count() > 0)
+                    result = item.Single().RegionName;
+            }
+            return result;
+        }
+
+        public string GetSortieConditionName(int conditionIndex)
+        {
+            var result = $"ConditionIndex{conditionIndex}";
+            if (dbContext != null)
+            {
+                var item = dbContext.WFSortieConditions.Where(x => x.ConditionIndex == conditionIndex);
+                if (item.Count() > 0)
+                    result = item.Single().ConditionName;
             }
             return result;
         }

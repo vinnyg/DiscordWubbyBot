@@ -17,6 +17,7 @@ namespace DiscordSharpTest
         public List<WarframeInvasion> InvasionsList { get; private set; }
         public List<WarframeVoidTrader> VoidTraders { get; private set; }
         public List<WarframeVoidFissure> VoidFissures { get; private set; }
+        public List<WarframeSortie> SortieList { get; private set; }
 
         //private XDocument _rssFeed { get; set; }
         private JObject _worldState { get; set; }
@@ -31,15 +32,18 @@ namespace DiscordSharpTest
         private List<WarframeAlert> NewAlerts;
         private List<WarframeInvasion> NewInvasions;
         private List<WarframeVoidFissure> NewVoidFissures;
+        private List<WarframeSortie> NewSorties;
 
         #region Events
         public event EventHandler<WarframeAlertScrapedArgs> AlertScraped;
         public event EventHandler<WarframeInvasionScrapedArgs> InvasionScraped;
         public event EventHandler<WarframeVoidTraderScrapedArgs> VoidTraderScraped;
         public event EventHandler<WarframeVoidFissureScrapedArgs> VoidFissureScraped;
+        public event EventHandler<WarframeSortieScrapedArgs> VoidSortieScraped;
         public event EventHandler<WarframeAlertExpiredArgs> AlertExpired;
         public event EventHandler<ExistingAlertFoundArgs> ExistingAlertFound;
         public event EventHandler<WarframeVoidFissureExpiredArgs> VoidFissureExpired;
+        public event EventHandler<WarframeSortieExpiredArgs> SortieExpired;
         #endregion
 
         public WarframeEventsContainer()
@@ -48,10 +52,13 @@ namespace DiscordSharpTest
             InvasionsList = new List<WarframeInvasion>();
             VoidTraders = new List<WarframeVoidTrader>();
             VoidFissures = new List<WarframeVoidFissure>();
+            SortieList = new List<WarframeSortie>();
+
             NewAlerts = new List<WarframeAlert>();
             NewInvasions = new List<WarframeInvasion>();
             NewVoidFissures = new List<WarframeVoidFissure>();
             wfDataMapper = new WarframeDataMapper();
+            NewSorties = new List<WarframeSortie>();
         }
 
         public void Start()
@@ -249,6 +256,7 @@ namespace DiscordSharpTest
                         currentTrader = new WarframeVoidTrader(id, wfDataMapper.GetNodeName(loc), startTime, expireTime);
                         VoidTraders.Add(currentTrader);
 
+
                         JToken traderInventory = jsonTrader["Manifest"];
                         if (traderInventory != null)
                         {
@@ -316,6 +324,67 @@ namespace DiscordSharpTest
                     CreateNewVoidFissureReceivedEvent(currentVoidFissure);
                 else
                     CreateVoidFissureExpiredEvent(currentVoidFissure, "");
+            }
+        }
+
+        private void ParseSorties()
+        {
+            NewSorties.Clear();
+
+            //Find Sorties
+            foreach (var jsonSortie in _worldState["Sorties"])
+            {
+                //Check if the sortie has already being tracked
+                WarframeSortie currentSortie = SortieList.Find(x => x.GUID == jsonSortie["_id"]["$id"].ToString());
+
+                if (currentSortie == null)
+                {
+                    string id = jsonSortie["_id"]["$id"].ToString();
+
+                    //Variant details
+                    List<string> varDests = new List<string>();
+                    List<MissionInfo> varMissions = new List<MissionInfo>();
+                    //If this sortie doesn't exist in the current list, then loop through the variant node to get mission info for all variants
+                    /*foreach (var variant in jsonSortie["Variants"])
+                    {
+                        string loc = variant["node"].ToString();
+                        varDests.Add(wfDataMapper.GetNodeName(loc));
+
+                        double secondsUntilStart = double.Parse(jsonSortie["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                        double secondsUntilExpire = double.Parse(jsonSortie["Expiry"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                        DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
+                        DateTime expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
+
+                        string regionName = wfDataMapper.GetSortieRegionName(int.Parse(variant["regionIndex"].ToString()));
+                        string missionName = wfDataMapper.GetRegionMission(int.Parse(variant["missionIndex"]).ToString());
+                        string condition = wfDataMapper.GetSortieConditionName(int.Parse(variant["modifierIndex"].ToString()));
+
+                        if (DateTime.Now < expireTime)
+                        {
+                            MissionInfo fissureInfo = new MissionInfo(Faction.OROKIN,
+                                "",
+                                0, fissure,
+                                0, 0, 0);
+
+                            currentSortie = new WarframeSortie(fissureInfo, id, "", startTime, expireTime);
+                            VoidFissures.Add(currentVoidFissure);
+                            NewVoidFissures.Add(currentVoidFissure);
+#if DEBUG
+                        Console.WriteLine("New Fissure Event");
+#endif
+                        }
+                    }*/
+                }
+                else
+                {
+                    if (currentSortie.ExpireTime < DateTime.Now)
+                        SortieList.Remove(currentSortie);
+                }
+
+                if ((currentSortie != null) && (currentSortie.ExpireTime > DateTime.Now))
+                    CreateNewSortieReceivedEvent(currentSortie);
+                else
+                    CreateSortieExpiredEvent(currentSortie, "");
             }
         }
 
@@ -438,6 +507,16 @@ namespace DiscordSharpTest
                 handler(this, e);
         }
 
+        private void CreateNewSortieReceivedEvent(WarframeSortie newSortie)
+        {
+            EventHandler<WarframeSortieScrapedArgs> handler = VoidSortieScraped;
+
+            WarframeSortieScrapedArgs e = new WarframeSortieScrapedArgs(newSortie);
+
+            if (handler != null)    //Check if there are any subscribers
+                handler(this, e);
+        }
+
         private void CreateAlertExpiredEvent(WarframeAlert expiredAlert, string messageID = "")
         {
             EventHandler<WarframeAlertExpiredArgs> handler = AlertExpired;
@@ -453,6 +532,16 @@ namespace DiscordSharpTest
             EventHandler<WarframeVoidFissureExpiredArgs> handler = VoidFissureExpired;
 
             WarframeVoidFissureExpiredArgs e = new WarframeVoidFissureExpiredArgs(expiredFissure, messageID);
+
+            if (handler != null)    //Check if there are any subscribers
+                handler(this, e);
+        }
+
+        private void CreateSortieExpiredEvent(WarframeSortie expiredSortie, string messageID = "")
+        {
+            EventHandler<WarframeSortieExpiredArgs> handler = SortieExpired;
+
+            var e = new WarframeSortieExpiredArgs(expiredSortie, messageID);
 
             if (handler != null)    //Check if there are any subscribers
                 handler(this, e);
