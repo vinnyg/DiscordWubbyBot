@@ -29,7 +29,6 @@ namespace DiscordSharpTest
         {
             Name = name;
             LogChannelName = logChannelName;
-            BotConfig = new Config();
             timeOfLastDiscordRequest = DateTime.Now;
 
             if (File.Exists(Name + ".json"))
