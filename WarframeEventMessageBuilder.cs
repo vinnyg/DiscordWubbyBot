@@ -75,7 +75,7 @@ namespace DiscordSharpTest
             StringBuilder returnMessage = returnMessage = new StringBuilder();
 
             //Stored boss name in Reward property for convenience.
-            returnMessage.Append(sortie.VariantDetails.First().Reward + Environment.NewLine);
+            returnMessage.Append($"{sortie.VariantDetails.First().Reward}" + Environment.NewLine);
             returnMessage.Append(msgInfo.First().Status + Environment.NewLine + Environment.NewLine);
             //Stored condition in parsed reward for convenience also.
             foreach (var variant in msgInfo)
@@ -167,7 +167,7 @@ namespace DiscordSharpTest
             int days = ts.Days, hours = ts.Hours, mins = ts.Minutes;
 
             var result = new StringBuilder((days > 0 ? $"{days} Days " : String.Empty) 
-                                        + ((hours > 0) || (days > 0) ? $"{hours}h and " : "")
+                                        + ((hours > 0) || (days > 0) ? $"{hours}h " : "")
                                         + ($"{mins}m"));
 
             return result.ToString();
@@ -275,7 +275,7 @@ namespace DiscordSharpTest
 
             string statusString =
                 (!sortie.IsExpired()) ? (DateTime.Now < sortie.StartTime ? $"Starts {sortie.StartTime:HH:mm} ({sortie.GetMinutesRemaining(true)}m)" :
-                $"Expires {sortie.ExpireTime:HH:mm} ({ParseTimeAsUnits(sortie.GetMinutesRemaining(false))})") : $"Expired ({sortie.ExpireTime:HH:mm})";
+                $"Expires {ParseTimeAsUnits(sortie.GetMinutesRemaining(false))}") : $"Expired ({sortie.ExpireTime:HH:mm})";
 
             var msgInfo = new List<WarframeEventMessageInfo>();
 

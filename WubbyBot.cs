@@ -333,7 +333,7 @@ namespace DiscordSharpTest
             bool postWillNotify = false;
             List<string> messagesToNotify = new List<string>();
             //Build all alert strings into a single message
-            if (voidFissureMessagePostQueue.Count == 0) finalMsg.Append("```ACTIVE SORTIES```" + Environment.NewLine);
+            if (sortieMessagePostQueue.Count > 0) finalMsg.Append("```ACTIVE SORTIES```" + Environment.NewLine);
             else finalMsg.Append("```NO SORTIES```" + Environment.NewLine);
 
             foreach (var m in sortieMessagePostQueue)
