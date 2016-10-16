@@ -90,6 +90,18 @@ namespace DiscordSharpTest
             return returnMessage.ToString();
         }
 
+        public string BuildMessage(WarframeTimeCycleInfo cycleInfo, bool formatMessage)
+        {
+            WarframeEventMessageInfo msgInfo = ParseDayCycle(cycleInfo);
+            //string traderAction = (DateTime.Now < trader.StartTime) ? "arriving at" : "leaving";
+
+            StringBuilder returnMessage = new StringBuilder(
+                $"The current time is {msgInfo.Reward}." + Environment.NewLine + 
+                $"The next cycle begins at {msgInfo.Status}.{Environment.NewLine}");
+
+            return returnMessage.ToString();
+        }
+
         public string BuildNotificationMessage(WarframeAlert alert)
         {
             WarframeEventMessageInfo msgInfo = ParseAlert(alert);
@@ -289,6 +301,17 @@ namespace DiscordSharpTest
                 ));
             }
             
+            return msgInfo;
+        }
+
+        private WarframeEventMessageInfo ParseDayCycle(WarframeTimeCycleInfo cycleInfo)
+        {
+            WarframeEventMessageInfo msgInfo = new WarframeEventMessageInfo(
+                String.Empty,
+                String.Empty,
+                cycleInfo.TimeIsDay() ? "Day" : "Night",
+                $"{cycleInfo.TimeOfNextCycleChange:HH:mm} ({(cycleInfo.TimeUntilNextCycleChange.Hours > 0 ? $"{cycleInfo.TimeUntilNextCycleChange.Hours}h ":String.Empty)}{cycleInfo.TimeUntilNextCycleChange.Minutes}m)");
+
             return msgInfo;
         }
     }

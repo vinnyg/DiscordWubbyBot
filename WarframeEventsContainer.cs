@@ -13,11 +13,13 @@ namespace DiscordSharpTest
 {
     class WarframeEventsContainer
     {
+        private const int SECONDS_PER_DAY_CYCLE = 14400;
         public List<WarframeAlert> AlertsList { get; private set; }
         public List<WarframeInvasion> InvasionsList { get; private set; }
         public List<WarframeVoidTrader> VoidTraders { get; private set; }
         public List<WarframeVoidFissure> VoidFissures { get; private set; }
         public List<WarframeSortie> SortieList { get; private set; }
+        public TimeSpan MinutesUntilNextCycle { get; private set; }
 
         //private XDocument _rssFeed { get; set; }
         private JObject _worldState { get; set; }
@@ -40,6 +42,7 @@ namespace DiscordSharpTest
         public event EventHandler<WarframeVoidTraderScrapedArgs> VoidTraderScraped;
         public event EventHandler<WarframeVoidFissureScrapedArgs> VoidFissureScraped;
         public event EventHandler<WarframeSortieScrapedArgs> SortieScraped;
+        public event EventHandler<DayCycleTimeScrapedArgs> DayCycleScraped;
         public event EventHandler<WarframeAlertExpiredArgs> AlertExpired;
         public event EventHandler<ExistingAlertFoundArgs> ExistingAlertFound;
         public event EventHandler<WarframeVoidFissureExpiredArgs> VoidFissureExpired;
@@ -401,6 +404,20 @@ namespace DiscordSharpTest
             }
         }
 
+        private void ParseTimeCycle()
+        {
+            int currentTime = int.Parse(_worldState["Time"].ToString());
+            //int secondsElapsedSinceLastCycleChange = currentTime % SECONDS_PER_DAY_CYCLE;
+            //int secondsUntilNextCycleChange = SECONDS_PER_DAY_CYCLE - secondsElapsedSinceLastCycleChange;
+
+            WarframeTimeCycleInfo cycleInfo = new WarframeTimeCycleInfo(currentTime);
+
+            //TimeSpan ts = TimeSpan.FromSeconds(secondsUntilNextCycleChange);
+            //MinutesUntilNextCycle = TimeSpan.FromSeconds(secondsUntilNextCycleChange);
+            CreateDayCycleUpdateReceivedEvent(cycleInfo);
+            //MinutesUntilNextCycle = ts.Hours * 60 + ts.Minutes;
+        }
+
         private void ParseJsonEvents()
         {
             ParseAlerts();
@@ -408,6 +425,7 @@ namespace DiscordSharpTest
             ParseVoidFissures();
             ParseSorties();
             ParseVoidTrader();
+            ParseTimeCycle();
         }
 
         private bool RewardIsNotIgnored(int credits = 0, string itemURI = "", int itemQuantity = 1)
@@ -526,6 +544,16 @@ namespace DiscordSharpTest
             EventHandler<WarframeSortieScrapedArgs> handler = SortieScraped;
 
             WarframeSortieScrapedArgs e = new WarframeSortieScrapedArgs(newSortie);
+
+            if (handler != null)    //Check if there are any subscribers
+                handler(this, e);
+        }
+
+        private void CreateDayCycleUpdateReceivedEvent(WarframeTimeCycleInfo cycleInfo)
+        {
+            EventHandler<DayCycleTimeScrapedArgs> handler = DayCycleScraped;
+
+            DayCycleTimeScrapedArgs e = new DayCycleTimeScrapedArgs(cycleInfo);
 
             if (handler != null)    //Check if there are any subscribers
                 handler(this, e);

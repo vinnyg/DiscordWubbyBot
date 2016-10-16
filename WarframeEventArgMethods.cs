@@ -66,6 +66,18 @@ namespace DiscordSharpTest.Events
         }
     }
 
+    class DayCycleTimeScrapedArgs : EventArgs
+    {
+        public WarframeTimeCycleInfo cycleInfo { get; private set; }
+        public string MessageID { get; private set; }
+
+        public DayCycleTimeScrapedArgs(WarframeTimeCycleInfo cycleInfo, string messageID = "")
+        {
+            this.cycleInfo = cycleInfo;
+            MessageID = messageID;
+        }
+    }
+
     class ExistingAlertFoundArgs : EventArgs
     {
         public WarframeAlert Alert { get; private set; }
