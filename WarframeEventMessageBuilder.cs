@@ -186,7 +186,7 @@ namespace DiscordSharpTest
             
             WarframeEventMessageInfo msgInfo = new WarframeEventMessageInfo(
                 $"{alert.DestinationName}",
-                $"{info.Faction} {info.MissionType} ({info.MinimumLevel}-{info.MaximumLevel})",
+                $"{info.Faction} {info.MissionType} ({info.MinimumLevel}-{info.MaximumLevel}){(info.RequiresArchwing ? $" (Archwing)" : String.Empty)}",
                 $"{rewardQuantityMessage + rewardMessage + creditMessage}",
                 $"{statusString}"
                 );

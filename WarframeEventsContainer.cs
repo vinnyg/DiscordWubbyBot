@@ -111,7 +111,9 @@ namespace DiscordSharpTest
                     DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
                     DateTime expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
 
-                    int creditReward = int.Parse(jsonAlert["MissionInfo"]["missionReward"]["credits"].ToString());
+                    var creditReward = int.Parse(jsonAlert["MissionInfo"]["missionReward"]["credits"].ToString());
+                    var reqArchwingData = jsonAlert["MissionInfo"]["archwingRequired"];
+                    bool requiresArchwing = reqArchwingData != null ? bool.Parse(reqArchwingData.ToString()) : false;
 
                     JToken rewardParam = null;
                     if (countables != null) rewardParam = countables[0]["ItemType"].ToString();
@@ -129,7 +131,8 @@ namespace DiscordSharpTest
                                 rewardStr,
                                 int.Parse((countables != null ? countables[0]["ItemCount"] : 1).ToString()),
                                 int.Parse(jsonAlert["MissionInfo"]["minEnemyLevel"].ToString()),
-                                int.Parse(jsonAlert["MissionInfo"]["maxEnemyLevel"].ToString()));
+                                int.Parse(jsonAlert["MissionInfo"]["maxEnemyLevel"].ToString()),
+                                requiresArchwing);
 
                             currentAlert = new WarframeAlert(alertInfo, id, wfDataMapper.GetNodeName(loc), startTime, expireTime);
                             AlertsList.Add(currentAlert);
@@ -196,7 +199,8 @@ namespace DiscordSharpTest
                                 String.IsNullOrEmpty(defenderRewardStr) ? "" : defenderRewardStr,
                                 defenderRewardQuantityParam,
                                 int.Parse(jsonInvasion["DefenderMissionInfo"]["minEnemyLevel"].ToString()),
-                                int.Parse(jsonInvasion["DefenderMissionInfo"]["maxEnemyLevel"].ToString()));
+                                int.Parse(jsonInvasion["DefenderMissionInfo"]["maxEnemyLevel"].ToString()),
+                                false);
 
                             MissionInfo defenderInfo = new MissionInfo(jsonInvasion["DefenderMissionInfo"]["faction"].ToString(),
                                 jsonInvasion["AttackerMissionInfo"]["missionType"].ToString(),
@@ -204,7 +208,8 @@ namespace DiscordSharpTest
                                 String.IsNullOrEmpty(attackerRewardStr) ? "" : attackerRewardStr,
                                 attackerRewardQuantityParam,
                                 int.Parse(jsonInvasion["AttackerMissionInfo"]["minEnemyLevel"].ToString()),
-                                int.Parse(jsonInvasion["AttackerMissionInfo"]["maxEnemyLevel"].ToString()));
+                                int.Parse(jsonInvasion["AttackerMissionInfo"]["maxEnemyLevel"].ToString()),
+                                false);
 
                             double secondsUntilStart = double.Parse(jsonInvasion["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
                             DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
@@ -304,7 +309,7 @@ namespace DiscordSharpTest
                         MissionInfo fissureInfo = new MissionInfo(Faction.OROKIN,
                             "",
                             0, fissure,
-                            0, 0, 0);
+                            0, 0, 0, false);
 
                         currentVoidFissure = new WarframeVoidFissure(fissureInfo, id, wfDataMapper.GetNodeName(loc), startTime, expireTime);
                         VoidFissures.Add(currentVoidFissure);
@@ -368,7 +373,7 @@ namespace DiscordSharpTest
                         //string condition = wfDataMapper.GetSortieConditionName(int.Parse(variant["modifierIndex"].ToString()));
 
                         var varMission = new MissionInfo(wfDataMapper.GetBossFaction(bossIndex), missionName,
-                                0, wfDataMapper.GetBossName(bossIndex), 0, 0, 0);
+                                0, wfDataMapper.GetBossName(bossIndex), 0, 0, 0, false);
 
                         varMissions.Add(varMission);
                     }

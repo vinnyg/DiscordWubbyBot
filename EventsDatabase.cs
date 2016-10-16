@@ -63,7 +63,7 @@ namespace DiscordSharpTest
                     $" VALUES ('{alert.GUID}', '{alert.DestinationName}', '{alert.MissionDetails.Faction}', '{alert.MissionDetails.MissionType}', {alert.MissionDetails.Credits}, '{alert.MissionDetails.Reward}', {alert.MissionDetails.RewardQuantity}, {alert.MissionDetails.MinimumLevel}, {alert.MissionDetails.MaximumLevel}, '{alert.StartTime:yyyy-MM-dd HH:mm:ss}', '{alert.ExpireTime:yyyy-MM-dd HH:mm:ss}')");
             }
         }
-
+        [Obsolete]
         public void DeleteAlert(WarframeAlert alert)
         {
             if (_dbConnection != null)
@@ -71,7 +71,7 @@ namespace DiscordSharpTest
                 ExecuteSQLNonQuery($"DELETE FROM alerts WHERE GUID = '{alert.GUID}'");
             }
         }
-
+        [Obsolete]
         public Dictionary<WarframeAlert, string> ReadDatabase()
         {
             Console.WriteLine("Reading database!");
@@ -89,7 +89,8 @@ namespace DiscordSharpTest
                         reader["factionName"].ToString(), reader["missionName"].ToString(),
                         int.Parse(reader["credits"].ToString()), reader["lootName"].ToString(),
                         int.Parse(reader["lootQuantity"].ToString()), int.Parse(reader["minLevel"].ToString()),
-                        int.Parse(reader["maxLevel"].ToString()));
+                        int.Parse(reader["maxLevel"].ToString()),
+                        false);
 
                     DateTime startTime = DateTime.Parse(reader["startTime"].ToString());
                     DateTime expireTime = DateTime.Parse(reader["expireTime"].ToString());

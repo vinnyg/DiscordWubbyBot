@@ -15,8 +15,9 @@ namespace DiscordSharpTest
         public int RewardQuantity { get; private set; }
         public int MinimumLevel { get; private set; }
         public int MaximumLevel { get; private set; }
+        public bool RequiresArchwing { get; private set; }
 
-        public MissionInfo(string factionName, string missionType, int credits, string reward, int rewardQuantity, int minLevel, int maxLevel)
+        public MissionInfo(string factionName, string missionType, int credits, string reward, int rewardQuantity, int minLevel, int maxLevel, bool requiresArchwing)
         {
             Faction = DiscordSharpTest.Faction.GetName(factionName);
             MissionType = DiscordSharpTest.MissionType.GetName(missionType);
@@ -25,6 +26,7 @@ namespace DiscordSharpTest
             RewardQuantity = rewardQuantity;
             MinimumLevel = minLevel;
             MaximumLevel = maxLevel;
+            RequiresArchwing = requiresArchwing;
         }
 
         public MissionInfo(MissionInfo info)
@@ -36,6 +38,7 @@ namespace DiscordSharpTest
             RewardQuantity = info.RewardQuantity;
             MinimumLevel = info.MinimumLevel;
             MaximumLevel = info.MaximumLevel;
+            RequiresArchwing = info.RequiresArchwing;
         }
     }
 }
