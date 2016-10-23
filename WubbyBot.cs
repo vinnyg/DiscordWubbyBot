@@ -73,7 +73,6 @@ namespace DiscordSharpTest
         private List<MessageQueueEntry> timeCycleMessagePostQueue;
 
         private DiscordMessage alertMessage = null;
-        private DiscordMessage invasionMessage = null;
         private DiscordMessage traderMessage = null;
         private DiscordMessage fissureMessage = null;
         private DiscordMessage sortieMessage = null;
@@ -264,7 +263,7 @@ namespace DiscordSharpTest
             bool postWillNotify = false;
             List<string> messagesToNotify = new List<string>();
             //Build all alert strings into a single message
-            finalMsg.Append("```VOID TRADER```" + Environment.NewLine);
+            finalMsg.Append($"```VOID TRADER{(voidTraderMessagePostQueue.Count() == 0 ? " HAS LEFT" : String.Empty)}```" + Environment.NewLine);
 
             foreach (var m in voidTraderMessagePostQueue)
             {
@@ -374,23 +373,17 @@ namespace DiscordSharpTest
             StringBuilder finalMsg = new StringBuilder();
             bool postWillNotify = false;
             List<string> messagesToNotify = new List<string>();
-            //Build all alert strings into a single message
-            /*if (sortieMessagePostQueue.Count > 0) finalMsg.Append("```DAY/NIGHT CYCLE```" + Environment.NewLine);
-            else finalMsg.Append("```NO SORTIES```" + Environment.NewLine);*/
 
             foreach (var m in timeCycleMessagePostQueue)
             {
                 string heading = (m.EventHasExpired) ? "```" : "```";
 
-                //finalMsg = new StringBuilder(heading + Environment.NewLine + m.Content + "```" + Environment.NewLine);
                 finalMsg.Append(heading + Environment.NewLine + m.Content + Environment.NewLine);
                 postWillNotify = m.NotifyClient;
 
                 if (postWillNotify)
-                {
-                    //finalMsg.Append("( new )");
                     messagesToNotify.Add(m.NotificationContent);
-                }
+
                 finalMsg.Append("```" + Environment.NewLine);
             }
 
@@ -448,7 +441,6 @@ namespace DiscordSharpTest
         {
             Log("Shutting down...");
             DeleteMessage(alertMessage);
-            DeleteMessage(invasionMessage);
             DeleteMessage(fissureMessage);
             DeleteMessage(sortieMessage);
             DeleteMessage(traderMessage);
@@ -457,7 +449,6 @@ namespace DiscordSharpTest
             //Sometimes the invasions message may be split up over multiple Discord messages so each one needs to be deleted.
             foreach (var i in invasionMessages)
                 DeleteMessage(i);
-            //SendMessage($"*{Name} is now offline*", Client.GetChannelByName(ALERTS_CHANNEL));
         }
 
         private Task SetupEvents()

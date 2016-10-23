@@ -281,7 +281,7 @@ namespace DiscordSharpTest
                         VoidTraders.Remove(currentTrader);
                 }
 
-                if (currentTrader.ExpireTime > DateTime.Now)
+                if ((currentTrader != null) && (currentTrader.ExpireTime > DateTime.Now))
                     CreateNewVoidTraderReceivedEvent(currentTrader);
             }
         }
