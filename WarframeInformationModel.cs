@@ -27,7 +27,8 @@ namespace DiscordSharpTest
         public DbSet<WFRegion> WFRegionNames { get; set; }
         public DbSet<WFSortieMission> WFSortieMissions { get; set; }
         public DbSet<WFSortieCondition> WFSortieConditions { get; set; }
-        public DbSet<WFPlanetRegionMissions> WFPlanetRegionMissions { get; set; }
+        public DbSet<WFPlanetRegionMission> WFPlanetRegionMissions { get; set; }
+        public DbSet<SolarMapMission> SolarMapMissions { get; set; }
         public string DataSource { get; private set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -118,7 +119,7 @@ namespace DiscordSharpTest
         public string MissionType { get; set; }
     }
 
-    public class WFPlanetRegionMissions
+    public class WFPlanetRegionMission
     {
         [Key]
         public int ID { get; set; }
@@ -132,5 +133,17 @@ namespace DiscordSharpTest
         virtual public WFSortieMission Mission { get; set; }
 
         public int MissionID { get; set; }
+    }
+
+    public class SolarMapMission
+    {
+        [Key]
+        public int NodeID { get; set; }
+        public string MissionType { get; set; }
+        public string Faction { get; set; }
+        public int MinLevel { get; set; }
+        public int MaxLevel { get; set; }
+        public int RequiresArchwing { get; set; }
+        public string NodeType { get; set; }
     }
 }

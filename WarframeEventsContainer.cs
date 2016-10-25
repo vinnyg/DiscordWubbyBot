@@ -305,14 +305,20 @@ namespace DiscordSharpTest
                     DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
                     DateTime expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
 
+                    string faction = wfDataMapper.GetNodeFaction(loc);
+                    string missionType = wfDataMapper.GetNodeMission(loc);
+                    int minLevel = wfDataMapper.GetNodeMinLevel(loc);
+                    int maxLevel = wfDataMapper.GetNodeMaxLevel(loc);
+                    bool archwingRequired = wfDataMapper.ArchwingRequired(loc);
+
                     string fissure = wfDataMapper.GetFissureName(jsonFissure["Modifier"].ToString());
 
                     if (DateTime.Now < expireTime)
                     {
-                        MissionInfo fissureInfo = new MissionInfo(Faction.OROKIN,
-                            "",
+                        MissionInfo fissureInfo = new MissionInfo(faction,
+                            missionType,
                             0, fissure,
-                            0, 0, 0, false);
+                            0, minLevel, maxLevel, archwingRequired);
 
                         currentVoidFissure = new WarframeVoidFissure(fissureInfo, id, wfDataMapper.GetNodeName(loc), startTime, expireTime);
                         VoidFissures.Add(currentVoidFissure);

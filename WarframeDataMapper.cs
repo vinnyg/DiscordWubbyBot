@@ -10,8 +10,6 @@ namespace DiscordSharpTest
 {
     public class WarframeDataMapper
     {
-        //private WarframeDataContext dbContext { get; set; }
-
         public WarframeDataMapper(WarframeDataContext wdc = null)
         {
             /*if (wdc.Equals(null))
@@ -23,7 +21,6 @@ namespace DiscordSharpTest
                 dbContext = wdc;
             }
             dbContext.Database.EnsureCreated();*/
-
         }
 
         public WarframeItem GetItem(string itemURI)
@@ -220,6 +217,114 @@ namespace DiscordSharpTest
                         result = item.Single().FissureName;
                     /*else
                         result = BandAidGetItemName(fissureURI);*/
+                }
+            }
+            return result;
+        }
+
+        public string GetNodeMission(string nodeURI)
+        {
+            string result = nodeURI;
+
+            using (var dbCon = new WarframeDataContext())
+            {
+                if (dbCon != null)
+                {
+                    int nodeID = dbCon.SolarNodes.Where(x => x.NodeURI == nodeURI).Single().ID;
+
+                    var node = dbCon.SolarMapMissions.Where(x => x.NodeID == nodeID);
+                    if (node.Count() > 0)
+                        result = node.Single().MissionType;
+                }
+            }
+            return result;
+        }
+
+        public int GetNodeMinLevel(string nodeURI)
+        {
+            int result = 0;
+
+            using (var dbCon = new WarframeDataContext())
+            {
+                if (dbCon != null)
+                {
+                    int nodeID = dbCon.SolarNodes.Where(x => x.NodeURI == nodeURI).Single().ID;
+
+                    var node = dbCon.SolarMapMissions.Where(x => x.NodeID == nodeID);
+                    if (node.Count() > 0)
+                        result = node.Single().MinLevel;
+                }
+            }
+            return result;
+        }
+
+        public int GetNodeMaxLevel(string nodeURI)
+        {
+            int result = 0;
+
+            using (var dbCon = new WarframeDataContext())
+            {
+                if (dbCon != null)
+                {
+                    int nodeID = dbCon.SolarNodes.Where(x => x.NodeURI == nodeURI).Single().ID;
+
+                    var node = dbCon.SolarMapMissions.Where(x => x.NodeID == nodeID);
+                    if (node.Count() > 0)
+                        result = node.Single().MaxLevel;
+                }
+            }
+            return result;
+        }
+
+        public string GetNodeType(string nodeURI)
+        {
+            string result = "MT_GENERIC";
+
+            using (var dbCon = new WarframeDataContext())
+            {
+                if (dbCon != null)
+                {
+                    int nodeID = dbCon.SolarNodes.Where(x => x.NodeURI == nodeURI).Single().ID;
+
+                    var node = dbCon.SolarMapMissions.Where(x => x.NodeID == nodeID);
+                    if (node.Count() > 0)
+                        result = node.Single().NodeType;
+                }
+            }
+            return result;
+        }
+
+        public string GetNodeFaction(string nodeURI)
+        {
+            string result = "FC_OROKIN";
+
+            using (var dbCon = new WarframeDataContext())
+            {
+                if (dbCon != null)
+                {
+                    int nodeID = dbCon.SolarNodes.Where(x => x.NodeURI == nodeURI).Single().ID;
+
+                    var node = dbCon.SolarMapMissions.Where(x => x.NodeID == nodeID);
+                    if (node.Count() > 0)
+                        result = node.Single().Faction;
+                }
+            }
+            return result;
+        }
+
+        public bool ArchwingRequired(string nodeURI)
+        {
+            bool result = false;
+
+            using (var dbCon = new WarframeDataContext())
+            {
+                if (dbCon != null)
+                {
+                    int nodeID = dbCon.SolarNodes.Where(x => x.NodeURI == nodeURI).Single().ID;
+
+                    var node = dbCon.SolarMapMissions.Where(x => x.NodeID == nodeID);
+                    if (node.Count() > 0)
+                        result = (node.Single().RequiresArchwing > 0);
                 }
             }
             return result;

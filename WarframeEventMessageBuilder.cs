@@ -60,6 +60,7 @@ namespace DiscordSharpTest
 
             StringBuilder returnMessage = new StringBuilder(
                 msgInfo.Destination + Environment.NewLine +
+                msgInfo.Faction + Environment.NewLine +
                 msgInfo.Reward + Environment.NewLine +
                 msgInfo.Status
                 );
@@ -269,7 +270,7 @@ namespace DiscordSharpTest
 
             WarframeEventMessageInfo msgInfo = new WarframeEventMessageInfo(
                 $"{fissure.DestinationName}",
-                $"{info.Faction}",
+                $"{info.Faction} {info.MissionType} ({info.MinimumLevel}-{info.MaximumLevel}){(info.RequiresArchwing ? $" (Archwing)" : String.Empty)}",
                 $"{rewardMessage}",
                 $"{statusString}"
                 );
