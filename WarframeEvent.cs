@@ -17,7 +17,7 @@ namespace DiscordSharpTest
     /*----Message Example----/
     Destination: Acanth, Eris
     Mission: Grineer (Extermination) vs Corpus (Spy)
-    Reward: Orokin Catalyst // Orokin Catalyst
+    Reward: Orokin Catalyst // Orokin Reactor
     Progress: 69% (Corpus)
     ------------------------*/
 
@@ -28,7 +28,7 @@ namespace DiscordSharpTest
     Progress: 69% (Corpus)
     ------------------------*/
 
-    abstract class WarframeEvent
+    abstract public class WarframeEvent
     {
         public string GUID { get; private set; }
         public string DestinationName { get; private set; }

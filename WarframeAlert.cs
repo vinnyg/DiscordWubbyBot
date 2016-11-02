@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DiscordSharpTest
 {
-    class WarframeAlert : WarframeEvent
+    public class WarframeAlert : WarframeEvent
     {
         public MissionInfo MissionDetails { get; private set; }
         public DateTime ExpireTime { get; internal set; }
