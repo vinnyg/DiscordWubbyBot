@@ -16,29 +16,27 @@ using System.Data.SQLite;
 using System.Net;
 using System.Xml;
 using System.Xml.Linq;
+using WubbyBot.Extensions;
 
 namespace DiscordSharpTest
 {
     class MessageQueueEntry
     {
-        public string Content;
+        public WarframeEvent wfEvent;
         public bool NotifyClient;
-        public string NotificationContent;
         public bool EventHasExpired;
 
-        public MessageQueueEntry(string content, bool notify, string notificationContent, bool eventHasExpired)
+        public MessageQueueEntry(WarframeEvent wfEvent, bool notify, bool eventHasExpired)
         {
             NotifyClient = notify;
-            Content = content;
-            NotificationContent = notificationContent;
+            this.wfEvent = wfEvent;
             EventHasExpired = eventHasExpired;
         }
 
         public MessageQueueEntry(MessageQueueEntry msg)
         {
             NotifyClient = msg.NotifyClient;
-            Content = msg.Content;
-            NotificationContent = msg.NotificationContent;
+            this.wfEvent = msg.wfEvent;
             EventHasExpired = msg.EventHasExpired;
         }
     };
@@ -64,7 +62,7 @@ namespace DiscordSharpTest
         private WarframeEventsContainer eventsContainer;
         private WarframeEventMessageBuilder messageBuilder;
         private Dictionary<WarframeAlert, DiscordMessage> alertMessageAssociations;
-        //private EventsDatabase database;
+        //private List<MessageQueueEntry> alertMessagePostQueue;
         private List<MessageQueueEntry> alertMessagePostQueue;
         private List<MessageQueueEntry> invasionMessagePostQueue;
         private List<MessageQueueEntry> voidTraderMessagePostQueue;
@@ -155,15 +153,15 @@ namespace DiscordSharpTest
             foreach (var m in alertMessagePostQueue)
             {
                 string heading = (m.EventHasExpired) ? "```" : "```xl";
-
-                //finalMsg = new StringBuilder(heading + Environment.NewLine + m.Content + "```" + Environment.NewLine);
-                finalMsg.Append(heading + Environment.NewLine + m.Content + Environment.NewLine);
+                finalMsg.Append(heading + Environment.NewLine
+                    + WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, false) + Environment.NewLine);
+                //Invoking extension method as static method. This will require some rearchitecturing.
                 postWillNotify = m.NotifyClient;
 
                 if (postWillNotify)
                 {
                     finalMsg.Append("( new )");
-                    messagesToNotify.Add(m.NotificationContent);
+                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, true));
                 }
                 finalMsg.Append("```" + Environment.NewLine);
             }
@@ -199,14 +197,15 @@ namespace DiscordSharpTest
             else entryForFinalMsg.Append("```NO ACTIVE INVASIONS```" + Environment.NewLine);
 
 
-            foreach (var messageItem in invasionMessageQueue)
+            foreach (var m in invasionMessageQueue)
             {
-                string heading = (messageItem.EventHasExpired) ? "```" : "```xl";
-                StringBuilder invasionMsgToAppend = new StringBuilder(heading + Environment.NewLine + messageItem.Content + Environment.NewLine);
+                string heading = (m.EventHasExpired) ? "```" : "```xl";
+                StringBuilder invasionMsgToAppend = new StringBuilder(heading + Environment.NewLine
+                    + WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, false) + Environment.NewLine);
                 
-                if (messageItem.NotifyClient)
+                if (m.NotifyClient)
                 {
-                    messagesToNotify.Add(messageItem.NotificationContent);
+                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, true));
                     invasionMsgToAppend.Append("( new )");
                 }
                 invasionMsgToAppend.Append("```" + Environment.NewLine);
@@ -268,9 +267,9 @@ namespace DiscordSharpTest
             foreach (var m in voidTraderMessagePostQueue)
             {
                 string heading = (m.EventHasExpired) ? "```" : "```xl";
-
-                //finalMsg = new StringBuilder(heading + Environment.NewLine + m.Content + "```" + Environment.NewLine);
-                finalMsg.Append(heading + Environment.NewLine + m.Content + Environment.NewLine);
+                
+                finalMsg.Append(heading + Environment.NewLine
+                    + WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, false) + Environment.NewLine);
                 postWillNotify = m.NotifyClient;
 
                 finalMsg.Append("```" + Environment.NewLine);
@@ -299,18 +298,20 @@ namespace DiscordSharpTest
             if (voidFissureMessagePostQueue.Count > 0) finalMsg.Append("```VOID FISSURES```" + Environment.NewLine);
             else finalMsg.Append("```NO VOID FISSURES```" + Environment.NewLine);
 
+            voidFissureMessagePostQueue.OrderBy(s => (s.wfEvent as WarframeVoidFissure).GetFissureIndex());
+
             foreach (var m in voidFissureMessagePostQueue)
             {
                 string heading = (m.EventHasExpired) ? "```" : "```xl";
 
-                //finalMsg = new StringBuilder(heading + Environment.NewLine + m.Content + "```" + Environment.NewLine);
-                finalMsg.Append(heading + Environment.NewLine + m.Content + Environment.NewLine);
+                finalMsg.Append(heading + Environment.NewLine
+                    + WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, false) + Environment.NewLine);
                 postWillNotify = m.NotifyClient;
 
                 if (postWillNotify)
                 {
                     finalMsg.Append("( new )");
-                    messagesToNotify.Add(m.NotificationContent);
+                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, false));
                 }
                 finalMsg.Append("```" + Environment.NewLine);
             }
@@ -342,14 +343,13 @@ namespace DiscordSharpTest
             {
                 string heading = (m.EventHasExpired) ? "```" : "```xl";
 
-                //finalMsg = new StringBuilder(heading + Environment.NewLine + m.Content + "```" + Environment.NewLine);
-                finalMsg.Append(heading + Environment.NewLine + m.Content + Environment.NewLine);
+                finalMsg.Append(heading + Environment.NewLine
+                    + WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, false) + Environment.NewLine);
                 postWillNotify = m.NotifyClient;
 
                 if (postWillNotify)
                 {
-                    //finalMsg.Append("( new )");
-                    messagesToNotify.Add(m.NotificationContent);
+                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, true));
                 }
                 finalMsg.Append("```" + Environment.NewLine);
             }
@@ -378,11 +378,12 @@ namespace DiscordSharpTest
             {
                 string heading = (m.EventHasExpired) ? "```" : "```";
 
-                finalMsg.Append(heading + Environment.NewLine + m.Content + Environment.NewLine);
+                finalMsg.Append(heading + Environment.NewLine
+                    + WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, false) + Environment.NewLine);
                 postWillNotify = m.NotifyClient;
 
                 if (postWillNotify)
-                    messagesToNotify.Add(m.NotificationContent);
+                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, false));
 
                 finalMsg.Append("```" + Environment.NewLine);
             }
@@ -401,40 +402,41 @@ namespace DiscordSharpTest
             timeCycleMessagePostQueue.Clear();
         }
 
-        private void AddToAlertPostQueue(string message, bool notifyClient, string notificationContent, bool alertHasExpired)
+        private void AddToAlertPostQueue(WarframeAlert alert, bool notifyClient, bool alertHasExpired)
         {
             //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
-            alertMessagePostQueue.Add(new MessageQueueEntry(message, notifyClient, notificationContent, alertHasExpired));
+            alertMessagePostQueue.Add(new MessageQueueEntry(alert, notifyClient, alertHasExpired));
         }
 
-        private void AddToInvasionPostQueue(string message, bool notifyClient, string notificationContent, bool invasionHasExpired)
+        private void AddToInvasionPostQueue(WarframeInvasion invasion, bool notifyClient, bool invasionHasExpired)
         {
             //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
-            invasionMessagePostQueue.Add(new MessageQueueEntry(message, notifyClient, notificationContent, invasionHasExpired));
+            //invasionMessagePostQueue.Add(new MessageQueueEntry(message, notifyClient, notificationContent, invasionHasExpired));
+            invasionMessagePostQueue.Add(new MessageQueueEntry(invasion, notifyClient, invasionHasExpired));
         }
 
-        private void AddToVoidTraderPostQueue(string message, bool notifyClient, string notificationContent, bool traderHasExpired)
+        private void AddToVoidTraderPostQueue(WarframeVoidTrader trader, bool notifyClient, bool traderHasExpired)
         {
             //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
-            voidTraderMessagePostQueue.Add(new MessageQueueEntry(message, notifyClient, notificationContent, traderHasExpired));
+            voidTraderMessagePostQueue.Add(new MessageQueueEntry(trader, notifyClient, traderHasExpired));
         }
 
-        private void AddToVoidFissurePostQueue(string message, bool notifyClient, string notificationContent, bool fissureHasExpired)
+        private void AddToVoidFissurePostQueue(WarframeVoidFissure fissure, bool notifyClient, bool fissureHasExpired)
         {
             //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
-            voidFissureMessagePostQueue.Add(new MessageQueueEntry(message, notifyClient, notificationContent, fissureHasExpired));
+            voidFissureMessagePostQueue.Add(new MessageQueueEntry(fissure, notifyClient, fissureHasExpired));
         }
 
-        private void AddToSortiePostQueue(string message, bool notifyClient, string notificationContent, bool sortieHasExpired)
+        private void AddToSortiePostQueue(WarframeSortie sortie, bool notifyClient, bool sortieHasExpired)
         {
             //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
-            sortieMessagePostQueue.Add(new MessageQueueEntry(message, notifyClient, notificationContent, sortieHasExpired));
+            sortieMessagePostQueue.Add(new MessageQueueEntry(sortie, notifyClient, sortieHasExpired));
         }
 
-        private void AddToTimeCyclePostQueue(string message, bool notifyClient, string notificationContent, bool eventHasExpired)
+        private void AddToTimeCyclePostQueue(WarframeTimeCycleInfo cycle, bool notifyClient, bool eventHasExpired)
         {
             //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
-            timeCycleMessagePostQueue.Add(new MessageQueueEntry(message, notifyClient, notificationContent, false));
+            timeCycleMessagePostQueue.Add(new MessageQueueEntry(cycle, notifyClient, false));
         }
 
         public void Shutdown()
@@ -646,7 +648,7 @@ namespace DiscordSharpTest
                     Log("Alert Scraped!");
 #endif
                     bool alertIsNew = eventsContainer.IsAlertNew(e.Alert);
-                    AddToAlertPostQueue(messageBuilder.BuildMessage(e.Alert, false), alertIsNew, messageBuilder.BuildNotificationMessage(e.Alert), e.Alert.IsExpired());
+                    AddToAlertPostQueue(e.Alert, alertIsNew, e.Alert.IsExpired());
                 };
 
                 eventsContainer.InvasionScraped += (sender, e) =>
@@ -655,7 +657,7 @@ namespace DiscordSharpTest
                     Log("Invasion Scraped!");
 #endif
                     bool invasionIsNew = eventsContainer.IsInvasionNew(e.Invasion);
-                    AddToInvasionPostQueue(messageBuilder.BuildMessage(e.Invasion, false), invasionIsNew, messageBuilder.BuildNotificationMessage(e.Invasion), e.Invasion.IsExpired());
+                    AddToInvasionPostQueue(e.Invasion, invasionIsNew, e.Invasion.IsExpired());
                 };
 
                 eventsContainer.VoidTraderScraped += (sender, e) =>
@@ -663,8 +665,7 @@ namespace DiscordSharpTest
 #if DEBUG
                     Log("Void Trader Scraped!");
 #endif
-                    //bool invasionIsNew = eventsContainer.IsInvasionNew(e.VoidTraderScraped);
-                    AddToVoidTraderPostQueue(messageBuilder.BuildMessage(e.Trader, false), false, messageBuilder.BuildNotificationMessage(e.Trader), e.Trader.IsExpired());
+                    AddToVoidTraderPostQueue(e.Trader, false, e.Trader.IsExpired());
                 };
 
                 eventsContainer.VoidFissureScraped += (sender, e) =>
@@ -672,8 +673,7 @@ namespace DiscordSharpTest
 #if DEBUG
                     Log("Fissure Scraped!");
 #endif
-                    //bool invasionIsNew = eventsContainer.IsInvasionNew(e.VoidTraderScraped);
-                    AddToVoidFissurePostQueue(messageBuilder.BuildMessage(e.Fissure, false), false, messageBuilder.BuildNotificationMessage(e.Fissure), e.Fissure.IsExpired());
+                    AddToVoidFissurePostQueue(e.Fissure, false, e.Fissure.IsExpired());
                 };
 
                 eventsContainer.SortieScraped += (sender, e) =>
@@ -681,8 +681,7 @@ namespace DiscordSharpTest
 #if DEBUG
                     Log("Sortie Scraped!");
 #endif
-                    //bool invasionIsNew = eventsContainer.IsInvasionNew(e.VoidTraderScraped);
-                    AddToSortiePostQueue(messageBuilder.BuildMessage(e.Sortie, false), false, messageBuilder.BuildNotificationMessage(e.Sortie), e.Sortie.IsExpired());
+                    AddToSortiePostQueue(e.Sortie, false, e.Sortie.IsExpired());
                 };
 
                 eventsContainer.DayCycleScraped += (sender, e) =>
@@ -690,8 +689,7 @@ namespace DiscordSharpTest
 #if DEBUG
                     Log("Day Cycle Scraped!");
 #endif
-                    //bool invasionIsNew = eventsContainer.IsInvasionNew(e.VoidTraderScraped);
-                    AddToTimeCyclePostQueue(messageBuilder.BuildMessage(e.cycleInfo, false), false, String.Empty, false);
+                    AddToTimeCyclePostQueue(e.cycleInfo, false, false);
                 };
 
                 eventsContainer.ExistingAlertFound += (sender, e) =>

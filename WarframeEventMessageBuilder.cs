@@ -12,9 +12,9 @@ namespace DiscordSharpTest
         const string ITALIC = "*";
         const string NO_STYLE = "";
 
-        public string BuildMessage(WarframeAlert alert, bool formatMessage)
+        /*public string BuildMessage(WarframeAlert alert, bool formatMessage)
         {
-            WarframeEventMessageInfo msgInfo = ParseAlert(alert);
+            WarframeAlertMessageInfo msgInfo = ParseAlert(alert);
             string styleStr = formatMessage ? (alert.IsExpired() ? ITALIC : BOLD) : NO_STYLE;
 
             StringBuilder returnMessage = new StringBuilder(
@@ -25,11 +25,11 @@ namespace DiscordSharpTest
                 );
 
             return returnMessage.ToString();
-        }
+        }*/
 
-        public string BuildMessage(WarframeInvasion invasion, bool formatMessage)
+        /*public string BuildMessage(WarframeInvasion invasion, bool formatMessage)
         {
-            WarframeEventMessageInfo msgInfo = ParseInvasion(invasion);
+            WarframeAlertMessageInfo msgInfo = ParseInvasion(invasion);
             string styleStr = formatMessage ? (invasion.IsExpired() ? ITALIC : BOLD) : NO_STYLE;
 
             StringBuilder returnMessage = new StringBuilder(
@@ -40,22 +40,22 @@ namespace DiscordSharpTest
                 );
 
             return returnMessage.ToString();
-        }
+        }*/
 
-        public string BuildMessage(WarframeVoidTrader trader, bool formatMessage)
+        /*public string BuildMessage(WarframeVoidTrader trader, bool formatMessage)
         {
-            WarframeEventMessageInfo msgInfo = ParseVoidTrader(trader);
+            WarframeAlertMessageInfo msgInfo = ParseVoidTrader(trader);
             string traderAction = (DateTime.Now < trader.StartTime) ? "arriving at" : "leaving";
 
             StringBuilder returnMessage = new StringBuilder(
                 $"{msgInfo.Faction} is {traderAction} {msgInfo.Destination} in {msgInfo.Status}.{Environment.NewLine + Environment.NewLine + msgInfo.Reward}");
 
             return returnMessage.ToString();
-        }
+        }*/
 
-        public string BuildMessage(WarframeVoidFissure fissure, bool formatMessage)
+        /*public string BuildMessage(WarframeVoidFissure fissure, bool formatMessage)
         {
-            WarframeEventMessageInfo msgInfo = ParseVoidFissure(fissure);
+            WarframeAlertMessageInfo msgInfo = ParseVoidFissure(fissure);
             string styleStr = formatMessage ? (fissure.IsExpired() ? ITALIC : BOLD) : NO_STYLE;
 
             StringBuilder returnMessage = new StringBuilder(
@@ -66,9 +66,9 @@ namespace DiscordSharpTest
                 );
 
             return returnMessage.ToString();
-        }
+        }*/
 
-        public string BuildMessage(WarframeSortie sortie, bool formatMessage)
+        /*public string BuildMessage(WarframeSortie sortie, bool formatMessage)
         {
             var msgInfo = ParseSortie(sortie);
             string styleStr = formatMessage ? (sortie.IsExpired() ? ITALIC : BOLD) : NO_STYLE;
@@ -89,11 +89,11 @@ namespace DiscordSharpTest
             }
             
             return returnMessage.ToString();
-        }
+        }*/
 
-        public string BuildMessage(WarframeTimeCycleInfo cycleInfo, bool formatMessage)
+        /*public string BuildMessage(WarframeTimeCycleInfo cycleInfo, bool formatMessage)
         {
-            WarframeEventMessageInfo msgInfo = ParseDayCycle(cycleInfo);
+            WarframeAlertMessageInfo msgInfo = ParseDayCycle(cycleInfo);
             //string traderAction = (DateTime.Now < trader.StartTime) ? "arriving at" : "leaving";
 
             StringBuilder returnMessage = new StringBuilder(
@@ -101,11 +101,11 @@ namespace DiscordSharpTest
                 $"The next cycle begins at {msgInfo.Status}.{Environment.NewLine}");
 
             return returnMessage.ToString();
-        }
+        }*/
 
-        public string BuildNotificationMessage(WarframeAlert alert)
+        /*public string BuildNotificationMessage(WarframeAlert alert)
         {
-            WarframeEventMessageInfo msgInfo = ParseAlert(alert);
+            WarframeAlertMessageInfo msgInfo = ParseAlert(alert);
             string expireMsg = $"Expires {alert.ExpireTime:HH:mm} ({alert.GetMinutesRemaining(false)}m)";
 
             StringBuilder msg = new StringBuilder(
@@ -115,11 +115,11 @@ namespace DiscordSharpTest
                 );
 
             return msg.ToString();
-        }
+        }*/
 
-        public string BuildNotificationMessage(WarframeInvasion invasion)
+        /*public string BuildNotificationMessage(WarframeInvasion invasion)
         {
-            WarframeEventMessageInfo msgInfo = ParseInvasion(invasion);
+            WarframeAlertMessageInfo msgInfo = ParseInvasion(invasion);
 
             StringBuilder msg = new StringBuilder(
                 "New Invasion" + Environment.NewLine +
@@ -128,11 +128,11 @@ namespace DiscordSharpTest
                 );
 
             return msg.ToString();
-        }
+        }*/
 
-        public string BuildNotificationMessage(WarframeVoidTrader trader)
+        /*public string BuildNotificationMessage(WarframeVoidTrader trader)
         {
-            WarframeEventMessageInfo msgInfo = ParseVoidTrader(trader);
+            WarframeAlertMessageInfo msgInfo = ParseVoidTrader(trader);
 
             StringBuilder msg = new StringBuilder(
                 msgInfo.Faction + Environment.NewLine +
@@ -140,11 +140,11 @@ namespace DiscordSharpTest
                 );
 
             return msg.ToString();
-        }
+        }*/
 
-        public string BuildNotificationMessage(WarframeVoidFissure fissure)
+        /*public string BuildNotificationMessage(WarframeVoidFissure fissure)
         {
-            WarframeEventMessageInfo msgInfo = ParseVoidFissure(fissure);
+            WarframeAlertMessageInfo msgInfo = ParseVoidFissure(fissure);
             string expireMsg = $"Expires {fissure.ExpireTime:HH:mm} ({fissure.GetMinutesRemaining(false)}m)";
 
             StringBuilder msg = new StringBuilder(
@@ -154,9 +154,9 @@ namespace DiscordSharpTest
                 );
 
             return msg.ToString();
-        }
+        }*/
 
-        public string BuildNotificationMessage(WarframeSortie sortie)
+        /*public string BuildNotificationMessage(WarframeSortie sortie)
         {
             var msgInfo = ParseSortie(sortie);
             string expireMsg = $"Expires {sortie.ExpireTime:HH:mm} ({sortie.GetMinutesRemaining(false)}m)";
@@ -169,9 +169,9 @@ namespace DiscordSharpTest
                 );
 
             return msg.ToString();
-        }
+        }*/
 
-        private string ParseTimeAsUnits(int minutes)
+        /*private string ParseTimeAsUnits(int minutes)
         {
             //TimeSpan ts = (DateTime.Now < trader.StartTime) ? trader.GetTimeRemaining(true) : trader.GetTimeRemaining(false);
             //int days = ts.Days, hours = ts.Hours, minutes = ts.Minutes;
@@ -184,20 +184,20 @@ namespace DiscordSharpTest
                                         + ($"{mins}m"));
 
             return result.ToString();
-        }
+        }*/
 
-        private WarframeEventMessageInfo ParseAlert(WarframeAlert alert)
+        /*private WarframeAlertMessageInfo ParseAlert(WarframeAlert alert)
         {
             MissionInfo info = alert.MissionDetails;
             string rewardMessage = (!String.IsNullOrEmpty(info.Reward) ? info.Reward : String.Empty),
                 rewardQuantityMessage = (info.RewardQuantity > 1 ? info.RewardQuantity + "x" : ""),
-                creditMessage = (/*info.RewardQuantity > 0*/ !String.IsNullOrEmpty(rewardMessage) ? ", " : "") + (info.Credits > 0 ? info.Credits + "cr" : "");
+                creditMessage = (!String.IsNullOrEmpty(rewardMessage) ? ", " : "") + (info.Credits > 0 ? info.Credits + "cr" : "");
 
             string statusString =
                 (!alert.IsExpired()) ? (DateTime.Now < alert.StartTime ? $"Starts {alert.StartTime:HH:mm} ({alert.GetMinutesRemaining(true)}m)" :
                 $"Expires {alert.ExpireTime:HH:mm} ({alert.GetMinutesRemaining(false)}m)") : $"Expired ({alert.ExpireTime:HH:mm})";
             
-            WarframeEventMessageInfo msgInfo = new WarframeEventMessageInfo(
+            WarframeAlertMessageInfo msgInfo = new WarframeAlertMessageInfo(
                 $"{alert.DestinationName}",
                 $"{info.Faction} {info.MissionType} ({info.MinimumLevel}-{info.MaximumLevel}){(info.RequiresArchwing ? $" (Archwing)" : String.Empty)}",
                 $"{rewardQuantityMessage + rewardMessage + creditMessage}",
@@ -205,9 +205,9 @@ namespace DiscordSharpTest
                 );
 
             return msgInfo;
-        }
+        }*/
 
-        private WarframeEventMessageInfo ParseInvasion(WarframeInvasion invasion)
+        /*private WarframeAlertMessageInfo ParseInvasion(WarframeInvasion invasion)
         {
             MissionInfo attackerInfo = invasion.AttackerDetails;
             MissionInfo defenderInfo = invasion.DefenderDetails;
@@ -222,7 +222,7 @@ namespace DiscordSharpTest
             string winningFaction = (System.Math.Abs(invasion.Progress) / invasion.Progress) > 0 ? defenderInfo.Faction : attackerInfo.Faction,
                 changeRateSign = (invasion.ChangeRate < 0 ? "" : "+");
             
-            WarframeEventMessageInfo msgInfo = new WarframeEventMessageInfo(
+            WarframeAlertMessageInfo msgInfo = new WarframeAlertMessageInfo(
                 $"{invasion.DestinationName}",
                 $"{defenderInfo.Faction} vs {attackerInfo.Faction}",
                 $"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{attackerQuantityMessage + attackerRewardMessage} ({defenderInfo.MissionType}) / ") : "")}{defenderQuantityMessage + defenderRewardMessage} ({attackerInfo.MissionType})",
@@ -231,9 +231,9 @@ namespace DiscordSharpTest
                 );
 
             return msgInfo;
-        }
+        }*/
 
-        private WarframeEventMessageInfo ParseVoidTrader(WarframeVoidTrader trader)
+        /*private WarframeAlertMessageInfo ParseVoidTrader(WarframeVoidTrader trader)
         {
             TimeSpan ts = (DateTime.Now < trader.StartTime) ? trader.GetTimeRemaining(true) : trader.GetTimeRemaining(false);
             int days = ts.Days, hours = ts.Hours, minutes = ts.Minutes;
@@ -250,16 +250,16 @@ namespace DiscordSharpTest
                 }
             }
 
-            WarframeEventMessageInfo msgInfo = new WarframeEventMessageInfo(
+            WarframeAlertMessageInfo msgInfo = new WarframeAlertMessageInfo(
                 trader.DestinationName,
                 traderName,
                 rewardString.ToString(),
                 $"{days} days {hours} hours and {minutes} minutes");
 
             return msgInfo;
-        }
+        }*/
 
-        private WarframeEventMessageInfo ParseVoidFissure(WarframeVoidFissure fissure)
+        /*private WarframeAlertMessageInfo ParseVoidFissure(WarframeVoidFissure fissure)
         {
             MissionInfo info = fissure.MissionDetails;
             string rewardMessage = (!String.IsNullOrEmpty(info.Reward) ? info.Reward : String.Empty);
@@ -268,7 +268,7 @@ namespace DiscordSharpTest
                 (!fissure.IsExpired()) ? (DateTime.Now < fissure.StartTime ? $"Starts {fissure.StartTime:HH:mm} ({fissure.GetMinutesRemaining(true)}m)" :
                 $"Expires {fissure.ExpireTime:HH:mm} ({fissure.GetMinutesRemaining(false)}m)") : $"Expired ({fissure.ExpireTime:HH:mm})";
 
-            WarframeEventMessageInfo msgInfo = new WarframeEventMessageInfo(
+            WarframeAlertMessageInfo msgInfo = new WarframeAlertMessageInfo(
                 $"{fissure.DestinationName}",
                 $"{info.Faction} {info.MissionType} ({info.MinimumLevel}-{info.MaximumLevel}){(info.RequiresArchwing ? $" (Archwing)" : String.Empty)}",
                 $"{rewardMessage}",
@@ -276,9 +276,9 @@ namespace DiscordSharpTest
                 );
 
             return msgInfo;
-        }
+        }*/
 
-        private List<WarframeEventMessageInfo> ParseSortie(WarframeSortie sortie)
+        /*private List<WarframeAlertMessageInfo> ParseSortie(WarframeSortie sortie)
         {
             var info = sortie.VariantDetails;
             var varDest = sortie.VariantDestinations;
@@ -290,11 +290,11 @@ namespace DiscordSharpTest
                 (!sortie.IsExpired()) ? (DateTime.Now < sortie.StartTime ? $"Starts {sortie.StartTime:HH:mm} ({sortie.GetMinutesRemaining(true)}m)" :
                 $"Expires {ParseTimeAsUnits(sortie.GetMinutesRemaining(false))}") : $"Expired ({sortie.ExpireTime:HH:mm})";
 
-            var msgInfo = new List<WarframeEventMessageInfo>();
+            var msgInfo = new List<WarframeAlertMessageInfo>();
 
             for (var i = 0; i < sortie.VariantDetails.Count; ++i)
             {
-                msgInfo.Add(new WarframeEventMessageInfo(
+                msgInfo.Add(new WarframeAlertMessageInfo(
                 $"{varDest[i]}",
                 $"{info[i].Faction} {info[i].MissionType}",
                 $"{varConditions[i]}",
@@ -303,17 +303,17 @@ namespace DiscordSharpTest
             }
             
             return msgInfo;
-        }
+        }*/
 
-        private WarframeEventMessageInfo ParseDayCycle(WarframeTimeCycleInfo cycleInfo)
+        /*private WarframeAlertMessageInfo ParseDayCycle(WarframeTimeCycleInfo cycleInfo)
         {
-            WarframeEventMessageInfo msgInfo = new WarframeEventMessageInfo(
+            WarframeAlertMessageInfo msgInfo = new WarframeAlertMessageInfo(
                 String.Empty,
                 String.Empty,
                 cycleInfo.TimeIsDay() ? "Day" : "Night",
                 $"{cycleInfo.TimeOfNextCycleChange:HH:mm} ({(cycleInfo.TimeUntilNextCycleChange.Hours > 0 ? $"{cycleInfo.TimeUntilNextCycleChange.Hours}h ":String.Empty)}{cycleInfo.TimeUntilNextCycleChange.Minutes}m)");
 
             return msgInfo;
-        }
+        }*/
     }
 }
