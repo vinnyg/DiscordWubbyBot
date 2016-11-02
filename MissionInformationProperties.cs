@@ -37,7 +37,7 @@ namespace DiscordSharpTest
             { "MT_CAPTURE", "Capture" },
             { "MT_COUNTER_INTEL", "Deception" },
             { "MT_DEFENSE", "Defense" },
-            { "MT_EXCAVATE", "Excavate" },
+            { "MT_EXCAVATE", "Excavation" },
             { "MT_EXTERMINATION", "Extermination" },
             { "MT_RETRIEVAL", "Hijack" },
             { "MT_TERRITORY", "Interception" },
