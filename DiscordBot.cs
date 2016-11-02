@@ -98,9 +98,9 @@ namespace DiscordSharpTest
             {
                 Log("SendMessage threw a NullReferenceException.");
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                Log("SendMessage threw an exception.");
+                Log($"SendMessage threw an exception. {e.Message}, {e.StackTrace}");
             }
 
             return m;

@@ -6,39 +6,96 @@ using System.Threading.Tasks;
 
 namespace DiscordSharpTest
 {
-    struct WarframeEventMessageInfo
+    abstract public class WarframeEventMessageInfo
     {
-        //This is the initial message; it will be shown in Windows notifications.
-        //private StringBuilder Message;
-        //This is the formatted message. Message will be immediately replaced with this string to reflect formatting in Discord app.
-        //private StringBuilder FormattedMessage;
-
-        public string Destination { get; private set; }
-        public string Faction { get; private set; }
-        public string Reward { get; private set; }
-        public string Status { get; private set; }
-
-        public WarframeEventMessageInfo(string destination, string faction, string reward, string status)
+        public struct LevelRange
         {
-            Destination = destination;
-            Faction = faction;
-            Reward = reward;
-            Status = status;
+            public int Min;
+            public int Max;
         }
 
-        void UpdateStatusString(string status)
+    }
+
+    public class WarframeAlertMessageInfo : WarframeEventMessageInfo
+    {
+        public string Destination
         {
-            Status = status;
+            get { return Destination; }
+            set
+            {
+                if (String.IsNullOrEmpty(value))
+                    throw new ArgumentException("Destination cannot be null or empty");
+                else
+                    Destination = value;
+            }
+        }
+        public string Faction
+        {
+            get { return Faction; }
+            set
+            {
+                if (String.IsNullOrEmpty(value))
+                    throw new ArgumentException("Faction cannot be null or empty");
+                else
+                    Faction = value;
+            }
+        }
+        public string MissionType
+        {
+            get { return MissionType; }
+            set
+            {
+                if (String.IsNullOrEmpty(value))
+                    throw new ArgumentException("MissionType cannot be null or empty");
+                else
+                    MissionType = value;
+            }
         }
 
-        /*public string GetMessage()
+        private LevelRange Levels;
+        public int GetMinLevel()
         {
-          return FormattedMessage.ToString();
+            return Levels.Min;
         }
 
-        public string GetUnformattedMessage()
+        public int GetMaxLevel()
         {
-            return Message.ToString();
-        }*/
+            return Levels.Max;
+        }
+
+        public void SetLevelRange(int min, int max)
+        {
+            Levels.Min = min;
+            Levels.Max = max;
+        }
+
+        public int RewardQuantity
+        {
+            get { return RewardQuantity; }
+            set
+            {
+                if (value < 0)
+                    throw new ArgumentException("RewardQuantity cannot be negative.");
+                else
+                    RewardQuantity = value;
+            }
+        }
+        public string Reward { get; set; }
+
+        public int Credits
+        {
+            get { return Credits; }
+            set
+            {
+                if (value < 0)
+                    throw new ArgumentException("Credits cannot be negative.");
+                else
+                    Credits = value;
+            }
+        }
+
+        public string Status { get; set; }
+
+        public bool RequiresArchwing { get; set; }
     }
 }
