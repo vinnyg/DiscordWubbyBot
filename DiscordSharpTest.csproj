@@ -368,8 +368,6 @@
     <Compile Include="Obsolete\TwitterCredentials.cs" />
     <Compile Include="UserInformation.cs" />
     <Compile Include="UserManager.cs" />
-    <Compile Include="WarframeEventExtensions.cs" />
-    <Compile Include="WarframeMessage.cs" />
     <Compile Include="WarframeDataMapper.cs" />
     <Compile Include="WarframeEvent.cs" />
     <Compile Include="WarframeEventMessage.cs" />
