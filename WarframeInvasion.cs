@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DiscordSharpTest
 {
-    class WarframeInvasion : WarframeEvent
+    public class WarframeInvasion : WarframeEvent
     {
         private const float CHANGE_RATE_MAX_HISTORY = 60.0f;
         public string Type { get; private set; }

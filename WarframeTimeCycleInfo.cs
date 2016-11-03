@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DiscordSharpTest
 {
-    class WarframeTimeCycleInfo : WarframeEvent
+    public class WarframeTimeCycleInfo : WarframeEvent
     {
         const int SECONDS_PER_DAY_CYCLE = 14400;
         public TimeSpan TimeUntilNextCycleChange { get; private set; }

@@ -193,7 +193,16 @@ namespace DiscordSharpTest
 
                     if ((System.Math.Abs(progress) < goal) /*&& (!String.IsNullOrEmpty(attackerRewardStr) || !String.IsNullOrEmpty(defenderRewardStr))*/)
                     {
-                        if (RewardIsNotIgnored(int.Parse((attackerCredits ?? 0).ToString()), itemURI: (attackerRewardParam ?? "").ToString(), itemQuantity:attackerRewardQuantityParam) || RewardIsNotIgnored(int.Parse((defenderCredits ?? 0).ToString()), itemURI: (defenderRewardParam ?? "").ToString(), itemQuantity:defenderRewardQuantityParam))
+                        //Check attacker conditions
+                        if (RewardIsNotIgnored(
+                            int.Parse((attackerCredits ?? 0).ToString()),
+                            itemURI: (attackerRewardParam ?? string.Empty).ToString(),
+                            itemQuantity:attackerRewardQuantityParam)
+                            //Check defender conditions
+                            || RewardIsNotIgnored(
+                            int.Parse((defenderCredits ?? 0).ToString()),
+                            itemURI: (defenderRewardParam ?? string.Empty).ToString(),
+                            itemQuantity:defenderRewardQuantityParam))
                         {
                             //Mission Info corresponds to the faction to fight against.
                             MissionInfo attackerInfo = new MissionInfo(jsonInvasion["AttackerMissionInfo"]["faction"].ToString(),
@@ -370,6 +379,10 @@ namespace DiscordSharpTest
                     {
                         string loc = variant["node"].ToString();
                         varDests.Add(wfDataMapper.GetNodeName(loc));
+                        /*var varCondIndex = int.Parse(variant["modifierIndex"].ToString());
+                        var varCondName = new StringBuilder(wfDataMapper.GetSortieConditionName(varCondIndex));
+                        varCondName.ToString() == "" ? varCondName.Append()
+                        varConditions.Add(varCondName);*/
                         varConditions.Add(wfDataMapper.GetSortieConditionName(int.Parse(variant["modifierIndex"].ToString())));
 
                         //Mission type varies depending on the region

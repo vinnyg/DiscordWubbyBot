@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DiscordSharpTest
 {
-    class VoidTraderItem
+    public class VoidTraderItem
     {
         public string Name { get; private set; }
         public int Credits { get; private set; }
@@ -20,7 +20,7 @@ namespace DiscordSharpTest
         }
     }
 
-    class WarframeVoidTrader : WarframeEvent
+    public class WarframeVoidTrader : WarframeEvent
     {
         public DateTime ExpireTime { get; internal set; }
         public List<VoidTraderItem> Inventory { get; private set; }

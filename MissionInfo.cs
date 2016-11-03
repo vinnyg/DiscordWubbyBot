@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DiscordSharpTest
 {
-    class MissionInfo
+    public class MissionInfo
     {
         public string Faction { get; private set; }
         public string MissionType { get; private set; }
