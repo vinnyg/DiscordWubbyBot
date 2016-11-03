@@ -183,7 +183,7 @@ namespace DiscordSharpTest
             Console.WriteLine($"[{DateTime.Now}] {message}");
             return;
 
-            var r = Client.GetServersList();
+            /*var r = Client.GetServersList();
 
             if ((Client != null) && (Client.GetServersList() != null) && (Client.GetServersList().Count > 0))
             {
@@ -198,7 +198,7 @@ namespace DiscordSharpTest
                         //LogFile.
                     }
                 }
-            }
+            }*/
         }
 
         private int GetTimeUntilCanRequest()
