@@ -142,7 +142,7 @@ namespace WubbyBot.Extensions
             if (!isNotification)
                 returnMessage.Append(
                     fissure.DestinationName + Environment.NewLine +
-                    $"{info.Faction} {info.MissionType} ({info.MinimumLevel}-{info.MaximumLevel}){(info.RequiresArchwing ? $" (Archwing)" : String.Empty)}" + Environment.NewLine +
+                    $"{info.Faction} {info.MissionType}{(info.RequiresArchwing ? $" (Archwing)" : String.Empty)}" + Environment.NewLine +
                     rewardMessage + Environment.NewLine +
                     statusString
                     );
