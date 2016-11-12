@@ -440,7 +440,7 @@ namespace DiscordSharpTest
         private void ParseJsonEvents()
         {
             ParseAlerts();
-            ParseInvasions();
+            //ParseInvasions();
             ParseVoidFissures();
             ParseSorties();
             ParseVoidTrader();

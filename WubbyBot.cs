@@ -196,7 +196,6 @@ namespace DiscordSharpTest
             if (invasionMessageQueue.Count > 0) entryForFinalMsg.Append("```ACTIVE INVASIONS```" + Environment.NewLine);
             else entryForFinalMsg.Append("```NO ACTIVE INVASIONS```" + Environment.NewLine);
 
-
             foreach (var m in invasionMessageQueue)
             {
                 string heading = (m.EventHasExpired) ? "```" : "```xl";
