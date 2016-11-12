@@ -170,7 +170,7 @@ namespace WubbyBot.Extensions
             {
                 foreach (var i in trader.Inventory)
                 {
-                    traderInventory.Append($"{i.Name} {i.Credits}cr + {i.Ducats}dc{Environment.NewLine}");
+                    traderInventory.Append($"{i.Name} {(i.Credits > 0 ? $"{i.Credits}cr{(i.Ducats > 0 ? " + " : string.Empty)}" : string.Empty)}{(i.Ducats > 0 ? $"{i.Ducats}dc" : string.Empty)}{Environment.NewLine}");
                 }
             }
             string traderAction = (DateTime.Now < trader.StartTime) ? "arriving at" : "leaving";
