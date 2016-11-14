@@ -19,6 +19,7 @@ namespace DiscordSharpTest
 
         public MissionInfo(string factionName, string missionType, int credits, string reward, int rewardQuantity, int minLevel, int maxLevel, bool requiresArchwing)
         {
+            //This is the mission information of the faction you are opposing
             Faction = DiscordSharpTest.Faction.GetName(factionName);
             MissionType = DiscordSharpTest.MissionType.GetName(missionType);
             Credits = credits;

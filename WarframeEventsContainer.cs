@@ -174,21 +174,43 @@ namespace DiscordSharpTest
                     string id = jsonInvasion["_id"]["$id"].ToString();
                     string loc = jsonInvasion["Node"].ToString();
 
-                    JToken attackerCountables = (jsonInvasion["DefenderReward"]["countedItems"]),
-                        attackerCredits = (jsonInvasion["DefenderReward"]["credits"]),
-                        defenderCountables = (jsonInvasion["AttackerReward"]["countedItems"]),
-                        defenderCredits = (jsonInvasion["AttackerReward"]["credits"]);
+                    JArray attackerCountables = new JArray(),
+                    defenderCountables = new JArray();
 
-                    string attackerRewardStr = (attackerCountables != null ? wfDataMapper.GetItemName(attackerCountables[0]["ItemType"].ToString()) : ""),
-                        defenderRewardStr = (defenderCountables != null ? wfDataMapper.GetItemName(defenderCountables[0]["ItemType"].ToString()) : "");
+                    JToken attackerCountablesInfo = jsonInvasion["AttackerReward"];
+                    JToken defenderCountablesInfo = jsonInvasion["DefenderReward"];
 
-                    JToken attackerRewardParam = null;
-                    if (attackerCountables != null) attackerRewardParam = attackerCountables[0]["ItemType"].ToString();
-                    JToken defenderRewardParam = null;
-                    if (defenderCountables != null) defenderRewardParam = defenderCountables[0]["ItemType"].ToString();
+                    int attackerCredits = 0, defenderCredits = 0;
 
-                    int attackerRewardQuantityParam = attackerCountables != null ? (attackerCountables[0]["ItemCount"] != null ? int.Parse(attackerCountables[0]["ItemCount"].ToString()) : 1) : 0;
-                    int defenderRewardQuantityParam = defenderCountables != null ? (defenderCountables[0]["ItemCount"] != null ? int.Parse(defenderCountables[0]["ItemCount"].ToString()) : 1) : 0;
+                    bool attackersGiveReward = !attackerCountablesInfo.IsNullOrEmpty();
+                    bool defendersGiveReward = !defenderCountablesInfo.IsNullOrEmpty();
+
+                    if (defendersGiveReward)
+                    {
+                        if (!defenderCountablesInfo["countedItems"].IsNullOrEmpty())
+                            defenderCountables = (JArray)(jsonInvasion["DefenderReward"]["countedItems"]);
+                        if (!defenderCountablesInfo["credits"].IsNullOrEmpty())
+                            defenderCredits = int.Parse((jsonInvasion["DefenderReward"]["credits"]).ToString());
+                    }
+
+                    if (attackersGiveReward)
+                    {
+                        if (!attackerCountablesInfo["countedItems"].IsNullOrEmpty())
+                            attackerCountables = (JArray)(jsonInvasion["AttackerReward"]["countedItems"]);
+                        if (!attackerCountablesInfo["credits"].IsNullOrEmpty())
+                            attackerCredits = int.Parse((jsonInvasion["AttackerReward"]["credits"]).ToString());
+                    }
+
+                    string attackerRewardStr = (attackersGiveReward ? wfDataMapper.GetItemName(attackerCountables[0]["ItemType"].ToString()) : ""),
+                        defenderRewardStr = (defendersGiveReward ? wfDataMapper.GetItemName(defenderCountables[0]["ItemType"].ToString()) : "");
+
+                    string attackerRewardParam = string.Empty;
+                    if (attackersGiveReward) attackerRewardParam = attackerCountables[0]["ItemType"].ToString();
+                    string defenderRewardParam = string.Empty;
+                    if (defendersGiveReward) defenderRewardParam = defenderCountables[0]["ItemType"].ToString();
+
+                    int attackerRewardQuantityParam = attackersGiveReward ? (attackerCountables[0]["ItemCount"] != null ? int.Parse(attackerCountables[0]["ItemCount"].ToString()) : 1) : 0;
+                    int defenderRewardQuantityParam = defendersGiveReward ? (defenderCountables[0]["ItemCount"] != null ? int.Parse(defenderCountables[0]["ItemCount"].ToString()) : 1) : 0;
 
                     int goal = int.Parse(jsonInvasion["Goal"].ToString()), progress = int.Parse(jsonInvasion["Count"].ToString());
 
@@ -196,32 +218,36 @@ namespace DiscordSharpTest
                     {
                         //Check attacker conditions
                         if (RewardIsNotIgnored(
-                            int.Parse((attackerCredits ?? 0).ToString()),
+                            attackerCredits,
                             itemURI: (attackerRewardParam ?? string.Empty).ToString(),
                             itemQuantity:attackerRewardQuantityParam)
                             //Check defender conditions
                             || RewardIsNotIgnored(
-                            int.Parse((defenderCredits ?? 0).ToString()),
+                            defenderCredits,
                             itemURI: (defenderRewardParam ?? string.Empty).ToString(),
                             itemQuantity:defenderRewardQuantityParam))
                         {
                             //Mission Info corresponds to the faction to fight against.
                             MissionInfo attackerInfo = new MissionInfo(jsonInvasion["AttackerMissionInfo"]["faction"].ToString(),
-                                jsonInvasion["DefenderMissionInfo"]["missionType"].ToString(),
-                                defenderCredits != null ? int.Parse(defenderCredits.ToString()) : 0,
-                                String.IsNullOrEmpty(defenderRewardStr) ? "" : defenderRewardStr,
-                                defenderRewardQuantityParam,
-                                int.Parse(jsonInvasion["DefenderMissionInfo"]["minEnemyLevel"].ToString()),
-                                int.Parse(jsonInvasion["DefenderMissionInfo"]["maxEnemyLevel"].ToString()),
+                                string.Empty,
+                                //jsonInvasion["DefenderMissionInfo"]["missionType"].ToString(),
+                                attackerCredits,
+                                string.IsNullOrEmpty(attackerRewardStr) ? "" : attackerRewardStr,
+                                attackerRewardQuantityParam,
+                                0, 0,
+                                //int.Parse(jsonInvasion["DefenderMissionInfo"]["minEnemyLevel"].ToString()),
+                                //int.Parse(jsonInvasion["DefenderMissionInfo"]["maxEnemyLevel"].ToString()),
                                 false);
 
                             MissionInfo defenderInfo = new MissionInfo(jsonInvasion["DefenderMissionInfo"]["faction"].ToString(),
-                                jsonInvasion["AttackerMissionInfo"]["missionType"].ToString(),
-                                attackerCredits != null ? int.Parse(attackerCredits.ToString()) : 0,
-                                String.IsNullOrEmpty(attackerRewardStr) ? "" : attackerRewardStr,
-                                attackerRewardQuantityParam,
-                                int.Parse(jsonInvasion["AttackerMissionInfo"]["minEnemyLevel"].ToString()),
-                                int.Parse(jsonInvasion["AttackerMissionInfo"]["maxEnemyLevel"].ToString()),
+                                string.Empty,
+                                //jsonInvasion["AttackerMissionInfo"]["missionType"].ToString(),
+                                defenderCredits,
+                                string.IsNullOrEmpty(defenderRewardStr) ? "" : defenderRewardStr,
+                                defenderRewardQuantityParam,
+                                0, 0,
+                                //int.Parse(jsonInvasion["AttackerMissionInfo"]["minEnemyLevel"].ToString()),
+                                //int.Parse(jsonInvasion["AttackerMissionInfo"]["maxEnemyLevel"].ToString()),
                                 false);
 
                             double secondsUntilStart = double.Parse(jsonInvasion["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
@@ -441,7 +467,7 @@ namespace DiscordSharpTest
         private void ParseJsonEvents()
         {
             ParseAlerts();
-            //ParseInvasions();
+            ParseInvasions();
             ParseVoidFissures();
             ParseSorties();
             ParseVoidTrader();

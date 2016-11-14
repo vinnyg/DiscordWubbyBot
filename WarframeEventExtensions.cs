@@ -9,7 +9,7 @@ namespace WubbyBot.Extensions
 {
     public static class WarframeEventExtensions
     {
-        private static string ParseTimeAsUnits(int minutes)
+        private static string ParseMinutesAsTime(int minutes)
         {
             TimeSpan ts = TimeSpan.FromMinutes(minutes);
             int days = ts.Days, hours = ts.Hours, mins = ts.Minutes;
@@ -66,10 +66,10 @@ namespace WubbyBot.Extensions
 
             //Check the invasion type - Invasions will have a reward from both factions but Outbreaks only have a reward from the defending faction.
             //Check if there is a credit reward; reward can only either be a credit reward or loot reward
-            string attackerRewardMessage = invasion.Type == InvasionType.INVASION ? (attackerInfo.Credits > 0 ? invasion.AttackerDetails.Credits.ToString() + "cr" : invasion.AttackerDetails.Reward) : "",
-                defenderRewardMessage = (defenderInfo.Credits > 0 ? invasion.DefenderDetails.Credits.ToString() + "cr" : invasion.DefenderDetails.Reward),
-                attackerQuantityMessage = (attackerInfo.RewardQuantity > 1 ? attackerInfo.RewardQuantity + "x" : ""),
-                defenderQuantityMessage = (defenderInfo.RewardQuantity > 1 ? defenderInfo.RewardQuantity + "x" : "");
+            string defenderAllianceRewardMessage = invasion.Type == InvasionType.INVASION ? (attackerInfo.Credits > 0 ? invasion.AttackerDetails.Credits.ToString() + "cr" : invasion.AttackerDetails.Reward) : "",
+                attackerAllianceRewardMessage = (defenderInfo.Credits > 0 ? invasion.DefenderDetails.Credits.ToString() + "cr" : invasion.DefenderDetails.Reward),
+                defenderAllianceQuantityMessage = (attackerInfo.RewardQuantity > 1 ? attackerInfo.RewardQuantity + "x" : ""),
+                attackerAllianceQuantityMessage = (defenderInfo.RewardQuantity > 1 ? defenderInfo.RewardQuantity + "x" : "");
 
             string winningFaction = (System.Math.Abs(invasion.Progress) / invasion.Progress) > 0 ? defenderInfo.Faction : attackerInfo.Faction,
                 changeRateSign = (invasion.ChangeRate < 0 ? "" : "+");
@@ -80,14 +80,15 @@ namespace WubbyBot.Extensions
                 returnMessage.Append(
                     invasion.DestinationName + Environment.NewLine +
                     $"{defenderInfo.Faction} vs {attackerInfo.Faction}" + Environment.NewLine +
-                    $"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{attackerQuantityMessage + attackerRewardMessage} ({defenderInfo.MissionType}) / ") : "")}{defenderQuantityMessage + defenderRewardMessage} ({attackerInfo.MissionType})" + Environment.NewLine +
+                    $"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{defenderAllianceQuantityMessage + defenderAllianceRewardMessage} / ") : "")}{attackerAllianceQuantityMessage + attackerAllianceRewardMessage}" + Environment.NewLine +
+                    //$"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{attackerQuantityMessage + attackerRewardMessage} ({defenderInfo.MissionType}) / ") : "")}{defenderQuantityMessage + defenderRewardMessage} ({attackerInfo.MissionType})" + Environment.NewLine +
                     $"{string.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({changeRateSign + string.Format("{0:0.00}", invasion.ChangeRate * 100.0f)} p/hr){(defenderInfo.Faction != Faction.INFESTATION ? " (" + winningFaction + ")" : "")}"
                     );
             else
                 returnMessage.Append(
                     "New Invasion" + Environment.NewLine +
                     $"{defenderInfo.Faction} vs {attackerInfo.Faction}" + Environment.NewLine +
-                    $"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{attackerQuantityMessage + attackerRewardMessage} ({defenderInfo.MissionType}) / ") : "")}{defenderQuantityMessage + defenderRewardMessage} ({attackerInfo.MissionType})" + Environment.NewLine
+                    $"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{defenderAllianceQuantityMessage + defenderAllianceRewardMessage} / ") : "")}{attackerAllianceQuantityMessage + attackerAllianceRewardMessage}" + Environment.NewLine
                     );
 
             return returnMessage.ToString();
@@ -101,7 +102,7 @@ namespace WubbyBot.Extensions
 
             string statusString =
                 (!sortie.IsExpired()) ? (DateTime.Now < sortie.StartTime ? $"Starts {sortie.StartTime:HH:mm} ({sortie.GetMinutesRemaining(true)}m)" :
-                $"Expires {ParseTimeAsUnits(sortie.GetMinutesRemaining(false))}") : $"Expired ({sortie.ExpireTime:HH:mm})";
+                $"Expires {ParseMinutesAsTime(sortie.GetMinutesRemaining(false))}") : $"Expired ({sortie.ExpireTime:HH:mm})";
 
             StringBuilder returnMessage = returnMessage = new StringBuilder();
 
