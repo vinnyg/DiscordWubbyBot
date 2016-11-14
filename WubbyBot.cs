@@ -60,7 +60,7 @@ namespace DiscordSharpTest
 
         //Cut out the middle-man "helper" class.
         private WarframeEventsContainer eventsContainer;
-        private WarframeEventMessageBuilder messageBuilder;
+        //private WarframeEventMessageBuilder messageBuilder;
         private Dictionary<WarframeAlert, DiscordMessage> alertMessageAssociations;
         //private List<MessageQueueEntry> alertMessagePostQueue;
         private List<MessageQueueEntry> alertMessagePostQueue;
@@ -120,7 +120,7 @@ namespace DiscordSharpTest
         {
             Log("Initialising sub-systems");
             eventsContainer = new WarframeEventsContainer();
-            messageBuilder = new WarframeEventMessageBuilder();
+            //messageBuilder = new WarframeEventMessageBuilder();
             alertMessageAssociations = new Dictionary<WarframeAlert, DiscordMessage>();
             //database = new EventsDatabase();
 

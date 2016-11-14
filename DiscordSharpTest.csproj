@@ -375,7 +375,6 @@
     <Compile Include="WarframeEventMessage.cs" />
     <Compile Include="WarframeEventMessageInfo.cs" />
     <Compile Include="WarframeEventsContainer.cs" />
-    <Compile Include="WarframeEventMessageBuilder.cs" />
     <Compile Include="WarframeInvasion.cs" />
     <Compile Include="WarframeEventArgMethods.cs" />
     <Compile Include="WarframeSortie.cs" />
