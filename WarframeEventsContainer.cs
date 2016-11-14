@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using System.Threading;
 using System.Net;
 using DiscordSharpTest.Events;
+using WarframeDatabase;
 
 namespace DiscordSharpTest
 {
@@ -449,39 +450,7 @@ namespace DiscordSharpTest
 
         private bool RewardIsNotIgnored(int credits = 0, string itemURI = "", int itemQuantity = 1)
         {
-            bool result = false;
-
-            //Check if the credit reward satisfies minimum
-            if (wfDataMapper.GetMinimumCredits() <= credits)
-                result = true;
-
-            if (!String.IsNullOrEmpty(itemURI))
-            {
-                WarframeItem item = wfDataMapper.GetItem(itemURI);
-                //Check if the category is ignored
-                if (item != null)
-                {
-                    var categories = wfDataMapper.GetItemCategories(item);
-                    foreach (var c in categories)
-                    {
-                        if (c.Ignore == 0)
-                            result = true;
-                    }
-                    //Check if the item is being ignored
-                    if ((item != null) && (item.Ignore == 0))
-                    {
-                        result = true;
-                        //Check that the item quantity satisfies the minimum quantity
-                        if (wfDataMapper.GetWarframeItemMinimumQuantity(item) <= itemQuantity)
-                            result = true;
-                        else result = false;
-                    }
-                    else
-                        result = false;
-                }
-            }
-
-            return result;
+            return !(wfDataMapper.IsItemIgnored(credits, itemURI, itemQuantity));
         }
 
         [Obsolete]

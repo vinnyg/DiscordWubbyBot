@@ -1,12 +1,10 @@
-﻿using Microsoft.Data.Entity;
+﻿//using Microsoft.Data.Entity;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace DiscordSharpTest
+namespace WarframeDatabase
 {
     public class WarframeDataMapper
     {
@@ -128,6 +126,44 @@ namespace DiscordSharpTest
             }
 
             return altItemURI.ToString();
+        }
+
+        public bool IsItemIgnored(int credits = 0, string itemURI = "", int itemQuantity = 1)
+        {
+            //Ignore items by default
+            bool result = true;
+
+            //Check if the credit reward satisfies minimum
+            if (GetMinimumCredits() <= credits)
+                result = false;
+
+            if (!string.IsNullOrEmpty(itemURI))
+            {
+                WarframeItem item = GetItem(itemURI);
+                //Check if the category is ignored
+                if (item != null)
+                {
+                    var categories = GetItemCategories(item);
+                    foreach (var c in categories)
+                    {
+                        if (c.Ignore == 0)
+                            result = false;
+                    }
+                    //Check if the item is being ignored
+                    if ((item != null) && (item.Ignore == 0))
+                    {
+                        result = false;
+                        //Check that the item quantity satisfies the minimum quantity
+                        if (GetWarframeItemMinimumQuantity(item) <= itemQuantity)
+                            result = false;
+                        else result = true;
+                    }
+                    else
+                        result = true;
+                }
+            }
+
+            return result;
         }
 
         public string GetNodeName(string node)

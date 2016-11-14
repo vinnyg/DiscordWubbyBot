@@ -194,7 +194,8 @@ namespace DiscordSharpTest
 
             //Append this before the loop so that it only appears once in the message
             if (invasionMessageQueue.Count > 0) entryForFinalMsg.Append("```ACTIVE INVASIONS```" + Environment.NewLine);
-            else entryForFinalMsg.Append("```NO ACTIVE INVASIONS```" + Environment.NewLine);
+            //else entryForFinalMsg.Append("```NO ACTIVE INVASIONS```" + Environment.NewLine);
+            else entryForFinalMsg.Append("```INVASIONS CURRENTLY DISABLED```" + Environment.NewLine);
 
             foreach (var m in invasionMessageQueue)
             {
