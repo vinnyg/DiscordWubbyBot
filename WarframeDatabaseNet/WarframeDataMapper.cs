@@ -4,21 +4,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace WarframeDatabase
+namespace WarframeDatabaseNet
 {
-    public class WarframeDataMapper
+    /*public class WarframeDataMapper : IWarframeDataMapper
     {
         public WarframeDataMapper(WarframeDataContext wdc = null)
         {
-            /*if (wdc.Equals(null))
-            {
-                dbContext = new WarframeDataContext();
-            }
-            else
-            {
-                dbContext = wdc;
-            }
-            dbContext.Database.EnsureCreated();*/
         }
 
         public WarframeItem GetItem(string itemURI)
@@ -40,8 +31,6 @@ namespace WarframeDatabase
                     if (iQ.Count() > 0)
                         result = iQ.Single();
                 }
-
-                    
             }
             return result;
         }
@@ -251,8 +240,6 @@ namespace WarframeDatabase
                     var item = dbCon.WFVoidFissures.Where(x => x.FissureURI == fissureURI);
                     if (item.Count() > 0)
                         result = item.Single().FissureName;
-                    /*else
-                        result = BandAidGetItemName(fissureURI);*/
                 }
             }
             return result;
@@ -460,5 +447,5 @@ namespace WarframeDatabase
             }
             return result;
         }
-    }
+    }*/
 }
