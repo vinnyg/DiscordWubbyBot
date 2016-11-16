@@ -37,3 +37,4 @@ namespace WarframeDatabaseNet
             optionsBuilder.UseSqlite(Connection);
         }
     }
+}
