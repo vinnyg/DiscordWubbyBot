@@ -8,7 +8,8 @@ using Newtonsoft.Json.Linq;
 using System.Threading;
 using System.Net;
 using DiscordSharpTest.Events;
-using WarframeDatabase;
+using WarframeDatabaseNet;
+using WarframeDatabaseNet.Persistence;
 
 namespace DiscordSharpTest
 {
@@ -21,15 +22,12 @@ namespace DiscordSharpTest
         public List<WarframeVoidFissure> VoidFissures { get; private set; }
         public List<WarframeSortie> SortieList { get; private set; }
         public TimeSpan MinutesUntilNextCycle { get; private set; }
-
-        //private XDocument _rssFeed { get; set; }
+        
         private JObject _worldState { get; set; }
 
         private Timer _eventUpdateInterval { get; set; }
 
         private bool isRunning;
-
-        private WarframeDataMapper wfDataMapper;
 
         //When an alert is read more than once, it will be added to this list. Alerts in this list are no longer new.
         private List<WarframeAlert> NewAlerts;
@@ -61,7 +59,6 @@ namespace DiscordSharpTest
             NewAlerts = new List<WarframeAlert>();
             NewInvasions = new List<WarframeInvasion>();
             NewVoidFissures = new List<WarframeVoidFissure>();
-            wfDataMapper = new WarframeDataMapper();
             NewSorties = new List<WarframeSortie>();
         }
 
@@ -106,12 +103,20 @@ namespace DiscordSharpTest
                     JToken countables = (jsonAlert["MissionInfo"]["missionReward"]["countedItems"]),
                         nonCountables = (jsonAlert["MissionInfo"]["missionReward"]["items"]);
 
-                    string rewardStr = (countables != null ?
-                        wfDataMapper.GetItemName(countables[0]["ItemType"].ToString()) :
-                        (nonCountables != null ? wfDataMapper.GetItemName(nonCountables[0].ToString()) : ""));
+                    var rewardStr = string.Empty;
+                    var nodeName = loc;
 
-                    double secondsUntilStart = double.Parse(jsonAlert["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
-                    double secondsUntilExpire = double.Parse(jsonAlert["Expiry"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                    using (var unit = new UnitOfWork(new WarframeDataContext()))
+                    {
+                        rewardStr = (countables != null ?
+                            unit.WarframeItems.GetItemName(countables[0]["ItemType"].ToString()) :
+                            (nonCountables != null ? unit.WarframeItems.GetItemName(nonCountables[0].ToString()) : ""));
+
+                        nodeName = unit.WFSolarNodes.GetNodeName(loc);
+                    }
+                    
+                    var secondsUntilStart = double.Parse(jsonAlert["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                    var secondsUntilExpire = double.Parse(jsonAlert["Expiry"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
                     DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
                     DateTime expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
 
@@ -138,7 +143,7 @@ namespace DiscordSharpTest
                                 int.Parse(jsonAlert["MissionInfo"]["maxEnemyLevel"].ToString()),
                                 requiresArchwing);
 
-                            currentAlert = new WarframeAlert(alertInfo, id, wfDataMapper.GetNodeName(loc), startTime, expireTime);
+                            currentAlert = new WarframeAlert(alertInfo, id, nodeName, startTime, expireTime);
                             AlertsList.Add(currentAlert);
                             NewAlerts.Add(currentAlert);
 #if DEBUG
@@ -201,8 +206,18 @@ namespace DiscordSharpTest
                             attackerCredits = int.Parse((jsonInvasion["AttackerReward"]["credits"]).ToString());
                     }
 
-                    string attackerRewardStr = (attackersGiveReward ? wfDataMapper.GetItemName(attackerCountables[0]["ItemType"].ToString()) : ""),
-                        defenderRewardStr = (defendersGiveReward ? wfDataMapper.GetItemName(defenderCountables[0]["ItemType"].ToString()) : "");
+                    string attackerRewardStr = string.Empty,
+                        defenderRewardStr = string.Empty,
+                        nodeName = string.Empty;
+
+                    using (var unit = new UnitOfWork(new WarframeDataContext()))
+                    {
+                        attackerRewardStr = (attackersGiveReward ? unit.WarframeItems.GetItemName(attackerCountables[0]["ItemType"].ToString()) : "");
+                        defenderRewardStr = (defendersGiveReward ? unit.WarframeItems.GetItemName(defenderCountables[0]["ItemType"].ToString()) : "");
+
+                        nodeName = unit.WFSolarNodes.GetNodeName(loc);
+                    }
+
 
                     string attackerRewardParam = string.Empty;
                     if (attackersGiveReward) attackerRewardParam = attackerCountables[0]["ItemType"].ToString();
@@ -253,7 +268,7 @@ namespace DiscordSharpTest
                             double secondsUntilStart = double.Parse(jsonInvasion["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
                             DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
 
-                            currentInvasion = new WarframeInvasion(attackerInfo, defenderInfo, id, wfDataMapper.GetNodeName(loc), startTime, int.Parse(jsonInvasion["Goal"].ToString()));
+                            currentInvasion = new WarframeInvasion(attackerInfo, defenderInfo, id, nodeName, startTime, int.Parse(jsonInvasion["Goal"].ToString()));
                             InvasionsList.Add(currentInvasion);
                             NewInvasions.Add(currentInvasion);
                         }
@@ -297,7 +312,14 @@ namespace DiscordSharpTest
 
                     if (DateTime.Now < expireTime)
                     {
-                        currentTrader = new WarframeVoidTrader(id, wfDataMapper.GetNodeName(loc), startTime, expireTime);
+                        string nodeName = loc, itemName = string.Empty;
+
+                        using (var unit = new UnitOfWork(new WarframeDataContext()))
+                        {
+                            nodeName = unit.WFSolarNodes.GetNodeName(loc);
+                        }
+
+                        currentTrader = new WarframeVoidTrader(id, nodeName, startTime, expireTime);
                         VoidTraders.Add(currentTrader);
 
 
@@ -306,7 +328,10 @@ namespace DiscordSharpTest
                         {
                             foreach (var i in traderInventory)
                             {
-                                currentTrader.AddTraderItem(wfDataMapper.GetItemName(i["ItemType"].ToString()), int.Parse(i["RegularPrice"].ToString()), int.Parse(i["PrimePrice"].ToString()));
+                                using (var unit = new UnitOfWork(new WarframeDataContext()))
+                                {
+                                    currentTrader.AddTraderItem(unit.WarframeItems.GetItemName(i["ItemType"].ToString()), int.Parse(i["RegularPrice"].ToString()), int.Parse(i["PrimePrice"].ToString()));
+                                }
                             }
                         }
                     }
@@ -341,13 +366,20 @@ namespace DiscordSharpTest
                     DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
                     DateTime expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
 
-                    string faction = wfDataMapper.GetNodeFaction(loc);
-                    string missionType = wfDataMapper.GetNodeMission(loc);
-                    int minLevel = wfDataMapper.GetNodeMinLevel(loc);
-                    int maxLevel = wfDataMapper.GetNodeMaxLevel(loc);
-                    bool archwingRequired = wfDataMapper.ArchwingRequired(loc);
+                    string nodeName = loc, faction = string.Empty, missionType = string.Empty, fissure = string.Empty;
+                    int minLevel = 0, maxLevel = 0;
+                    bool archwingRequired = false;
 
-                    string fissure = wfDataMapper.GetFissureName(jsonFissure["Modifier"].ToString());
+                    using (var unit = new UnitOfWork(new WarframeDataContext()))
+                    {
+                        nodeName = unit.WFSolarNodes.GetNodeName(loc);
+                        faction = unit.WFSolarNodes.GetFaction(loc);
+                        missionType = unit.WFSolarNodes.GetMissionType(loc);
+                        minLevel = unit.WFSolarNodes.GetMinLevel(loc);
+                        maxLevel = unit.WFSolarNodes.GetMaxLevel(loc);
+                        fissure = unit.WFVoidFissures.GetFissureName(jsonFissure["Modifier"].ToString());
+                        archwingRequired = unit.WFSolarNodes.ArchwingRequired(loc);
+                    }
 
                     if (DateTime.Now < expireTime)
                     {
@@ -356,7 +388,7 @@ namespace DiscordSharpTest
                             0, fissure,
                             0, minLevel, maxLevel, archwingRequired);
 
-                        currentVoidFissure = new WarframeVoidFissure(fissureInfo, id, wfDataMapper.GetNodeName(loc), startTime, expireTime);
+                        currentVoidFissure = new WarframeVoidFissure(fissureInfo, id, nodeName, startTime, expireTime);
                         VoidFissures.Add(currentVoidFissure);
                         NewVoidFissures.Add(currentVoidFissure);
 #if DEBUG
@@ -404,27 +436,31 @@ namespace DiscordSharpTest
                     //If this sortie doesn't exist in the current list, then loop through the variant node to get mission info for all variants
                     foreach (var variant in jsonSortie["Variants"])
                     {
-                        string loc = variant["node"].ToString();
-                        varDests.Add(wfDataMapper.GetNodeName(loc));
-                        /*var varCondIndex = int.Parse(variant["modifierIndex"].ToString());
-                        var varCondName = new StringBuilder(wfDataMapper.GetSortieConditionName(varCondIndex));
-                        varCondName.ToString() == "" ? varCondName.Append()
-                        varConditions.Add(varCondName);*/
-                        varConditions.Add(wfDataMapper.GetSortieConditionName(int.Parse(variant["modifierIndex"].ToString())));
+                        using (var unit = new UnitOfWork(new WarframeDataContext()))
+                        {
+                            string loc = variant["node"].ToString();
+                            varDests.Add(unit.WFSolarNodes.GetNodeName(loc));
+                            /*var varCondIndex = int.Parse(variant["modifierIndex"].ToString());
+                            var varCondName = new StringBuilder(wfDataMapper.GetSortieConditionName(varCondIndex));
+                            varCondName.ToString() == "" ? varCondName.Append()
+                            varConditions.Add(varCondName);*/
+                            varConditions.Add(unit.WFSorties.GetCondition(int.Parse(variant["modifierIndex"].ToString())));
 
-                        //Mission type varies depending on the region
-                        int regionIndex = int.Parse(variant["regionIndex"].ToString());
-                        int regionMissionIndex = wfDataMapper.GetRegionMission(regionIndex ,int.Parse(variant["missionIndex"].ToString()));
-                        int bossIndex = int.Parse(variant["bossIndex"].ToString());
+                            //Mission type varies depending on the region
+                            int regionIndex = int.Parse(variant["regionIndex"].ToString());
+                            int missionIndex = int.Parse(variant["missionIndex"].ToString());
+                            //int regionMissionIndex = unit.WFSorties.GetRegionMission(regionIndex, int.Parse(variant["missionIndex"].ToString()));
+                            int bossIndex = int.Parse(variant["bossIndex"].ToString());
 
-                        string regionName = wfDataMapper.GetSortieRegionName(regionIndex);
-                        string missionName = wfDataMapper.GetSortieMissionName(regionMissionIndex);
-                        //string condition = wfDataMapper.GetSortieConditionName(int.Parse(variant["modifierIndex"].ToString()));
+                            string regionName = unit.WFSorties.GetRegion(regionIndex);
+                            string missionName = unit.WFSorties.GetMissionType(missionIndex, regionIndex);
+                            //string condition = wfDataMapper.GetSortieConditionName(int.Parse(variant["modifierIndex"].ToString()));
 
-                        var varMission = new MissionInfo(wfDataMapper.GetBossFaction(bossIndex), missionName,
-                                0, wfDataMapper.GetBossName(bossIndex), 0, 0, 0, false);
+                            var varMission = new MissionInfo(unit.WFSorties.GetFaction(bossIndex), missionName,
+                                    0, unit.WFSorties.GetBoss(bossIndex), 0, 0, 0, false);
 
-                        varMissions.Add(varMission);
+                            varMissions.Add(varMission);
+                        }
                     }
 
                     if (DateTime.Now < expireTime)
@@ -476,7 +512,29 @@ namespace DiscordSharpTest
 
         private bool RewardIsNotIgnored(int credits = 0, string itemURI = "", int itemQuantity = 1)
         {
-            return !(wfDataMapper.IsItemIgnored(credits, itemURI, itemQuantity));
+            const string CREDITS_URI = "/Lotus/Language/Menu/Monies";
+            bool result = true;
+            using (var unit = new UnitOfWork(new WarframeDataContext()))
+            {
+                if (string.IsNullOrEmpty(itemURI))
+                {
+                    //If there is no item reward, we check for credit value
+                    var creds = unit.WarframeItems.GetItemByURI(CREDITS_URI);
+                    int min = unit.WFDatabaseOptions.GetItemMinimum(creds);
+
+                    result = !(credits < min);
+                }
+                else
+                {
+                    //Check for item min in the same way we check for credits
+                    var item = unit.WarframeItems.GetItemByURI(itemURI);
+                    int min = unit.WFDatabaseOptions.GetItemMinimum(item);
+
+                    result = !(itemQuantity < min);
+                }
+            }
+
+            return result;
         }
 
         [Obsolete]
