@@ -42,8 +42,6 @@ namespace DiscordSharpTest
                 //Console.WriteLine(DateTime.Now.ToString() + " :: " + StartTime.ToString());
                 TimeSpan timeElapsedSinceStart = (DateTime.Now).Subtract(StartTime);
                 //Calculate an estimated rate.
-                //Console.WriteLine(timeElapsedSinceStart.Minutes + " minutes since start!");
-                //Console.WriteLine((Progress / timeElapsedSinceStart.Minutes) * direction);
                 //Prevent divide by zero when a new invasion has started
                 int totalMins = timeElapsedSinceStart.Days * 24 * 60 + timeElapsedSinceStart.Hours * 60 + timeElapsedSinceStart.Minutes;
 
