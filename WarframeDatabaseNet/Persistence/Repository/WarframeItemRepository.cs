@@ -99,13 +99,7 @@ namespace WarframeDatabaseNet.Persistence.Repository
             else return false;
         }
 
-        /*public void SetIgnore(string itemURI, bool ignore)
-        {
-            var item = GetItemByURI(itemURI);
-            item.Ignore = !ignore ? 0 : 1;
-        }*/
-
-        //Due to a change in itemURI structure (possibly recent) we have to do a check for the new itemURI structure as well as a check for the legacy structure
+        //Due to a change in itemURI structure we have to do a check for the new itemURI structure as well as a check for the legacy structure
         private string GetAltItemURI(string URI)
         {
             var splitString = URI.Split('/');

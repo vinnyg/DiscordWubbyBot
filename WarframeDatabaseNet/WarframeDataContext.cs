@@ -10,6 +10,7 @@ namespace WarframeDatabaseNet
     public class WarframeDataContext : DbContext
     {
         const string DEFAULT_DATASOURCE = "WarframeData.db";
+        //const string DEFAULT_DATASOURCE = @"S:\Repos\DiscordSharpTest\DiscordSharpTest\bin\Release\WarframeData.db";
         public WarframeDataContext(string dataSource = DEFAULT_DATASOURCE)
         {
             DataSource = dataSource;
