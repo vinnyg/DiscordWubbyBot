@@ -1,0 +1,29 @@
+﻿<!--
+    <Window x:Class="WFDBApplication.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WFDBApplication"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="350" Width="525">
+    <Grid>
+        <TextBlock Name="StateBlock" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="72">
+            Hello World!
+        </TextBlock>
+        <Button Margin="80,235,80,45" Click="TouchButton_Click" Background="AliceBlue">
+            <Button.Name>TouchButton</Button.Name>
+            <Button.FontWeight>Bold</Button.FontWeight>
+            <Button.Content>
+                Touch Me
+            </Button.Content>
+        </Button>
+    </Grid>
+</Window>
+-->
+<NavigationWindow x:Class="WFDBApplication.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:WFDBApplication"
+    Title="WFDB" Height="350" Width="500" Source="WFDBHome.xaml">
+</NavigationWindow>

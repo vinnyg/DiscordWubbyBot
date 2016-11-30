@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WarframeDatabaseNET", "Warf
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WFDBApplication", "WFDBApplication\WFDBApplication.csproj", "{1782802E-87C5-4C90-A15F-D45CE359480E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordWrapper", "DiscordWrapper\DiscordWrapper.csproj", "{3F7B1445-1AC1-47B7-B023-D995A174C2CB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordWrapper", "..\DiscordWrapper\DiscordWrapper.csproj", "{3F7B1445-1AC1-47B7-B023-D995A174C2CB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

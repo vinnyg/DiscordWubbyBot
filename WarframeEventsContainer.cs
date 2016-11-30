@@ -10,6 +10,7 @@ using System.Net;
 using DiscordSharpTest.Events;
 using WarframeDatabaseNet;
 using WarframeDatabaseNet.Persistence;
+using DiscordSharpTest.WarframeEvents;
 
 namespace DiscordSharpTest
 {

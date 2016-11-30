@@ -1,0 +1,67 @@
+﻿<Page x:Class="WFDBApplication.WFDBHome"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:WFDBApplication"
+      xmlns:viewmodels="clr-namespace:WFDBApplication.ViewModels"
+      mc:Ignorable="d" 
+      d:DesignHeight="350" d:DesignWidth="500"
+      Title="WFDB - WHome"
+      DataContext="{Binding Source={StaticResource mainViewModelLocator}, Path=WFDBHomeViewModel}">
+
+    <Grid Margin="10,0,10,5">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition />
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Label Grid.Column="1" VerticalAlignment="Center" FontFamily="Trebuchet MS" 
+        FontWeight="Bold" FontSize="18" Foreground="#0066cc">
+            View Information
+        </Label>
+
+        <!-- People list -->
+        <Border Grid.Column="0" Grid.Row="1" Height="35" Padding="5" Background="#4E87D4">
+            <Label VerticalAlignment="Center" Foreground="White">Items</Label>
+        </Border>
+        <ListBox Name="ItemListBox"
+                 Grid.Column="0"
+                 Grid.Row="2"
+                 ItemsSource="{Binding WarframeItem, Converter={StaticResource localDoNothingConverter}}"
+                 IsSynchronizedWithCurrentItem="true"
+                 SelectedItem="{Binding SelectedItem}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Border BorderBrush="#CCCCCC" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="5" />
+                                <ColumnDefinition Width="40" />
+                                <ColumnDefinition Width="340"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="24"/>
+                                <RowDefinition Height="24"/>
+                                <RowDefinition Height="5"/>
+                            </Grid.RowDefinitions>
+                            <Label Content="{Binding ItemURI}" FontSize="10" Grid.Column="1" Grid.ColumnSpan="2"></Label>
+                            <Label Content="{Binding Name}" FontSize="10" Grid.Column="1" Grid.Row ="1" Grid.ColumnSpan="2"></Label>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- View report button -->
+        <Button CommandParameter="{Binding ElementName=ItemListBox, Path=SelectedItem}" Grid.Column="0" Grid.Row="3" Margin="0,10,0,0" Width="125" Height="25" HorizontalAlignment="Center" Click="Button_Click">View</Button>
+        <!--<Grid.Background>
+            <ImageBrush ImageSource="catref.png"/>
+        </Grid.Background>-->
+    </Grid>
+</Page>

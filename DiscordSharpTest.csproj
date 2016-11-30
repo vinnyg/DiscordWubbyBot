@@ -339,28 +339,19 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DiscordMessageTemplate.cs" />
-    <Compile Include="EventsMessageAssociationManager.cs" />
-    <Compile Include="MissionInfo.cs" />
-    <Compile Include="MissionInformationProperties.cs" />
-    <Compile Include="WarframeAlert.cs" />
-    <Compile Include="Config.cs" />
-    <Compile Include="DiscordBot.cs" />
+    <Compile Include="WarframeEvents\MissionInfo.cs" />
+    <Compile Include="WarframeEvents\MissionInformationProperties.cs" />
+    <Compile Include="WarframeEvents\WarframeAlert.cs" />
     <Compile Include="DiscordShMain.cs" />
-    <Compile Include="UserInformation.cs" />
-    <Compile Include="UserManager.cs" />
-    <Compile Include="WarframeEventExtensions.cs" />
-    <Compile Include="WarframeMessage.cs" />
-    <Compile Include="WarframeEvent.cs" />
-    <Compile Include="WarframeEventMessage.cs" />
-    <Compile Include="WarframeEventMessageInfo.cs" />
+    <Compile Include="Events\Extensions\WarframeEventExtensions.cs" />
+    <Compile Include="WarframeEvents\WarframeEvent.cs" />
     <Compile Include="WarframeEventsContainer.cs" />
-    <Compile Include="WarframeInvasion.cs" />
-    <Compile Include="WarframeEventArgMethods.cs" />
-    <Compile Include="WarframeSortie.cs" />
-    <Compile Include="WarframeTimeCycleInfo.cs" />
-    <Compile Include="WarframeVoidFissure.cs" />
-    <Compile Include="WarframeVoidTrader.cs" />
+    <Compile Include="WarframeEvents\WarframeInvasion.cs" />
+    <Compile Include="Events\WarframeEventArgMethods.cs" />
+    <Compile Include="WarframeEvents\WarframeSortie.cs" />
+    <Compile Include="WarframeEvents\WarframeTimeCycleInfo.cs" />
+    <Compile Include="WarframeEvents\WarframeVoidFissure.cs" />
+    <Compile Include="WarframeEvents\WarframeVoidTrader.cs" />
     <Compile Include="WubbyBot.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -368,11 +359,16 @@
     <Content Include="opus.dll" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="DiscordWrapper\DiscordWrapper.csproj">
+      <Project>{3f7b1445-1ac1-47b7-b023-d995a174c2cb}</Project>
+      <Name>DiscordWrapper</Name>
+    </ProjectReference>
     <ProjectReference Include="WarframeDatabaseNet\WarframeDatabaseNET.csproj">
       <Project>{71eef9c5-1871-4489-b6e2-38b8da3e6c32}</Project>
       <Name>WarframeDatabaseNET</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

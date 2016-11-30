@@ -88,6 +88,9 @@ namespace WarframeDatabaseNet.Persistence.Repository
         {
             const int TRUE = 1;
 
+            if (string.IsNullOrEmpty(itemURI))
+                return true;
+
             var altItemURI = GetAltItemURI(itemURI);
             var item = WFDataContext.WarframeItems.Where(x => x.ItemURI == itemURI);
             var altItem = WFDataContext.WarframeItems.Where(x => x.ItemURI == altItemURI);
@@ -102,6 +105,9 @@ namespace WarframeDatabaseNet.Persistence.Repository
         //Due to a change in itemURI structure we have to do a check for the new itemURI structure as well as a check for the legacy structure
         private string GetAltItemURI(string URI)
         {
+            if (string.IsNullOrEmpty(URI))
+                return string.Empty;
+
             var splitString = URI.Split('/');
             StringBuilder altItemURI = new StringBuilder();
 
@@ -109,9 +115,7 @@ namespace WarframeDatabaseNet.Persistence.Repository
             foreach (var i in splitString)
             {
                 if ((i != "StoreItems") && (!string.IsNullOrEmpty(i)))
-                {
                     altItemURI.Append('/' + i);
-                }
             }
 
             return altItemURI.ToString();
@@ -119,6 +123,9 @@ namespace WarframeDatabaseNet.Persistence.Repository
 
         public int GetMinimumQuantity(string itemURI)
         {
+            if (string.IsNullOrEmpty(itemURI))
+                return 0;
+
             var item = GetItemByURI(itemURI);
             int result = 0;
 

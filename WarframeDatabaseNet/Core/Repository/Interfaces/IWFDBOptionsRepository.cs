@@ -11,7 +11,6 @@ namespace WarframeDatabaseNet.Core.Repository.Interfaces
 {
     public interface IWFDBOptionsRepository : IRepository<WFMiscIgnoreSettings>
     {
-        //int GetMinimumCredits();
         int GetItemMinimum(WarframeItem item);
     }
 }

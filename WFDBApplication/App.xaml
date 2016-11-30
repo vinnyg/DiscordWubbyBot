@@ -1,0 +1,13 @@
+﻿<Application x:Class="WFDBApplication.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:WFDBApplication"
+             xmlns:converters="clr-namespace:WFDBApplication.Converters"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <local:ViewModelLocator x:Key="mainViewModelLocator"></local:ViewModelLocator>
+            <converters:DoNothingConverter x:Key="localDoNothingConverter"></converters:DoNothingConverter>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

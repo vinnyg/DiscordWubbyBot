@@ -16,7 +16,9 @@ using System.Data.SQLite;
 using System.Net;
 using System.Xml;
 using System.Xml.Linq;
-using WubbyBot.Extensions;
+using WubbyBot.Events.Extensions;
+using DiscordWrapper;
+using DiscordSharpTest.WarframeEvents;
 
 namespace DiscordSharpTest
 {
