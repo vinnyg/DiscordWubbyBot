@@ -29,8 +29,6 @@ namespace DiscordSharpTest.WarframeEvents
             TimeSpan ts = untilStart ? StartTime.Subtract(DateTime.Now) : ExpireTime.Subtract(DateTime.Now);
             int days = ts.Days, hours = ts.Hours, mins = ts.Minutes;
             return (days * 1440) + (hours * 60) + ts.Minutes;
-
-            //return string.Format($"Destination: **{_destinationName}\n**Mission: **{Mission} ({Faction})\n**Reward: **{_loot}, {Credits}\n**Status: **{_expireTime}**");
         }
 
         override public bool IsExpired()

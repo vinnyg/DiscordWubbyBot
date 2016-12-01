@@ -8,6 +8,8 @@ using DiscordSharpTest.WarframeEvents;
 
 namespace WubbyBot.Events.Extensions
 {
+    //These extension methods exist as they are not directly relevant to the functionality of the classes concerned.
+    //As such they exist to prevent class responsibility bloat.
     public static class WarframeEventExtensions
     {
         private static string ParseMinutesAsTime(int minutes)
@@ -75,8 +77,7 @@ namespace WubbyBot.Events.Extensions
                 returnMessage.Append(
                     invasion.DestinationName + Environment.NewLine +
                     $"{defenderInfo.Faction} vs {attackerInfo.Faction}" + Environment.NewLine +
-                    $"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{defenderAllianceQuantityMessage + defenderAllianceRewardMessage} / ") : "")}{attackerAllianceQuantityMessage + attackerAllianceRewardMessage}" + Environment.NewLine +
-                    //$"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{attackerQuantityMessage + attackerRewardMessage} ({defenderInfo.MissionType}) / ") : "")}{defenderQuantityMessage + defenderRewardMessage} ({attackerInfo.MissionType})" + Environment.NewLine +
+                    $"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{defenderAllianceQuantityMessage + defenderAllianceRewardMessage} / ") : "")}{attackerAllianceQuantityMessage + attackerAllianceRewardMessage}" + Environment.NewLine + 
                     $"{string.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({changeRateSign + string.Format("{0:0.00}", invasion.ChangeRate * 100.0f)} p/hr){(defenderInfo.Faction != Faction.INFESTATION ? " (" + winningFaction + ")" : "")}"
                     );
             else

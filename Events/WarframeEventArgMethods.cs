@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace DiscordSharpTest.Events
 {
-    class WarframeAlertScrapedArgs : EventArgs
+    public class WarframeAlertScrapedArgs : EventArgs
     {
         public WarframeAlert Alert { get; private set; }
         public string MessageID { get; private set; }
@@ -19,7 +19,7 @@ namespace DiscordSharpTest.Events
         }
     }
 
-    class WarframeInvasionScrapedArgs : EventArgs
+    public class WarframeInvasionScrapedArgs : EventArgs
     {
         /*public WarframeEventMessage Message { get; set; }*/
         public WarframeInvasion Invasion { get; private set; }
@@ -31,7 +31,7 @@ namespace DiscordSharpTest.Events
         }
     }
 
-    class WarframeVoidTraderScrapedArgs : EventArgs
+    public class WarframeVoidTraderScrapedArgs : EventArgs
     {
         /*public WarframeEventMessage Message { get; set; }*/
         public WarframeVoidTrader Trader { get; private set; }
@@ -43,7 +43,7 @@ namespace DiscordSharpTest.Events
         }
     }
 
-    class WarframeVoidFissureScrapedArgs : EventArgs
+    public class WarframeVoidFissureScrapedArgs : EventArgs
     {
         public WarframeVoidFissure Fissure { get; private set; }
         public string MessageID { get; private set; }
@@ -55,7 +55,7 @@ namespace DiscordSharpTest.Events
         }
     }
 
-    class WarframeSortieScrapedArgs : EventArgs
+    public class WarframeSortieScrapedArgs : EventArgs
     {
         public WarframeSortie Sortie { get; private set; }
         public string MessageID { get; private set; }
@@ -67,7 +67,7 @@ namespace DiscordSharpTest.Events
         }
     }
 
-    class DayCycleTimeScrapedArgs : EventArgs
+    public class DayCycleTimeScrapedArgs : EventArgs
     {
         public WarframeTimeCycleInfo cycleInfo { get; private set; }
         public string MessageID { get; private set; }
@@ -79,7 +79,7 @@ namespace DiscordSharpTest.Events
         }
     }
 
-    class ExistingAlertFoundArgs : EventArgs
+    public class ExistingAlertFoundArgs : EventArgs
     {
         public WarframeAlert Alert { get; private set; }
         public string MessageID { get; private set; }
@@ -91,7 +91,7 @@ namespace DiscordSharpTest.Events
         }
     }
 
-    class WarframeAlertExpiredArgs : EventArgs
+    public class WarframeAlertExpiredArgs : EventArgs
     {
         public WarframeAlert Alert { get; private set; }
         public string MessageID { get; private set; }
@@ -103,7 +103,7 @@ namespace DiscordSharpTest.Events
         }
     }
 
-    class WarframeVoidFissureExpiredArgs : EventArgs
+    public class WarframeVoidFissureExpiredArgs : EventArgs
     {
         public WarframeVoidFissure Fissure { get; private set; }
         public string MessageID { get; private set; }
@@ -115,7 +115,7 @@ namespace DiscordSharpTest.Events
         }
     }
 
-    class WarframeSortieExpiredArgs : EventArgs
+    public class WarframeSortieExpiredArgs : EventArgs
     {
         public WarframeSortie Sortie { get; private set; }
         public string MessageID { get; private set; }

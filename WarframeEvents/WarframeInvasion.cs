@@ -14,9 +14,9 @@ namespace DiscordSharpTest.WarframeEvents
         public MissionInfo AttackerDetails { get; private set; }
         public MissionInfo DefenderDetails { get; private set; }
         public float Progress { get; private set; }
-        private int Goal { get; set; }
+        private int _goal { get; set; }
         public float ChangeRate { get; private set; }
-        private Queue<float> ChangeRateHistory { get; set; }
+        private Queue<float> _changeRateHistory { get; set; }
 
         public WarframeInvasion(MissionInfo attackerInfo, MissionInfo defenderInfo, string guid, string destinationName, DateTime startTime, int goal) : base(guid, destinationName, startTime)
         {
@@ -26,8 +26,8 @@ namespace DiscordSharpTest.WarframeEvents
             DefenderDetails = defenderInfo;
             //We check the defender information because the defender information contains information corresponding to the mission that they give and vice versa.
             Type = DefenderDetails.Faction == Faction.INFESTATION ? InvasionType.OUTBREAK : InvasionType.INVASION;
-            Goal = goal;
-            ChangeRateHistory = new Queue<float>();
+            _goal = goal;
+            _changeRateHistory = new Queue<float>();
         }
 
         public void UpdateProgress(int progress)
@@ -36,9 +36,9 @@ namespace DiscordSharpTest.WarframeEvents
             int direction = progress != 0 ? (System.Math.Abs(progress) / progress) : 1;
             float prevProg = Progress;
             //We want the absolute progress towards goal regardless of the direction.
-            Progress = (((float)Math.Abs(progress) / (float)Goal) * direction);
+            Progress = (((float)Math.Abs(progress) / (float)_goal) * direction);
             //If there is no previous history, calculate an estimated progression rate based on when the invasion started.
-            if (ChangeRateHistory.Count() == 0)
+            if (_changeRateHistory.Count() == 0)
             {
                 //Console.WriteLine(DateTime.Now.ToString() + " :: " + StartTime.ToString());
                 TimeSpan timeElapsedSinceStart = (DateTime.Now).Subtract(StartTime);
@@ -47,22 +47,22 @@ namespace DiscordSharpTest.WarframeEvents
                 int totalMins = timeElapsedSinceStart.Days * 24 * 60 + timeElapsedSinceStart.Hours * 60 + timeElapsedSinceStart.Minutes;
 
                 if (totalMins > 0)
-                    ChangeRateHistory.Enqueue((Progress / totalMins) * direction);
+                    _changeRateHistory.Enqueue((Progress / totalMins) * direction);
                 else
-                    ChangeRateHistory.Enqueue(0);
+                    _changeRateHistory.Enqueue(0);
             }
             else
                 //Enqueue new entries every minute so that a more accurate average can be calculated.
-                ChangeRateHistory.Enqueue((Progress - prevProg) * direction);
+                _changeRateHistory.Enqueue((Progress - prevProg) * direction);
             //We are only measuring the past hour.
-            if (ChangeRateHistory.Count > CHANGE_RATE_MAX_HISTORY)
-                ChangeRateHistory.Dequeue();
+            if (_changeRateHistory.Count > CHANGE_RATE_MAX_HISTORY)
+                _changeRateHistory.Dequeue();
             float sigmaChange = .0f;
-            foreach(var i in ChangeRateHistory)
+            foreach(var i in _changeRateHistory)
             {
                 sigmaChange = sigmaChange + i;
             }
-            ChangeRate = (sigmaChange / ChangeRateHistory.Count()) * CHANGE_RATE_MAX_HISTORY;
+            ChangeRate = (sigmaChange / _changeRateHistory.Count()) * CHANGE_RATE_MAX_HISTORY;
         }
 
         override public bool IsExpired()

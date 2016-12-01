@@ -22,28 +22,7 @@ using DiscordSharpTest.WarframeEvents;
 
 namespace DiscordSharpTest
 {
-    class MessageQueueEntry
-    {
-        public WarframeEvent wfEvent;
-        public bool NotifyClient;
-        public bool EventHasExpired;
-
-        public MessageQueueEntry(WarframeEvent wfEvent, bool notify, bool eventHasExpired)
-        {
-            NotifyClient = notify;
-            this.wfEvent = wfEvent;
-            EventHasExpired = eventHasExpired;
-        }
-
-        public MessageQueueEntry(MessageQueueEntry msg)
-        {
-            NotifyClient = msg.NotifyClient;
-            this.wfEvent = msg.wfEvent;
-            EventHasExpired = msg.EventHasExpired;
-        }
-    };
-
-    class WubbyBot : DiscordBot
+    public class WubbyBot : DiscordBot
     {
 #if DEBUG
         const string ALERTS_CHANNEL = "wf-dev";
@@ -59,24 +38,21 @@ namespace DiscordSharpTest
 
         //Miscellaneous
         private string _currentGame { get; set; }
+        
+        private WarframeEventsContainer _eventsContainer { get; set; }
+        private Dictionary<WarframeAlert, DiscordMessage> _alertMessageAssociations { get; set; }
+        private List<MessageQueueElement> _alertMessagePostQueue { get; set; }
+        private List<MessageQueueElement> _invasionMessagePostQueue { get; set; }
+        private List<MessageQueueElement> _voidTraderMessagePostQueue { get; set; }
+        private List<MessageQueueElement> _voidFissureMessagePostQueue { get; set; }
+        private List<MessageQueueElement> _sortieMessagePostQueue { get; set; }
+        private List<MessageQueueElement> _timeCycleMessagePostQueue { get; set; }
 
-        //Cut out the middle-man "helper" class.
-        private WarframeEventsContainer eventsContainer;
-        //private WarframeEventMessageBuilder messageBuilder;
-        private Dictionary<WarframeAlert, DiscordMessage> alertMessageAssociations;
-        //private List<MessageQueueEntry> alertMessagePostQueue;
-        private List<MessageQueueEntry> alertMessagePostQueue;
-        private List<MessageQueueEntry> invasionMessagePostQueue;
-        private List<MessageQueueEntry> voidTraderMessagePostQueue;
-        private List<MessageQueueEntry> voidFissureMessagePostQueue;
-        private List<MessageQueueEntry> sortieMessagePostQueue;
-        private List<MessageQueueEntry> timeCycleMessagePostQueue;
-
-        private DiscordMessage alertMessage = null;
-        private DiscordMessage traderMessage = null;
-        private DiscordMessage fissureMessage = null;
-        private DiscordMessage sortieMessage = null;
-        private DiscordMessage timeCycleMessage = null;
+        private DiscordMessage _alertMessage { get; set; } = null;
+        private DiscordMessage _traderMessage { get; set; } = null;
+        private DiscordMessage _fissureMessage { get; set; } = null;
+        private DiscordMessage _sortieMessage { get; set; } = null;
+        private DiscordMessage _timeCycleMessage { get; set; } = null;
 
         //List just in case the invasion message exceeds the 2000 character limit
         private List<DiscordMessage> invasionMessages = null;
@@ -85,23 +61,6 @@ namespace DiscordSharpTest
         public WubbyBot(string name, string devLogName = "") : base(name, devLogName)
         {
             _randomNumGen = new Random((int)DateTime.Now.Ticks);
-
-            /*string credentialsFile = string.Format("{0}.txt", _name);
-            if (File.Exists(credentialsFile))
-            {
-                StreamReader sr = new StreamReader(credentialsFile);
-                _client.ClientPrivateInformation.email = sr.ReadLine();
-                _client.ClientPrivateInformation.password = sr.ReadLine();
-                sr.Close();
-            }
-            else
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Write("Error: ");
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.Write(string.Format("Credentials could not be found.\nPlease provide credentials in {0}.txt in the following format: \nemailaddress@domainname.com\npassword", _name));
-                Console.ReadLine();
-            }*/
         }
 
         //Initialise the bot
@@ -118,26 +77,25 @@ namespace DiscordSharpTest
             SetupEvents();
         }
 
-        private void InitSubsystems()
+        private void InitSystems()
         {
-            Log("Initialising sub-systems");
-            eventsContainer = new WarframeEventsContainer();
-            //messageBuilder = new WarframeEventMessageBuilder();
-            alertMessageAssociations = new Dictionary<WarframeAlert, DiscordMessage>();
-            //database = new EventsDatabase();
+            Log("Initialising Warframe JSON Parser...");
+            _eventsContainer = new WarframeEventsContainer();
+            _alertMessageAssociations = new Dictionary<WarframeAlert, DiscordMessage>();
 
-            alertMessagePostQueue = new List<MessageQueueEntry>();
-            invasionMessagePostQueue = new List<MessageQueueEntry>();
-            voidTraderMessagePostQueue = new List<MessageQueueEntry>();
-            voidFissureMessagePostQueue = new List<MessageQueueEntry>();
-            sortieMessagePostQueue = new List<MessageQueueEntry>();
-            timeCycleMessagePostQueue = new List<MessageQueueEntry>();
+            _alertMessagePostQueue = new List<MessageQueueElement>();
+            _invasionMessagePostQueue = new List<MessageQueueElement>();
+            _voidTraderMessagePostQueue = new List<MessageQueueElement>();
+            _voidFissureMessagePostQueue = new List<MessageQueueElement>();
+            _sortieMessagePostQueue = new List<MessageQueueElement>();
+            _timeCycleMessagePostQueue = new List<MessageQueueElement>();
 
             invasionMessages = new List<DiscordMessage>();
 
-            Log("Sub-systems initialised");
+            Log("Initialisation complete.");
         }
 
+        //Start application operation cycle
         private void StartPostTimer()
         {
             _eventUpdateInterval = new Timer((e) => { PostAlertMessage(); PostInvasionMessage(); PostSortieMessage(); PostVoidFissureMessage(); PostVoidTraderMessage(); PostTimeCycleMessage(); }, null, 3000, (int)(TimeSpan.FromMinutes(1).TotalMilliseconds));
@@ -149,37 +107,36 @@ namespace DiscordSharpTest
             bool postWillNotify = false;
             List<string> messagesToNotify = new List<string>();
             //Build all alert strings into a single message
-            if (alertMessagePostQueue.Count > 0) finalMsg.Append("```ACTIVE ALERTS```" + Environment.NewLine);
+            if (_alertMessagePostQueue.Count > 0) finalMsg.Append("```ACTIVE ALERTS```" + Environment.NewLine);
             else finalMsg.Append("```NO ACTIVE ALERTS```" + Environment.NewLine);
 
-            foreach (var m in alertMessagePostQueue)
+            foreach (var m in _alertMessagePostQueue)
             {
                 string heading = (m.EventHasExpired) ? "```" : "```xl";
                 finalMsg.Append(heading + Environment.NewLine
-                    + WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, false) + Environment.NewLine);
-                //Invoking extension method as static method. This will require some rearchitecturing.
+                    + WarframeEventExtensions.DiscordMessage(m.WFEvent as dynamic, false) + Environment.NewLine);
                 postWillNotify = m.NotifyClient;
 
                 if (postWillNotify)
                 {
                     finalMsg.Append("( new )");
-                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, true));
+                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(m.WFEvent as dynamic, true));
                 }
                 finalMsg.Append("```" + Environment.NewLine);
             }
 
-            if (alertMessage == null)
-                alertMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
+            if (_alertMessage == null)
+                _alertMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
             else
             {
-                EditMessage(finalMsg.ToString(), alertMessage, Client.GetChannelByName(ALERTS_CHANNEL));
+                EditMessage(finalMsg.ToString(), _alertMessage, Client.GetChannelByName(ALERTS_CHANNEL));
                 foreach(var item in messagesToNotify)
                 {
                     NotifyClient(item, Client.GetChannelByName(ALERTS_CHANNEL));
                 }
             }
             
-            alertMessagePostQueue.Clear();
+            _alertMessagePostQueue.Clear();
         }
 
         private void PostInvasionMessage()
@@ -192,7 +149,7 @@ namespace DiscordSharpTest
             finalMessagesToPost.Add(entryForFinalMsg);
 
             //Sometimes new invasions are added while the loop is still iterating, which causes problems.
-            List<MessageQueueEntry> invasionMessageQueue = new List<MessageQueueEntry>(invasionMessagePostQueue);
+            List<MessageQueueElement> invasionMessageQueue = new List<MessageQueueElement>(_invasionMessagePostQueue);
 
             //Append this before the loop so that it only appears once in the message
             if (invasionMessageQueue.Count > 0) entryForFinalMsg.Append("```ACTIVE INVASIONS```" + Environment.NewLine);
@@ -202,11 +159,11 @@ namespace DiscordSharpTest
             {
                 string heading = (m.EventHasExpired) ? "```" : "```xl";
                 StringBuilder invasionMsgToAppend = new StringBuilder(heading + Environment.NewLine
-                    + WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, false) + Environment.NewLine);
+                    + WarframeEventExtensions.DiscordMessage(m.WFEvent as dynamic, false) + Environment.NewLine);
                 
                 if (m.NotifyClient)
                 {
-                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, true));
+                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(m.WFEvent as dynamic, true));
                     invasionMsgToAppend.Append("( new )");
                 }
                 invasionMsgToAppend.Append("```" + Environment.NewLine);
@@ -254,7 +211,7 @@ namespace DiscordSharpTest
                 Log(i.Length + " characters long");
             }
 #endif
-            invasionMessagePostQueue.Clear();
+            _invasionMessagePostQueue.Clear();
         }
 
         private void PostVoidTraderMessage()
@@ -263,31 +220,31 @@ namespace DiscordSharpTest
             bool postWillNotify = false;
             List<string> messagesToNotify = new List<string>();
             //Build all alert strings into a single message
-            finalMsg.Append($"```VOID TRADER{(voidTraderMessagePostQueue.Count() == 0 ? " HAS LEFT" : String.Empty)}```" + Environment.NewLine);
+            finalMsg.Append($"```VOID TRADER{(_voidTraderMessagePostQueue.Count() == 0 ? " HAS LEFT" : String.Empty)}```" + Environment.NewLine);
 
-            foreach (var m in voidTraderMessagePostQueue)
+            foreach (var m in _voidTraderMessagePostQueue)
             {
                 string heading = (m.EventHasExpired) ? "```" : "```xl";
                 
                 finalMsg.Append(heading + Environment.NewLine
-                    + WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, false) + Environment.NewLine);
+                    + WarframeEventExtensions.DiscordMessage(m.WFEvent as dynamic, false) + Environment.NewLine);
                 postWillNotify = m.NotifyClient;
 
                 finalMsg.Append("```" + Environment.NewLine);
             }
 
-            if (traderMessage == null)
-                traderMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
+            if (_traderMessage == null)
+                _traderMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
             else
             {
-                EditMessage(finalMsg.ToString(), traderMessage, Client.GetChannelByName(ALERTS_CHANNEL));
+                EditMessage(finalMsg.ToString(), _traderMessage, Client.GetChannelByName(ALERTS_CHANNEL));
                 foreach (var item in messagesToNotify)
                 {
                     NotifyClient(item, Client.GetChannelByName(ALERTS_CHANNEL));
                 }
             }
 
-            voidTraderMessagePostQueue.Clear();
+            _voidTraderMessagePostQueue.Clear();
         }
 
         private void PostVoidFissureMessage()
@@ -296,39 +253,39 @@ namespace DiscordSharpTest
             bool postWillNotify = false;
             List<string> messagesToNotify = new List<string>();
             //Build all alert strings into a single message
-            if (voidFissureMessagePostQueue.Count > 0) finalMsg.Append("```VOID FISSURES```" + Environment.NewLine);
+            if (_voidFissureMessagePostQueue.Count > 0) finalMsg.Append("```VOID FISSURES```" + Environment.NewLine);
             else finalMsg.Append("```NO VOID FISSURES```" + Environment.NewLine);
 
-            voidFissureMessagePostQueue.OrderBy(s => (s.wfEvent as WarframeVoidFissure).GetFissureIndex());
+            _voidFissureMessagePostQueue.OrderBy(s => (s.WFEvent as WarframeVoidFissure).GetFissureIndex());
 
-            foreach (var m in voidFissureMessagePostQueue)
+            foreach (var m in _voidFissureMessagePostQueue)
             {
                 string heading = (m.EventHasExpired) ? "```" : "```xl";
 
                 finalMsg.Append(heading + Environment.NewLine
-                    + WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, false) + Environment.NewLine);
+                    + WarframeEventExtensions.DiscordMessage(m.WFEvent as dynamic, false) + Environment.NewLine);
                 postWillNotify = m.NotifyClient;
 
                 if (postWillNotify)
                 {
                     finalMsg.Append("( new )");
-                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, false));
+                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(m.WFEvent as dynamic, false));
                 }
                 finalMsg.Append("```" + Environment.NewLine);
             }
 
-            if (fissureMessage == null)
-                fissureMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
+            if (_fissureMessage == null)
+                _fissureMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
             else
             {
-                EditMessage(finalMsg.ToString(), fissureMessage, Client.GetChannelByName(ALERTS_CHANNEL));
+                EditMessage(finalMsg.ToString(), _fissureMessage, Client.GetChannelByName(ALERTS_CHANNEL));
                 foreach (var item in messagesToNotify)
                 {
                     NotifyClient(item, Client.GetChannelByName(ALERTS_CHANNEL));
                 }
             }
 
-            voidFissureMessagePostQueue.Clear();
+            _voidFissureMessagePostQueue.Clear();
         }
 
         private void PostSortieMessage()
@@ -337,36 +294,36 @@ namespace DiscordSharpTest
             bool postWillNotify = false;
             List<string> messagesToNotify = new List<string>();
             //Build all alert strings into a single message
-            if (sortieMessagePostQueue.Count > 0) finalMsg.Append("```ACTIVE SORTIES```" + Environment.NewLine);
+            if (_sortieMessagePostQueue.Count > 0) finalMsg.Append("```ACTIVE SORTIES```" + Environment.NewLine);
             else finalMsg.Append("```NO SORTIES```" + Environment.NewLine);
 
-            foreach (var m in sortieMessagePostQueue)
+            foreach (var m in _sortieMessagePostQueue)
             {
                 string heading = (m.EventHasExpired) ? "```" : "```xl";
 
                 finalMsg.Append(heading + Environment.NewLine
-                    + WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, false) + Environment.NewLine);
+                    + WarframeEventExtensions.DiscordMessage(m.WFEvent as dynamic, false) + Environment.NewLine);
                 postWillNotify = m.NotifyClient;
 
                 if (postWillNotify)
                 {
-                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, true));
+                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(m.WFEvent as dynamic, true));
                 }
                 finalMsg.Append("```" + Environment.NewLine);
             }
 
-            if (sortieMessage == null)
-                sortieMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
+            if (_sortieMessage == null)
+                _sortieMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
             else
             {
-                EditMessage(finalMsg.ToString(), sortieMessage, Client.GetChannelByName(ALERTS_CHANNEL));
+                EditMessage(finalMsg.ToString(), _sortieMessage, Client.GetChannelByName(ALERTS_CHANNEL));
                 foreach (var item in messagesToNotify)
                 {
                     NotifyClient(item, Client.GetChannelByName(ALERTS_CHANNEL));
                 }
             }
 
-            sortieMessagePostQueue.Clear();
+            _sortieMessagePostQueue.Clear();
         }
 
         private void PostTimeCycleMessage()
@@ -375,79 +332,78 @@ namespace DiscordSharpTest
             bool postWillNotify = false;
             List<string> messagesToNotify = new List<string>();
 
-            foreach (var m in timeCycleMessagePostQueue)
+            foreach (var m in _timeCycleMessagePostQueue)
             {
                 string heading = (m.EventHasExpired) ? "```" : "```";
 
                 finalMsg.Append(heading + Environment.NewLine
-                    + WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, false) + Environment.NewLine);
+                    + WarframeEventExtensions.DiscordMessage(m.WFEvent as dynamic, false) + Environment.NewLine);
                 postWillNotify = m.NotifyClient;
 
                 if (postWillNotify)
-                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(m.wfEvent as dynamic, false));
+                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(m.WFEvent as dynamic, false));
 
                 finalMsg.Append("```" + Environment.NewLine);
             }
 
-            if (timeCycleMessage == null)
-                timeCycleMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
+            if (_timeCycleMessage == null)
+                _timeCycleMessage = SendMessage(finalMsg.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
             else
             {
-                EditMessage(finalMsg.ToString(), timeCycleMessage, Client.GetChannelByName(ALERTS_CHANNEL));
+                EditMessage(finalMsg.ToString(), _timeCycleMessage, Client.GetChannelByName(ALERTS_CHANNEL));
                 foreach (var item in messagesToNotify)
                 {
                     NotifyClient(item, Client.GetChannelByName(ALERTS_CHANNEL));
                 }
             }
 
-            timeCycleMessagePostQueue.Clear();
+            _timeCycleMessagePostQueue.Clear();
         }
 
         private void AddToAlertPostQueue(WarframeAlert alert, bool notifyClient, bool alertHasExpired)
         {
             //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
-            alertMessagePostQueue.Add(new MessageQueueEntry(alert, notifyClient, alertHasExpired));
+            _alertMessagePostQueue.Add(new MessageQueueElement(alert, notifyClient, alertHasExpired));
         }
 
         private void AddToInvasionPostQueue(WarframeInvasion invasion, bool notifyClient, bool invasionHasExpired)
         {
             //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
-            //invasionMessagePostQueue.Add(new MessageQueueEntry(message, notifyClient, notificationContent, invasionHasExpired));
-            invasionMessagePostQueue.Add(new MessageQueueEntry(invasion, notifyClient, invasionHasExpired));
+            _invasionMessagePostQueue.Add(new MessageQueueElement(invasion, notifyClient, invasionHasExpired));
         }
 
         private void AddToVoidTraderPostQueue(WarframeVoidTrader trader, bool notifyClient, bool traderHasExpired)
         {
             //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
-            voidTraderMessagePostQueue.Add(new MessageQueueEntry(trader, notifyClient, traderHasExpired));
+            _voidTraderMessagePostQueue.Add(new MessageQueueElement(trader, notifyClient, traderHasExpired));
         }
 
         private void AddToVoidFissurePostQueue(WarframeVoidFissure fissure, bool notifyClient, bool fissureHasExpired)
         {
             //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
-            voidFissureMessagePostQueue.Add(new MessageQueueEntry(fissure, notifyClient, fissureHasExpired));
+            _voidFissureMessagePostQueue.Add(new MessageQueueElement(fissure, notifyClient, fissureHasExpired));
         }
 
         private void AddToSortiePostQueue(WarframeSortie sortie, bool notifyClient, bool sortieHasExpired)
         {
             //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
-            sortieMessagePostQueue.Add(new MessageQueueEntry(sortie, notifyClient, sortieHasExpired));
+            _sortieMessagePostQueue.Add(new MessageQueueElement(sortie, notifyClient, sortieHasExpired));
         }
 
         private void AddToTimeCyclePostQueue(WarframeTimeCycleInfo cycle, bool notifyClient, bool eventHasExpired)
         {
             //Log("The following message was added to the queue:" + Environment.NewLine + (String.IsNullOrEmpty(message) ? "Empty string" : message));
-            timeCycleMessagePostQueue.Add(new MessageQueueEntry(cycle, notifyClient, false));
+            _timeCycleMessagePostQueue.Add(new MessageQueueElement(cycle, notifyClient, false));
         }
 
         public void Shutdown()
         {
             Log("Shutting down...");
-            DeleteMessage(alertMessage);
-            DeleteMessage(fissureMessage);
-            DeleteMessage(sortieMessage);
-            DeleteMessage(traderMessage);
-            DeleteMessage(timeCycleMessage);
+            DeleteMessage(_alertMessage);
+            DeleteMessage(_fissureMessage);
+            DeleteMessage(_sortieMessage);
+            DeleteMessage(_traderMessage);
+            DeleteMessage(_timeCycleMessage);
 
             //Sometimes the invasions message may be split up over multiple Discord messages so each one needs to be deleted.
             foreach (var i in invasionMessages)
@@ -464,77 +420,6 @@ namespace DiscordSharpTest
                     //Don't log messages posted in the log channel
                     if (e.Channel.Name != LogChannelName)
                         Log($"Message from {e.Author.Username} in #{e.Channel.Name} on {e.Channel.Parent.Name}: {e.Message.ID}");
-
-                    /*if (doingInitialRun)
-                    {
-                        if (e.message.content.StartsWith("?authenticate"))
-                        {
-                            string[] split = e.message.content.Split(new char[] { ' ' }, 2);
-                            if (split.Length > 1)
-                            {
-                                if (codeToEnter.Trim() == split[1].Trim())
-                                {
-                                    config.OwnerID = e.author.ID;
-                                    doingInitialRun = false;
-                                    e.Channel.SendMessage("Authentication successful! **You are now my owner, " + e.author.Username + ".**");
-                                    CommandsManager.AddPermission(e.author, PermissionType.Owner);
-                                    owner = e.author;
-                                }
-                            }
-                        }
-                    }
-                    else*/
-                    {
-                        if (e.Message.Content.Length > 0 && (e.Message.Content[0] == BotConfig.commandPrefix))
-                        {
-                            string rawCommand = e.Message.Content.Substring(1);
-
-                            /*if (e.message.content.StartsWith("!dice"))
-                            {
-                                int max = 1, r;
-                                string[] split = e.message.content.Split(new char[] { ' ' }, 2);
-
-                                if (int.TryParse(split[1], out max))
-                                {
-                                    if (max > 1)
-                                    {
-                                        bool isCoin = (max > 2);
-                                        r = RollDice(1, max + 1);
-
-                                        if (max > 2)
-                                        {
-                                            _client.SendMessageToChannel(String.Format("@{0} D{1} rolled **{2}**", e.author.Username, max, r), e.Channel);
-                                        }
-                                        else
-                                        {
-                                            string coin_result = (r == 1) ? "**heads**" : "**tails**";
-                                            _client.SendMessageToChannel(String.Format("@{0} Luckiest penny yielded {1}!", e.author.Username, coin_result), e.Channel);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        _client.SendMessageToChannel(String.Format("@{0} Try a larger number, you big dummy.", e.author.Username), e.Channel);
-                                    }
-                                }
-                                else
-                                {
-                                    _client.SendMessageToChannel(String.Format("@{0} Enter a number larger than 2.", e.author.Username), e.Channel);
-                                }
-                            }*/
-                            //try
-                            //{
-                            //CommandsManager.ExecuteCommand(rawCommand, e.Channel, e.author);
-                            //}
-                            //catch(UnauthorizedAccessException ex)
-                            //{
-                            //e.Channel.SendMessage(ex.Message);
-                            //}
-                            //catch(Exception ex)
-                            //{
-                            //e.Channel.SendMessage("Exception occurred while running command:\n```" + ex.Message + "\n```");
-                            //}
-                        }
-                    }
                 };
                 /*_client.GuildCreated += (sender, e) =>
                 {
@@ -565,34 +450,7 @@ namespace DiscordSharpTest
                 {
                     Log($"Connected as {e.User.Username}");
 
-                    //ExecuteSQLNonQuery($"DELETE FROM alerts", _dbConnection);
-                    //ReadDatabase();
-                    //loginDate = DateTime.Now;
-
-                    /*if (!String.IsNullOrEmpty(config.OwnerID))
-                        owner = client.GetServersList().Find(x => x.members.Find(y => y.ID == config.OwnerID) != null).members.Find(x => x.ID == config.OwnerID);
-                    else
-                    {
-                        doingInitialRun = true;
-                        RandomCodeGenerator rcg = new RandomCodeGenerator();
-                        codeToEnter = rcg.GenerateRandomCode();
-
-                        Console.ForegroundColor = ConsoleColor.Cyan;
-                        Console.WriteLine("Important: ");
-                        Console.ForegroundColor = ConsoleColor.White;
-                        Console.WriteLine("\tPlease authenticate yourself as owner by typing the following into any Discord server you and the bot are in: ");
-                        Console.WriteLine($"\t{config.CommandPrefix}authenticate " + codeToEnter);
-                    }*/
-                    /*CommandsManager = new CommandsManager(client);
-                    if (File.Exists("permissions.json"))
-                    {
-                        var permissionsDictionary = JsonConvert.DeserializeObject<Dictionary<string, PermissionType>>(File.ReadAllText("permissions.json"));
-                        CommandsManager.OverridePermissionsDictionary(permissionsDictionary);
-                    }*/
-                    //SetupCommands();
-
-                    InitSubsystems();
-                    //LoadState();
+                    InitSystems();
 
                     SetupWarframeEventsTask();
                 };
@@ -643,25 +501,25 @@ namespace DiscordSharpTest
         {
             return Task.Run(() =>
             {
-                eventsContainer.AlertScraped += (sender, e) =>
+                _eventsContainer.AlertScraped += (sender, e) =>
                 {
 #if DEBUG
                     Log("Alert Scraped!");
 #endif
-                    bool alertIsNew = eventsContainer.IsAlertNew(e.Alert);
+                    bool alertIsNew = _eventsContainer.IsAlertNew(e.Alert);
                     AddToAlertPostQueue(e.Alert, alertIsNew, e.Alert.IsExpired());
                 };
 
-                eventsContainer.InvasionScraped += (sender, e) =>
+                _eventsContainer.InvasionScraped += (sender, e) =>
                 {
 #if DEBUG
                     Log("Invasion Scraped!");
 #endif
-                    bool invasionIsNew = eventsContainer.IsInvasionNew(e.Invasion);
+                    bool invasionIsNew = _eventsContainer.IsInvasionNew(e.Invasion);
                     AddToInvasionPostQueue(e.Invasion, invasionIsNew, e.Invasion.IsExpired());
                 };
 
-                eventsContainer.VoidTraderScraped += (sender, e) =>
+                _eventsContainer.VoidTraderScraped += (sender, e) =>
                 {
 #if DEBUG
                     Log("Void Trader Scraped!");
@@ -669,7 +527,7 @@ namespace DiscordSharpTest
                     AddToVoidTraderPostQueue(e.Trader, false, e.Trader.IsExpired());
                 };
 
-                eventsContainer.VoidFissureScraped += (sender, e) =>
+                _eventsContainer.VoidFissureScraped += (sender, e) =>
                 {
 #if DEBUG
                     Log("Fissure Scraped!");
@@ -677,7 +535,7 @@ namespace DiscordSharpTest
                     AddToVoidFissurePostQueue(e.Fissure, false, e.Fissure.IsExpired());
                 };
 
-                eventsContainer.SortieScraped += (sender, e) =>
+                _eventsContainer.SortieScraped += (sender, e) =>
                 {
 #if DEBUG
                     Log("Sortie Scraped!");
@@ -685,7 +543,7 @@ namespace DiscordSharpTest
                     AddToSortiePostQueue(e.Sortie, false, e.Sortie.IsExpired());
                 };
 
-                eventsContainer.DayCycleScraped += (sender, e) =>
+                _eventsContainer.DayCycleScraped += (sender, e) =>
                 {
 #if DEBUG
                     Log("Day Cycle Scraped!");
@@ -693,7 +551,7 @@ namespace DiscordSharpTest
                     AddToTimeCyclePostQueue(e.cycleInfo, false, false);
                 };
 
-                eventsContainer.ExistingAlertFound += (sender, e) =>
+                _eventsContainer.ExistingAlertFound += (sender, e) =>
                 {
                     if (Client.ReadyComplete == true)
                     {
@@ -707,158 +565,42 @@ namespace DiscordSharpTest
 #if DEBUG
                             Log($"Message {e.MessageID} was found.");
 #endif
-                            alertMessageAssociations.Add(e.Alert, targetMessage);
+                            _alertMessageAssociations.Add(e.Alert, targetMessage);
                         }
                     }
                 };
                 
-                eventsContainer.Start();
+                _eventsContainer.Start();
                 StartPostTimer();
             });
         }
 
-        private Task ClientTask(DiscordClient client)
-        {
-            return Task.Run(() =>
-            {
-                client.MessageReceived += (sender, e) =>
-                {
-                    /*if (e.message.content.StartsWith("?joinvoice"))
-                    {
-                        string[] split = e.message.content.Split(new char[] { ' ' }, 2);
-                        if (split[1] != "")
-                        {
-                            DiscordChannel toJoin = e.Channel.parent.channels.Find(x => (x.name.ToLower() == split[1].ToLower()) && (x.type == DiscordSharp.ChannelType.Voice));
-                            if (toJoin != null)
-                            {
-                                client.ConnectToVoiceChannel(toJoin);
-                            }
-                        }
-                    }
-                    else if (e.message.content.StartsWith("?voice"))
-                    {
-                        string[] split = e.message.content.Split(new char[] { ' ' }, 2);
-                        if (File.Exists(split[1]))
-                            DoVoice(client.GetVoiceClient(), split[1]);
-                    }
-                    else if (e.message.content.StartsWith("!disconnect"))
-                    {
-                        client.DisconnectFromVoice();
-                    }
-                    else */
-                    if (e.Message.Content.StartsWith("!help"))
-                    {
-                        client.SendMessageToUser("I am helping :)", e.Message.Author);
-                    }
-                    else if (e.Message.Content.StartsWith("!proxymsg"))
-                    {
-                        string[] split = e.Message.Content.Split(new char[] { ' ' }, 3);
-                        if (split[1] != "")
-                        {
-                            /*DiscordChannel toJoin = e.Channel.parent.channels.Find(x => (x.name.ToLower() == split[1].ToLower()) && (x.type == DiscordSharp.ChannelType.Voice));
-                            if (toJoin != null)
-                            {
-                                client.ConnectToVoiceChannel(toJoin);
-                            }*/
-                        }
-                    }
-                    /*else if (e.message.content.StartsWith("!announce"))
-                    {
-                    }*/
-                    else if (e.Message.Content.StartsWith("!dice"))
-                    {
-                        int max = 1, r;
-                        string[] split = e.Message.Content.Split(new char[] { ' ' }, 2);
-
-                        if (int.TryParse(split[1], out max))
-                        {
-                            if (max > 1)
-                            {
-                                bool isCoin = (max > 2);
-                                r = RollDice(1, max + 1);
-
-                                if (max > 2)
-                                {
-                                    client.SendMessageToChannel(String.Format("@{0} D{1} rolled **{2}**", e.Author.Username, max, r), e.Channel);
-                                }
-                                else
-                                {
-                                    string coin_result = (r == 1) ? "**heads**" : "**tails**";
-                                    client.SendMessageToChannel(String.Format("@{0} Luckiest penny yielded {1}!", e.Author.Username, coin_result), e.Channel);
-                                }
-                            }
-                            else
-                            {
-                                client.SendMessageToChannel(String.Format("@{0} Try a larger number, you big dummy.", e.Author.Username), e.Channel);
-                            }
-                        }
-                        else
-                        {
-                            client.SendMessageToChannel(String.Format("@{0} Enter a number larger than 2.", e.Author.Username), e.Channel);
-                        }
-                    }
-                    /*else if (e.message.content.StartsWith("!privileges"))
-                    {
-                        bool isPriviledged = false;
-                        foreach (DiscordRole i in e.author.roles)
-                        {
-                            //client.SendMessageToChannel(string.Format("@{0}: {1}", e.author.user.username, i.name), e.message.channel);
-                            if (i.name == "@privileged")
-                            {
-                                isPriviledged = true;
-                            }
-                        }
-
-                        if (isPriviledged)
-                            client.SendMessageToChannel(string.Format("@{0} You are privileged :D", e.author.user.username), e.Channel);
-                        else
-                            client.SendMessageToChannel(string.Format("@{0} You are not privileged :(", e.author.user.username), e.Channel);
-                    }
-                    else if (e.message.content.StartsWith("!time"))
-                    {
-                        client.SendMessageToChannel(string.Format("@{0} The current time is {1}", e.message.author.user.username, System.DateTime.Now.ToString("h:mm tt")), e.message.channel);
-                    }
-                    else if (e.message.content.StartsWith("!userid"))
-                    {
-                        client.SendMessageToUser(string.Format("Your user ID is {0}", e.message.author.user.id), e.message.author);
-                    }
-                    else if (e.message.content.StartsWith("@" + client.Me.user.id))
-                    {
-                        string message;
-                        if (e.author.user.username != "wubby")
-                            message = string.Format("@{0} Hi :)", e.author.user.username);
-                        else
-                            message = string.Format("@{0} Please don't talk to me", e.author.user.username);
-                        client.SendMessageToUser(string.Format("Your user ID is {0}", e.message.author.user.id), e.message.author);
-                    }*/
-                };
-
-                client.MessageEdited += (sender, e) =>
-                {
-                    Console.WriteLine(string.Format("I detected that a message was editted by {0}", e.Author.Username));
-                };
-
-                client.Connected += (sender, e) =>
-                {
-                    Console.WriteLine("Connected as " + e.User.Username);
-                    //client.UpdateCurrentGame("With Your Emotions!", false);
-                };
-                client.Connect();
-            });
-        }
-
-        //Send a log in request
-        public async Task<bool> Connect()
-        {
-            bool x = false;
-            if (Client.SendLoginRequest() != null)
-                await ClientTask(Client);
-            return x;
-        }
-
         private int RollDice(int min, int max)
         {
-            return _randomNumGen.Next(min, max);
+            throw new NotImplementedException();
+
+            //return _randomNumGen.Next(min, max);
         }
+
+        public class MessageQueueElement
+        {
+            public WarframeEvent WFEvent;
+            public bool NotifyClient;
+            public bool EventHasExpired;
+
+            public MessageQueueElement(WarframeEvent wfEvent, bool notify, bool eventHasExpired)
+            {
+                NotifyClient = notify;
+                WFEvent = wfEvent;
+                EventHasExpired = eventHasExpired;
+            }
+
+            public MessageQueueElement(MessageQueueElement msg)
+            {
+                NotifyClient = msg.NotifyClient;
+                WFEvent = msg.WFEvent;
+                EventHasExpired = msg.EventHasExpired;
+            }
+        };
     }
 }

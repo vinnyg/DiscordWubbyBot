@@ -23,7 +23,7 @@ namespace DiscordSharpTest.WarframeEvents
             Faction = DiscordSharpTest.WarframeEvents.Faction.GetName(factionName);
             MissionType = DiscordSharpTest.WarframeEvents.MissionType.GetName(missionType);
             Credits = credits;
-            Reward = reward; //DiscordSharpTest.Reward.GetName(reward);
+            Reward = reward;
             RewardQuantity = rewardQuantity;
             MinimumLevel = minLevel;
             MaximumLevel = maxLevel;

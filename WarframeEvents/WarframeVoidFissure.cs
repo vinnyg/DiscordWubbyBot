@@ -9,7 +9,7 @@ namespace DiscordSharpTest.WarframeEvents
 {
     public class WarframeVoidFissure : WarframeEvent
     {
-        private readonly Dictionary<string, int> fissureIndex = new Dictionary<string, int>() { { "Lith Fissure", 0 }, { "Meso Fissure", 1 }, { "Neo Fissure", 2}, { "Axi Fissure", 3 } };
+        private readonly Dictionary<string, int> _fissureIndex = new Dictionary<string, int>() { { "Lith Fissure", 0 }, { "Meso Fissure", 1 }, { "Neo Fissure", 2}, { "Axi Fissure", 3 } };
         public MissionInfo MissionDetails { get; private set; }
         public DateTime ExpireTime { get; internal set; }
         
@@ -28,7 +28,7 @@ namespace DiscordSharpTest.WarframeEvents
 
         public int GetFissureIndex()
         {
-            return fissureIndex[MissionDetails.Reward];
+            return _fissureIndex[MissionDetails.Reward];
         }
 
         override public bool IsExpired()

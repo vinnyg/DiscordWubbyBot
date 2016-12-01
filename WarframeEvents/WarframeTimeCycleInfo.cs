@@ -13,7 +13,7 @@ namespace DiscordSharpTest.WarframeEvents
         public DateTime TimeOfNextCycleChange { get; private set; }
         public TimeSpan TimeSinceLastCycleChange { get; private set; }
         private int CurrentTimeInSeconds { get; set; }
-        private bool IsDay { get; set; }
+        private bool _isDay { get; set; }
 
         public WarframeTimeCycleInfo(int currentTime) : base(String.Empty, "Earth", DateTime.Now)
         {

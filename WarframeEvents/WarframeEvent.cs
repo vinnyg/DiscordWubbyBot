@@ -28,7 +28,7 @@ namespace DiscordSharpTest.WarframeEvents
     Progress: 69% (Corpus)
     ------------------------*/
 
-    abstract public class WarframeEvent
+    public abstract class WarframeEvent
     {
         public string GUID { get; private set; }
         public string DestinationName { get; private set; }

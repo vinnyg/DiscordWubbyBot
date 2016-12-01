@@ -10,15 +10,16 @@ namespace DiscordWrapper
 {
     public abstract class DiscordBot
     {
-        //Milliseconds which must pass before another Discord request can be made.
+        //Milliseconds which must pass before another Discord request can be made
         private const int REQUEST_TIME_LIMIT = 1000;
+        //Maximum character limit for a single Discord Message
         public const int MESSAGE_CHAR_LIMIT = 2000;
 
-        public DiscordClient Client { get; internal set; }   //Client
-        public string Name { get; set; }       //Name of bot
+        public DiscordClient Client { get; internal set; }
+        public string Name { get; set; }       //Display name of bot
         public DiscordMember Owner { get; set; }
         public Config BotConfig { get; internal set; }
-        public StreamWriter LogFile { get; internal set; }          //File to log messages to
+        public StreamWriter LogFile { get; internal set; }
         public string LogChannelName { get; internal set; }     //Name of channel to post log messages to
 
         private DateTime timeOfLastDiscordRequest;
@@ -49,9 +50,6 @@ namespace DiscordWrapper
                 Console.WriteLine("Please provide login credentials in \"" + Name + ".json\"");
                 return;
             }
-
-            //Client.ClientPrivateInformation.Email = BotConfig.email;
-            //Client.ClientPrivateInformation.Password = BotConfig.password;
         }
 
         public abstract void Init();
@@ -145,6 +143,7 @@ namespace DiscordWrapper
             }
         }
 
+        //Return a reference to the specific instance of a DiscordMessage using the message ID
         virtual public DiscordMessage GetMessageByID(string messageID, DiscordChannel channel)
         {
             List<DiscordMessage> messageHistory = new List<DiscordMessage>();
@@ -169,6 +168,7 @@ namespace DiscordWrapper
             return targetMessage;
         }
 
+        //Creates a new message which is automatically deleted shortly after to force a DiscordApp notification
         virtual public void NotifyClient(string content, DiscordChannel channel)
         {
             DiscordMessage m = SendMessage(content, channel);
