@@ -31,7 +31,9 @@ namespace DiscordWrapper
             timeOfLastDiscordRequest = DateTime.Now;
 
             if (File.Exists(Name + ".json"))
+            {
                 BotConfig = JsonConvert.DeserializeObject<Config>(File.ReadAllText(Name + ".json"));
+            }
             else
             {
                 BotConfig = new Config();
@@ -61,11 +63,11 @@ namespace DiscordWrapper
             //Log($"SendMessage({content})");
             Console.WriteLine($"SendMessage({content})");
 #endif
-            DiscordMessage m = null;
+            DiscordMessage message = null;
             try
             {
                 System.Threading.Thread.Sleep(GetTimeUntilCanRequest());
-                m = Client.SendMessageToChannel(content, channel);
+                message = Client.SendMessageToChannel(content, channel);
                 timeOfLastDiscordRequest = DateTime.Now;
             }
             catch (NullReferenceException)
@@ -77,17 +79,17 @@ namespace DiscordWrapper
                 Log("SendMessage threw an exception.");
             }
 
-            return m;
+            return message;
         }
 
         //Send a message to the specified user
         virtual public DiscordMessage SendMessage(string content, DiscordMember user)
         {
-            DiscordMessage m = null;
+            DiscordMessage message = null;
             try
             {
                 System.Threading.Thread.Sleep(GetTimeUntilCanRequest());
-                m = Client.SendMessageToUser(content, user);
+                message = Client.SendMessageToUser(content, user);
                 timeOfLastDiscordRequest = DateTime.Now;
             }
             catch (NullReferenceException)
@@ -99,16 +101,16 @@ namespace DiscordWrapper
                 Log($"SendMessage threw an exception. {e.Message}, {e.StackTrace}");
             }
 
-            return m;
+            return message;
         }
 
         virtual public DiscordMessage EditMessage(string newContent, DiscordMessage targetMessage, DiscordChannel channel)
         {
-            DiscordMessage m = targetMessage;
+            var message = targetMessage;
             try
             {
                 System.Threading.Thread.Sleep(GetTimeUntilCanRequest());
-                m = Client.EditMessage(targetMessage.ID, newContent, channel);
+                message = Client.EditMessage(targetMessage.ID, newContent, channel);
                 timeOfLastDiscordRequest = DateTime.Now;
             }
             catch (NullReferenceException)
@@ -119,17 +121,17 @@ namespace DiscordWrapper
             {
                 Log("EditMessage threw an exception.");
             }
-            return m;
+            return message;
         }
 
-        virtual public void DeleteMessage(DiscordMessage target)
+        virtual public void DeleteMessage(DiscordMessage targetMsg)
         {
             try
             {
                 System.Threading.Thread.Sleep(GetTimeUntilCanRequest());
-                if (target != null)
+                if (targetMsg != null)
                 {
-                    Client.DeleteMessage(target);
+                    Client.DeleteMessage(targetMsg);
                     timeOfLastDiscordRequest = DateTime.Now;
                 }
             }
@@ -146,10 +148,10 @@ namespace DiscordWrapper
         //Return a reference to the specific instance of a DiscordMessage using the message ID
         virtual public DiscordMessage GetMessageByID(string messageID, DiscordChannel channel)
         {
-            List<DiscordMessage> messageHistory = new List<DiscordMessage>();
+            var messageHistory = new List<DiscordMessage>();
             DiscordMessage targetMessage = null;
-            String lastDiscordMessage = String.Empty;
-            int messageBatch = 0;
+            var lastDiscordMessage = string.Empty;
+            var messageBatch = 0;
 
             do
             {
@@ -171,9 +173,9 @@ namespace DiscordWrapper
         //Creates a new message which is automatically deleted shortly after to force a DiscordApp notification
         virtual public void NotifyClient(string content, DiscordChannel channel)
         {
-            DiscordMessage m = SendMessage(content, channel);
+            DiscordMessage message = SendMessage(content, channel);
             System.Threading.Thread.Sleep(REQUEST_TIME_LIMIT);
-            Client.DeleteMessage(m);
+            Client.DeleteMessage(message);
         }
 
         virtual public void Log(string message)

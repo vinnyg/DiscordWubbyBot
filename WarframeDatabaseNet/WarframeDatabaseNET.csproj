@@ -140,7 +140,6 @@
     <Compile Include="Core\Domain\ItemCategoryAssociation.cs" />
     <Compile Include="Enums\EnumNodeType.cs" />
     <Compile Include="Enums\EnumMissionType.cs" />
-    <Compile Include="IWarframeDataMapper.cs" />
     <Compile Include="Persistence\Repository\Repository.cs" />
     <Compile Include="Persistence\Repository\WarframeItemRepository.cs" />
     <Compile Include="Persistence\Repository\WFSolarNodeRepository.cs" />
@@ -148,7 +147,6 @@
     <Compile Include="Persistence\Repository\WFDBOptionsRepository.cs" />
     <Compile Include="Persistence\Repository\WFVoidFissureRepository.cs" />
     <Compile Include="Persistence\UnitOfWork.cs" />
-    <Compile Include="Persistence\WFDBContext.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Core\Repository\Interfaces\IWarframeItemRepository.cs" />
     <Compile Include="Core\Repository\Interfaces\IRepository.cs" />

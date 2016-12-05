@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DiscordSharpTest.WarframeEvents.Properties;
 
 namespace DiscordSharpTest.WarframeEvents
 {
@@ -14,9 +15,10 @@ namespace DiscordSharpTest.WarframeEvents
         public MissionInfo AttackerDetails { get; private set; }
         public MissionInfo DefenderDetails { get; private set; }
         public float Progress { get; private set; }
-        private int _goal { get; set; }
         public float ChangeRate { get; private set; }
-        private Queue<float> _changeRateHistory { get; set; }
+
+        private int _goal;
+        private Queue<float> _changeRateHistory;
 
         public WarframeInvasion(MissionInfo attackerInfo, MissionInfo defenderInfo, string guid, string destinationName, DateTime startTime, int goal) : base(guid, destinationName, startTime)
         {
@@ -40,12 +42,12 @@ namespace DiscordSharpTest.WarframeEvents
             //If there is no previous history, calculate an estimated progression rate based on when the invasion started.
             if (_changeRateHistory.Count() == 0)
             {
-                //Console.WriteLine(DateTime.Now.ToString() + " :: " + StartTime.ToString());
                 TimeSpan timeElapsedSinceStart = (DateTime.Now).Subtract(StartTime);
                 //Calculate an estimated rate.
-                //Prevent divide by zero when a new invasion has started
-                int totalMins = timeElapsedSinceStart.Days * 24 * 60 + timeElapsedSinceStart.Hours * 60 + timeElapsedSinceStart.Minutes;
+                
+                int totalMins = (int)timeElapsedSinceStart.TotalMinutes;
 
+                //Prevent divide by zero when a new invasion has started
                 if (totalMins > 0)
                     _changeRateHistory.Enqueue((Progress / totalMins) * direction);
                 else

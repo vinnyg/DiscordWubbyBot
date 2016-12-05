@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using DiscordSharpTest;
 using DiscordSharpTest.WarframeEvents;
+using DiscordSharpTest.WarframeEvents.Properties;
 
 namespace WubbyBot.Events.Extensions
 {
@@ -14,8 +15,10 @@ namespace WubbyBot.Events.Extensions
     {
         private static string ParseMinutesAsTime(int minutes)
         {
-            TimeSpan ts = TimeSpan.FromMinutes(minutes);
-            int days = ts.Days, hours = ts.Hours, mins = ts.Minutes;
+            var ts = TimeSpan.FromMinutes(minutes);
+            int days = ts.Days;
+            int hours = ts.Hours;
+            int mins = ts.Minutes;
 
             var result = new StringBuilder((days > 0 ? $"{days} Days " : String.Empty)
                                         + ((hours > 0) || (days > 0) ? $"{hours}h " : "")
@@ -24,34 +27,45 @@ namespace WubbyBot.Events.Extensions
             return result.ToString();
         }
 
+        //Parse the mission information into a readable presentation
         public static string DiscordMessage(this WarframeAlert alert, bool isNotification)
         {
             MissionInfo info = alert.MissionDetails;
-            string rewardMessage = (!string.IsNullOrEmpty(info.Reward) ? info.Reward : string.Empty),
-                rewardQuantityMessage = (info.RewardQuantity > 1 ? info.RewardQuantity + "x" : ""),
-                creditMessage = (!string.IsNullOrEmpty(rewardMessage) ? ", " : "") + (info.Credits > 0 ? info.Credits + "cr" : "");
+            string rewardMessage = (!string.IsNullOrEmpty(info.Reward) ? info.Reward : string.Empty);
+            string rewardQuantityMessage = (info.RewardQuantity > 1 ? info.RewardQuantity + "x" : string.Empty);
+            string creditMessage = (!string.IsNullOrEmpty(rewardMessage) ? ", " : "") + (info.Credits > 0 ? info.Credits + "cr" : string.Empty);
 
-            string statusString =
-                (!alert.IsExpired()) ? (DateTime.Now < alert.StartTime ? $"Starts {alert.StartTime:HH:mm} ({alert.GetMinutesRemaining(true)}m)" :
-                $"Expires {alert.ExpireTime:HH:mm} ({alert.GetMinutesRemaining(false)}m)") : $"Expired ({alert.ExpireTime:HH:mm})";
+            var statusMessage = new StringBuilder();
 
-            StringBuilder returnMessage = new StringBuilder();
+            if (!alert.IsExpired())
+            {
+                if (DateTime.Now < alert.StartTime)
+                    statusMessage.Append($"Starts {alert.StartTime:HH:mm} ({alert.GetMinutesRemaining(true)}m)");
+                else
+                    statusMessage.Append($"Expires {alert.ExpireTime:HH:mm} ({alert.GetMinutesRemaining(false)}m)");
+            }
+            else
+            {
+                statusMessage.Append($"Expired ({alert.ExpireTime:HH:mm})");
+            }
 
-            string expireMsg = $"Expires {alert.ExpireTime:HH:mm} ({alert.GetMinutesRemaining(false)}m)";
+            var returnMessage = new StringBuilder();
+
+            var expireMessage = $"Expires {alert.ExpireTime:HH:mm} ({alert.GetMinutesRemaining(false)}m)";
 
             if (!isNotification)
-                returnMessage.Append(
-                    alert.DestinationName + Environment.NewLine +
-                    $"{info.Faction} {info.MissionType} ({info.MinimumLevel}-{info.MaximumLevel}){(info.RequiresArchwing ? $" (Archwing)" : String.Empty)}" + Environment.NewLine +
-                    $"{rewardQuantityMessage + rewardMessage + creditMessage}" + Environment.NewLine +
-                    statusString
-                    );
+            {
+                returnMessage.AppendLine(alert.DestinationName);
+                returnMessage.AppendLine($"{info.Faction} {info.MissionType} ({info.MinimumLevel}-{info.MaximumLevel}){(info.RequiresArchwing ? $" (Archwing)" : String.Empty)}");
+                returnMessage.AppendLine($"{rewardQuantityMessage + rewardMessage + creditMessage}");
+                returnMessage.Append(statusMessage.ToString());
+            }
             else
-                returnMessage.Append(
-                    "New Alert" + Environment.NewLine +
-                    $"{rewardQuantityMessage + rewardMessage + creditMessage}" + Environment.NewLine +
-                    expireMsg
-                    );
+            {
+                returnMessage.AppendLine("New Alert");
+                returnMessage.AppendLine($"{rewardQuantityMessage + rewardMessage + creditMessage}");
+                returnMessage.Append(expireMessage);
+            }
 
             return returnMessage.ToString();
         }
@@ -63,29 +77,49 @@ namespace WubbyBot.Events.Extensions
 
             //Check the invasion type - Invasions will have a reward from both factions but Outbreaks only have a reward from the defending faction.
             //Check if there is a credit reward; reward can only either be a credit reward or loot reward
-            string defenderAllianceRewardMessage = invasion.Type == InvasionType.INVASION ? (attackerInfo.Credits > 0 ? invasion.AttackerDetails.Credits.ToString() + "cr" : invasion.AttackerDetails.Reward) : "",
-                attackerAllianceRewardMessage = (defenderInfo.Credits > 0 ? invasion.DefenderDetails.Credits.ToString() + "cr" : invasion.DefenderDetails.Reward),
-                defenderAllianceQuantityMessage = (attackerInfo.RewardQuantity > 1 ? attackerInfo.RewardQuantity + "x" : ""),
-                attackerAllianceQuantityMessage = (defenderInfo.RewardQuantity > 1 ? defenderInfo.RewardQuantity + "x" : "");
+            var defenderAllianceRewardMessage = new StringBuilder();
+            if (invasion.Type == InvasionType.INVASION)
+            {
+                if (attackerInfo.Credits > 0)
+                {
+                    defenderAllianceRewardMessage.Append($"{invasion.AttackerDetails.Credits.ToString()}cr");
+                }
+                else
+                {
+                    defenderAllianceRewardMessage.Append(attackerInfo.RewardQuantity > 1 ? attackerInfo.RewardQuantity + "x" : string.Empty);
+                    defenderAllianceRewardMessage.Append(invasion.AttackerDetails.Reward);
+                }
+            }
+            
+            var attackerAllianceRewardMessage = new StringBuilder();
+            if (defenderInfo.Credits > 0)
+            {
+                attackerAllianceRewardMessage.Append($"{invasion.DefenderDetails.Credits.ToString()}cr");
+            }
+            else
+            {
+                attackerAllianceRewardMessage.Append(defenderInfo.RewardQuantity > 1 ? defenderInfo.RewardQuantity + "x" : string.Empty);
+                attackerAllianceRewardMessage.Append(invasion.DefenderDetails.Reward);
+            }
 
-            string winningFaction = (System.Math.Abs(invasion.Progress) / invasion.Progress) > 0 ? defenderInfo.Faction : attackerInfo.Faction,
-                changeRateSign = (invasion.ChangeRate < 0 ? "" : "+");
+            var winningFaction = (System.Math.Abs(invasion.Progress) / invasion.Progress) > 0 ? defenderInfo.Faction : attackerInfo.Faction;
+            string changeRateSign = (invasion.ChangeRate < 0 ? "" : "+");
 
-            StringBuilder returnMessage = new StringBuilder();
+            var returnMessage = new StringBuilder();
 
             if (!isNotification)
-                returnMessage.Append(
-                    invasion.DestinationName + Environment.NewLine +
-                    $"{defenderInfo.Faction} vs {attackerInfo.Faction}" + Environment.NewLine +
-                    $"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{defenderAllianceQuantityMessage + defenderAllianceRewardMessage} / ") : "")}{attackerAllianceQuantityMessage + attackerAllianceRewardMessage}" + Environment.NewLine + 
-                    $"{string.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({changeRateSign + string.Format("{0:0.00}", invasion.ChangeRate * 100.0f)} p/hr){(defenderInfo.Faction != Faction.INFESTATION ? " (" + winningFaction + ")" : "")}"
-                    );
+            {
+                returnMessage.AppendLine(invasion.DestinationName);
+                returnMessage.AppendLine($"{defenderInfo.Faction} vs {attackerInfo.Faction}");
+                returnMessage.AppendLine($"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{defenderAllianceRewardMessage} / ") : "")}{attackerAllianceRewardMessage}");
+                returnMessage.Append($"{string.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({changeRateSign + string.Format("{0:0.00}", invasion.ChangeRate * 100.0f)} p/hr){(defenderInfo.Faction != Faction.INFESTATION ? " (" + winningFaction + ")" : "")}");
+            } 
             else
-                returnMessage.Append(
-                    "New Invasion" + Environment.NewLine +
-                    $"{defenderInfo.Faction} vs {attackerInfo.Faction}" + Environment.NewLine +
-                    $"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{defenderAllianceQuantityMessage + defenderAllianceRewardMessage} / ") : "")}{attackerAllianceQuantityMessage + attackerAllianceRewardMessage}" + Environment.NewLine
-                    );
+            {
+                returnMessage.AppendLine("New Invasion");
+                returnMessage.AppendLine($"{defenderInfo.Faction} vs {attackerInfo.Faction}");
+                returnMessage.Append($"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{defenderAllianceRewardMessage} / ") : "")}{attackerAllianceRewardMessage}");
+            }
 
             return returnMessage.ToString();
         }
@@ -96,106 +130,134 @@ namespace WubbyBot.Events.Extensions
             var varDest = sortie.VariantDestinations;
             var varConditions = sortie.VariantConditions;
 
-            string statusString =
-                (!sortie.IsExpired()) ? (DateTime.Now < sortie.StartTime ? $"Starts {sortie.StartTime:HH:mm} ({sortie.GetMinutesRemaining(true)}m)" :
-                $"Expires {ParseMinutesAsTime(sortie.GetMinutesRemaining(false))}") : $"Expired ({sortie.ExpireTime:HH:mm})";
+            var statusMessage = new StringBuilder();
 
-            StringBuilder returnMessage = returnMessage = new StringBuilder();
+            if (!sortie.IsExpired())
+            {
+                if (DateTime.Now < sortie.StartTime)
+                    statusMessage.Append($"Starts {sortie.StartTime:HH:mm} ({sortie.GetMinutesRemaining(true)}m)");
+                else
+                    statusMessage.Append($"Expires {sortie.ExpireTime:HH:mm} ({sortie.GetMinutesRemaining(false)}m)");
+            }
+            else
+            {
+                statusMessage.Append($"Expired ({sortie.ExpireTime:HH:mm})");
+            }
+
+            var returnMessage = new StringBuilder();
 
             if (!isNotification)
             {
                 //Stored boss name in Reward property for convenience.
-                returnMessage.Append($"{sortie.VariantDetails.First().Reward}" + Environment.NewLine);
-                returnMessage.Append(statusString + Environment.NewLine + Environment.NewLine);
+                returnMessage.AppendLine($"{sortie.VariantDetails.First().Reward}");
+                returnMessage.AppendLine(statusMessage + Environment.NewLine);
                 //Stored condition in parsed reward for convenience also.
                 for (var i = 0; i < sortie.VariantDetails.Count; ++i)
                 {
-                    returnMessage.Append(
-                    varDest[i] + Environment.NewLine +
-                    $"{info[i].Faction} {info[i].MissionType}" + Environment.NewLine +
-                    varConditions[i] + Environment.NewLine + Environment.NewLine
-                    );
+                    returnMessage.AppendLine(varDest[i]);
+                    returnMessage.AppendLine($"{info[i].Faction} {info[i].MissionType}");
+                    returnMessage.AppendLine(varConditions[i] + Environment.NewLine);
                 }
             }
             else
-                returnMessage.Append(
-                "New Sortie" + Environment.NewLine +
-                sortie.VariantDetails.First().Faction + Environment.NewLine
-                );
-
+            {
+                returnMessage.AppendLine("New Sortie");
+                returnMessage.AppendLine(sortie.VariantDetails.First().Faction);
+            }
+            
             return returnMessage.ToString();
         }
 
         public static string DiscordMessage(this WarframeVoidFissure fissure, bool isNotification)
         {
             MissionInfo info = fissure.MissionDetails;
-            string rewardMessage = (!string.IsNullOrEmpty(info.Reward) ? info.Reward : string.Empty);
+            var rewardMessage = (!string.IsNullOrEmpty(info.Reward) ? info.Reward : string.Empty);
 
-            string statusString =
-                (!fissure.IsExpired()) ? (DateTime.Now < fissure.StartTime ? $"Starts {fissure.StartTime:HH:mm} ({fissure.GetMinutesRemaining(true)}m)" :
+            var statusString = (!fissure.IsExpired()) ? (DateTime.Now < fissure.StartTime ? $"Starts {fissure.StartTime:HH:mm} ({fissure.GetMinutesRemaining(true)}m)" :
                 $"Expires {fissure.ExpireTime:HH:mm} ({fissure.GetMinutesRemaining(false)}m)") : $"Expired ({fissure.ExpireTime:HH:mm})";
 
             StringBuilder returnMessage = new StringBuilder();
             if (!isNotification)
-                returnMessage.Append(
-                    fissure.DestinationName + Environment.NewLine +
-                    $"{info.Faction} {info.MissionType}{(info.RequiresArchwing ? $" (Archwing)" : String.Empty)}" + Environment.NewLine +
-                    rewardMessage + Environment.NewLine +
-                    statusString
-                    );
+            {
+                returnMessage.AppendLine(fissure.DestinationName);
+                returnMessage.AppendLine($"{info.Faction} {info.MissionType}{(info.RequiresArchwing ? $" (Archwing)" : String.Empty)}");
+                returnMessage.AppendLine(rewardMessage);
+                returnMessage.Append(statusString);
+            }
             else
-                returnMessage.Append(
-                    "New Void Fissure" + Environment.NewLine +
-                    $"{info.Faction} {info.MissionType}" + Environment.NewLine +
-                    rewardMessage + Environment.NewLine +
-                    statusString
-                    );
+            {
+                returnMessage.AppendLine("New Void Fissure");
+                returnMessage.AppendLine($"{info.Faction} {info.MissionType}");
+                returnMessage.AppendLine(rewardMessage);
+                returnMessage.Append(statusString);
+            }
 
             return returnMessage.ToString();
         }
 
         public static string DiscordMessage(this WarframeVoidTrader trader, bool isNotification)
         {
-            TimeSpan ts = (DateTime.Now < trader.StartTime) ? trader.GetTimeRemaining(true) : trader.GetTimeRemaining(false);
-            int days = ts.Days, hours = ts.Hours, minutes = ts.Minutes;
-            string traderName = "Baro Ki Teer";
-
-            StringBuilder traderInventory = new StringBuilder();
+            var ts = (DateTime.Now < trader.StartTime) ? trader.GetTimeRemaining(true) : trader.GetTimeRemaining(false);
+            var days = ts.Days;
+            var hours = ts.Hours;
+            var minutes = ts.Minutes;
+            var traderName = "Baro Ki Teer";
+            var traderInventory = new StringBuilder();
 
             //Ensure that the trader's inventory is not empty first.
             if (trader.Inventory.Count() > 0)
             {
                 foreach (var i in trader.Inventory)
                 {
-                    traderInventory.Append($"{i.Name} {(i.Credits > 0 ? $"{i.Credits}cr{(i.Ducats > 0 ? " + " : string.Empty)}" : string.Empty)}{(i.Ducats > 0 ? $"{i.Ducats}dc" : string.Empty)}{Environment.NewLine}");
+                    traderInventory.Append(i.Name);
+                    if (i.Credits > 0)
+                        traderInventory.Append($" {i.Credits}cr{(i.Ducats > 0 ? " +" : string.Empty)}");
+                    if (i.Ducats > 0)
+                        traderInventory.Append($" {i.Ducats}dc");
+                    traderInventory.AppendLine();
+
                 }
             }
-            string traderAction = (DateTime.Now < trader.StartTime) ? "arriving at" : "leaving";
 
-            StringBuilder returnMessage = new StringBuilder();
+            var traderAction = (DateTime.Now < trader.StartTime) ? "arriving at" : "leaving";
+
+            var returnMessage = new StringBuilder();
 
             if (!isNotification)
-                returnMessage.Append(
-                    $"{traderName} is {traderAction} {trader.DestinationName} in {$"{days} days {hours} hours and {minutes} minutes"}.{Environment.NewLine + Environment.NewLine + traderInventory.ToString()}");
+            {
+                returnMessage.AppendLine($"{traderName} is {traderAction} {trader.DestinationName} in {$"{days} days {hours} hours and {minutes} minutes"}.{Environment.NewLine}");
+                returnMessage.Append(traderInventory.ToString());
+            }
             else
-                returnMessage.Append(
-                    traderName + Environment.NewLine +
-                    trader.DestinationName + Environment.NewLine
-                    );
-
+            {
+                returnMessage.AppendLine(traderName);
+                returnMessage.AppendLine(trader.DestinationName);
+            }
+                
             return returnMessage.ToString();
         }
 
         public static string DiscordMessage(this WarframeTimeCycleInfo cycleInfo, bool isNotification)
         {
-            string timeOfDay = cycleInfo.TimeIsDay() ? "Day" : "Night";
-            string cycleStatus = $"{cycleInfo.TimeOfNextCycleChange:HH:mm} ({(cycleInfo.TimeUntilNextCycleChange.Hours > 0 ? $"{cycleInfo.TimeUntilNextCycleChange.Hours}h " : String.Empty)}{cycleInfo.TimeUntilNextCycleChange.Minutes}m)";
+            var timeOfDay = cycleInfo.TimeIsDay() ? "Day" : "Night";
+            var cycleStatus = $"{cycleInfo.TimeOfNextCycleChange:HH:mm} ({(cycleInfo.TimeUntilNextCycleChange.Hours > 0 ? $"{cycleInfo.TimeUntilNextCycleChange.Hours}h " : String.Empty)}{cycleInfo.TimeUntilNextCycleChange.Minutes}m)";
 
-            StringBuilder returnMessage = new StringBuilder(
-                $"The current cycle is {timeOfDay}." + Environment.NewLine +
-                $"The next cycle begins at {cycleStatus}.{Environment.NewLine}");
+            var returnMessage = new StringBuilder();
+            returnMessage.AppendLine($"The current cycle is {timeOfDay}.");
+            returnMessage.AppendLine($"The next cycle begins at {cycleStatus}.");
 
             return returnMessage.ToString();
+        }
+
+        //Encapsulates Discord Message formatting to aid with code reuse and maintainability
+        public static StringBuilder FormatMessage(string content, string markdownLanguageIdentifier = "xl")
+        {
+            var result = new StringBuilder();
+            result.AppendLine($"```{(string.IsNullOrEmpty(markdownLanguageIdentifier) ? string.Empty : markdownLanguageIdentifier)}");
+            result.AppendLine(content);
+            result.AppendLine("```");
+
+            return result;
         }
     }
 }

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace DiscordSharpTest.WarframeEvents
 {
+    //A container for all related information regarding a mission
     public class MissionInfo
     {
         public string Faction { get; private set; }
@@ -20,8 +21,8 @@ namespace DiscordSharpTest.WarframeEvents
         public MissionInfo(string factionName, string missionType, int credits, string reward, int rewardQuantity, int minLevel, int maxLevel, bool requiresArchwing)
         {
             //This is the mission information of the faction you are opposing
-            Faction = DiscordSharpTest.WarframeEvents.Faction.GetName(factionName);
-            MissionType = DiscordSharpTest.WarframeEvents.MissionType.GetName(missionType);
+            Faction = DiscordSharpTest.WarframeEvents.Properties.Faction.GetName(factionName);
+            MissionType = DiscordSharpTest.WarframeEvents.Properties.MissionType.GetName(missionType);
             Credits = credits;
             Reward = reward;
             RewardQuantity = rewardQuantity;

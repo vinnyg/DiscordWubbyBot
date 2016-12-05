@@ -14,20 +14,22 @@ using DiscordSharpTest.WarframeEvents;
 
 namespace DiscordSharpTest
 {
-    class WarframeEventsContainer
+    //This class parses a JSON file and raises events regarding the contents
+    public class WarframeJSONScraper
     {
+        //TODO: Break this class down into two; a dedicated scraper class and JSON parser class
+        //Consider responsibility of raising events
         private const int SECONDS_PER_DAY_CYCLE = 14400;
         public List<WarframeAlert> AlertsList { get; private set; }
         public List<WarframeInvasion> InvasionsList { get; private set; }
         public List<WarframeVoidTrader> VoidTraders { get; private set; }
         public List<WarframeVoidFissure> VoidFissures { get; private set; }
         public List<WarframeSortie> SortieList { get; private set; }
-        
+        public bool IsRunning { get; set; }
+
         //Store the JSON file
         private JObject _worldState { get; set; }
-        private Timer _eventUpdateInterval { get; set; }
-        private double _minutesPerUpdate { get; set; }
-        private bool _isRunning { get; set; }
+        private Timer _eventUpdateTimer { get; set; }
         private List<WarframeAlert> _newAlerts { get; set; }
         private List<WarframeInvasion> _newInvasions { get; set; }
         private List<WarframeVoidFissure> _newVoidFissures { get; set; }
@@ -41,12 +43,11 @@ namespace DiscordSharpTest
         public event EventHandler<WarframeSortieScrapedArgs> SortieScraped;
         public event EventHandler<DayCycleTimeScrapedArgs> DayCycleScraped;
         public event EventHandler<WarframeAlertExpiredArgs> AlertExpired;
-        public event EventHandler<ExistingAlertFoundArgs> ExistingAlertFound;
         public event EventHandler<WarframeVoidFissureExpiredArgs> VoidFissureExpired;
         public event EventHandler<WarframeSortieExpiredArgs> SortieExpired;
         #endregion
 
-        public WarframeEventsContainer(int minutesPerUpdate = 1)
+        public WarframeJSONScraper()
         {
             AlertsList = new List<WarframeAlert>();
             InvasionsList = new List<WarframeInvasion>();
@@ -58,26 +59,35 @@ namespace DiscordSharpTest
             _newInvasions = new List<WarframeInvasion>();
             _newVoidFissures = new List<WarframeVoidFissure>();
             _newSorties = new List<WarframeSortie>();
-            _minutesPerUpdate = minutesPerUpdate;
         }
 
-        public void Start()
+        public void Start(int updateIntervalInMinutes = 1)
         {
-            if (!_isRunning)
+            if (!IsRunning)
             {
                 //Establish event update interval (every minute)
-                _eventUpdateInterval = new Timer((e) =>
+                _eventUpdateTimer = new Timer((e) =>
                 {
                     ScrapeWorldState();
                     ParseJsonEvents();
-                }, null, 0, (int)(TimeSpan.FromMinutes((double)_minutesPerUpdate).TotalMilliseconds));
+                }, null, 0, (int)(TimeSpan.FromMinutes((double)updateIntervalInMinutes).TotalMilliseconds));
 
-                _isRunning = true;
+                IsRunning = true;
+            }
+        }
+
+        public void Stop()
+        {
+            if (IsRunning)
+            {
+                _eventUpdateTimer.Dispose();
+                IsRunning = false;
             }
         }
 
         private void ScrapeWorldState()
         {
+            //TODO: Move literal to config
             using (WebClient wc = new WebClient())
             {
                 _worldState = JObject.Parse(wc.DownloadString("http://content.warframe.com/dynamic/worldState.php"));
@@ -622,12 +632,12 @@ namespace DiscordSharpTest
 
         public bool IsAlertNew(WarframeAlert alert)
         {
-            return (_newAlerts.Find(x => x.GUID == alert.GUID) != null);
+            return (_newAlerts.Exists( x => x.GUID == alert.GUID));
         }
 
         public bool IsInvasionNew(WarframeInvasion invasion)
         {
-            return (_newInvasions.Find(x => x.GUID == invasion.GUID) != null);
+            return (_newInvasions.Exists(x => x.GUID == invasion.GUID));
         }
     }
 }

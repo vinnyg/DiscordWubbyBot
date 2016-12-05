@@ -28,6 +28,7 @@ namespace DiscordSharpTest.WarframeEvents
     Progress: 69% (Corpus)
     ------------------------*/
 
+    //Base class for all Warframe Events to extend.
     public abstract class WarframeEvent
     {
         public string GUID { get; private set; }

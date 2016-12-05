@@ -1,6 +1,4 @@
-﻿#define DEBUG
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,13 +6,12 @@ using System.Threading.Tasks;
 using DiscordSharp;
 using System.Reflection;
 using System.IO;
-//using DiscordSharp.Objects;
-//using System.Threading;
 
 namespace DiscordSharpTest
 {
     class Program
     {
+        //http://stackoverflow.com/questions/1600962/displaying-the-build-date
         public static DateTime GetLinkerTime(TimeZoneInfo target = null)
         {
             var assembly = Assembly.GetEntryAssembly();

@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.ComponentModel;
 
-namespace DiscordSharpTest.WarframeEvents
+namespace DiscordSharpTest.WarframeEvents.Properties
 {
     public static class Faction
     {
@@ -55,38 +55,9 @@ namespace DiscordSharpTest.WarframeEvents
         }
     };
 
-    public static class Reward
-    {
-        private static readonly Dictionary<string, string> RewardNames = new Dictionary<string, string>
-        {
-            //Some manual work that I don't really want to do. Refer to that Warframe Alerts Info application.
-            //GameLangStrings\GameStringsEnglish.txt
-            { "/Lotus/Types/Items/MiscItems/Alertium", "Nitain Extract" },
-            { "/Lotus/Types/Items/MiscItems/OrokinCell", "Orokin Cell" },
-            { "/Lotus/Types/Items/MiscItems/InfestedAladCoordinate", "Mutalist Alad V Coordinate" },
-            { "/Lotus/Types/Items/Research/EnergyComponent", "Fieldron" },
-            { "/Lotus/Types/Items/Research/BioComponent", "Mutagen Mass" },
-            { "/Lotus/StoreItems/Upgrades/Mods/Aura/PlayerHolsterSpeedAuraMod", "Speed Holster Aura" },
-            { "/Lotus/StoreItems/Upgrades/Mods/Aura/PlayerLootRadarAuraMod", "Loot Radar Aura" }
-            
-        };
-
-        public static string GetName(string rewardName)
-        {
-            return RewardNames.ContainsKey(rewardName) ? RewardNames[rewardName] : rewardName;
-        }
-    }
-
     public static class InvasionType
     {
         public const string INVASION = "Invasion";
         public const string OUTBREAK = "Outbreak";
     };
 }
-
-
-
-/*namespace Extension
-{
-    
-}*/
