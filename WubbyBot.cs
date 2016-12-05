@@ -12,7 +12,6 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Collections.Concurrent;
 using Newtonsoft.Json.Linq;
-using System.Data.SQLite;
 using System.Net;
 using System.Xml;
 using System.Xml.Linq;
