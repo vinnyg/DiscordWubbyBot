@@ -20,9 +20,10 @@ namespace WubbyBot.Events.Extensions
             int hours = ts.Hours;
             int mins = ts.Minutes;
 
-            var result = new StringBuilder((days > 0 ? $"{days} Days " : String.Empty)
-                                        + ((hours > 0) || (days > 0) ? $"{hours}h " : "")
-                                        + ($"{mins}m"));
+            var result = new StringBuilder();
+            result.Append(days > 0 ? $"{days} Days " : string.Empty);
+            result.Append((hours > 0) || (days > 0) ? $"{hours}h " : string.Empty);
+            result.Append($"{mins}m");
 
             return result.ToString();
         }
@@ -50,13 +51,12 @@ namespace WubbyBot.Events.Extensions
             }
 
             var returnMessage = new StringBuilder();
-
             var expireMessage = $"Expires {alert.ExpireTime:HH:mm} ({alert.GetMinutesRemaining(false)}m)";
 
             if (!isNotification)
             {
                 returnMessage.AppendLine(alert.DestinationName);
-                returnMessage.AppendLine($"{info.Faction} {info.MissionType} ({info.MinimumLevel}-{info.MaximumLevel}){(info.RequiresArchwing ? $" (Archwing)" : String.Empty)}");
+                returnMessage.AppendLine($"{info.Faction} {info.MissionType} ({info.MinimumLevel}-{info.MaximumLevel}){(info.RequiresArchwing ? $" (Archwing)" : string.Empty)}");
                 returnMessage.AppendLine($"{rewardQuantityMessage + rewardMessage + creditMessage}");
                 returnMessage.Append(statusMessage.ToString());
             }
@@ -112,7 +112,7 @@ namespace WubbyBot.Events.Extensions
                 returnMessage.AppendLine(invasion.DestinationName);
                 returnMessage.AppendLine($"{defenderInfo.Faction} vs {attackerInfo.Faction}");
                 returnMessage.AppendLine($"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{defenderAllianceRewardMessage} / ") : "")}{attackerAllianceRewardMessage}");
-                returnMessage.Append($"{string.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({changeRateSign + string.Format("{0:0.00}", invasion.ChangeRate * 100.0f)} p/hr){(defenderInfo.Faction != Faction.INFESTATION ? " (" + winningFaction + ")" : "")}");
+                returnMessage.Append($"{string.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({changeRateSign + string.Format("{0:0.00}", invasion.ChangeRate * 100.0f)} p/hr){(defenderInfo.Faction != Faction.INFESTATION ? " (" + winningFaction + ")" : string.Empty)}");
             } 
             else
             {
@@ -180,7 +180,7 @@ namespace WubbyBot.Events.Extensions
             if (!isNotification)
             {
                 returnMessage.AppendLine(fissure.DestinationName);
-                returnMessage.AppendLine($"{info.Faction} {info.MissionType}{(info.RequiresArchwing ? $" (Archwing)" : String.Empty)}");
+                returnMessage.AppendLine($"{info.Faction} {info.MissionType}{(info.RequiresArchwing ? $" (Archwing)" : string.Empty)}");
                 returnMessage.AppendLine(rewardMessage);
                 returnMessage.Append(statusString);
             }
@@ -240,7 +240,7 @@ namespace WubbyBot.Events.Extensions
         public static string DiscordMessage(this WarframeTimeCycleInfo cycleInfo, bool isNotification)
         {
             var timeOfDay = cycleInfo.TimeIsDay() ? "Day" : "Night";
-            var cycleStatus = $"{cycleInfo.TimeOfNextCycleChange:HH:mm} ({(cycleInfo.TimeUntilNextCycleChange.Hours > 0 ? $"{cycleInfo.TimeUntilNextCycleChange.Hours}h " : String.Empty)}{cycleInfo.TimeUntilNextCycleChange.Minutes}m)";
+            var cycleStatus = $"{cycleInfo.TimeOfNextCycleChange:HH:mm} ({(cycleInfo.TimeUntilNextCycleChange.Hours > 0 ? $"{cycleInfo.TimeUntilNextCycleChange.Hours}h " : string.Empty)}{cycleInfo.TimeUntilNextCycleChange.Minutes}m)";
 
             var returnMessage = new StringBuilder();
             returnMessage.AppendLine($"The current cycle is {timeOfDay}.");
