@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DiscordSharp;
+//using DiscordSharp;
 using System.Reflection;
 using System.IO;
 
