@@ -4,8 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using DiscordSharp;
-using DiscordSharp.Objects;
 using Newtonsoft.Json;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -19,6 +17,8 @@ using WubbyBot.Events.Extensions;
 using DiscordWrapper;
 using DiscordSharpTest.WarframeEvents;
 using System.Reflection;
+using System.Configuration;
+using DSharpPlus.Objects;
 
 namespace DiscordSharpTest
 {
@@ -26,9 +26,9 @@ namespace DiscordSharpTest
     public class WubbyBot : DiscordBot
     {
 #if DEBUG
-        private const string ALERTS_CHANNEL = "wf-dev";
+        private long _alertsChannelID = long.Parse(ConfigurationManager.AppSettings["WubbyBotAlertsChannelDebug"]);
 #else
-        private const string ALERTS_CHANNEL = "warframe-events";
+        private string _alertsChannelID = ConfigurationManager.AppSettings["WubbyBotAlertsChannel"];
 #endif
         private const string ALERTS_ARCHIVE_CHANNEL = "wf-alert-archive";
 
@@ -75,46 +75,38 @@ namespace DiscordSharpTest
         }
 
         //This task is responsible for ensuring that a connection to Discord has been made, as well as handling the lifetime of the application
-        private Task SetupEvents()
+        private void SetupEvents()
         {
             Console.ForegroundColor = ConsoleColor.White;
-            return Task.Run(() =>
+            Client.MessageReceived += (sender, e) =>
             {
-                Client.MessageReceived += (sender, e) =>
-                {
-                    //Don't log messages posted in the log channel
-                    if (e.Channel.Name != LogChannelName)
-                        Log($"Message from {e.Author.Username} in #{e.Channel.Name} on {e.Channel.Parent.Name}: {e.Message.ID}");
-                };
+                //Don't log messages posted in the log channel
+                if (e.Channel.Name != LogChannelName)
+                    Log($"Message from {e.Author.Username} in #{e.Channel.Name} on {e.Channel.Parent.Name}: {e.Message.ID}");
+            };
 
-                Client.Connected += (sender, e) =>
-                {
-                    Log($"Connected as {e.User.Username}");
+            Client.Connected += (sender, e) =>
+            {
+                Log($"Connected as {e.User.Username}");
 
-                    InitSystems();
-                    SetupWarframeEventsTask();
+                InitSystems();
+                SetupWarframeEventsTask();
 
-                    SetGame();
-                };
+                SetCurrentGame(false);
+            };
 
 #if DEBUG
-                Client.SocketOpened += (sender, e) =>
-                {
-                    Log("Socket was opened!");
-                };
+            Client.SocketOpened += (sender, e) =>
+            {
+                Log("Socket was opened!");
+            };
 
-                Client.SocketClosed += (sender, e) =>
-                {
-                    Log("Socket was closed!");
-                };
+            Client.SocketClosed += (sender, e) =>
+            {
+                Log("Socket was closed!");
+            };
 #endif
-
-                if (Client.SendLoginRequest() != null)
-                {
-                    Client.Connect();
-                }
-            }
-            );
+            Connect();
         }
 
         private void InitSystems()
@@ -126,63 +118,61 @@ namespace DiscordSharpTest
             Log("Initialisation complete.");
         }
 
-        private Task SetupWarframeEventsTask()
+        //private Task SetupWarframeEventsTask()
+        private void SetupWarframeEventsTask()
         {
-            return Task.Run(() =>
+            _eventsScraper.AlertScraped += (sender, e) =>
             {
-                _eventsScraper.AlertScraped += (sender, e) =>
-                {
 #if DEBUG
-                    Log("Alert Scraped!");
+                Log("Alert Scraped!");
 #endif
-                    bool alertIsNew = _eventsScraper.IsAlertNew(e.Alert);
-                    AddToAlertPostQueue(e.Alert, alertIsNew, e.Alert.IsExpired());
-                };
+                bool alertIsNew = _eventsScraper.IsAlertNew(e.Alert);
+                AddToAlertPostQueue(e.Alert, alertIsNew, e.Alert.IsExpired());
+            };
 
-                _eventsScraper.InvasionScraped += (sender, e) =>
-                {
+            _eventsScraper.InvasionScraped += (sender, e) =>
+            {
 #if DEBUG
-                    Log("Invasion Scraped!");
+                Log("Invasion Scraped!");
 #endif
-                    bool invasionIsNew = _eventsScraper.IsInvasionNew(e.Invasion);
-                    AddToInvasionPostQueue(e.Invasion, invasionIsNew, e.Invasion.IsExpired());
-                };
+                bool invasionIsNew = _eventsScraper.IsInvasionNew(e.Invasion);
+                AddToInvasionPostQueue(e.Invasion, invasionIsNew, e.Invasion.IsExpired());
+            };
 
-                _eventsScraper.VoidTraderScraped += (sender, e) =>
-                {
+            _eventsScraper.VoidTraderScraped += (sender, e) =>
+            {
 #if DEBUG
-                    Log("Void Trader Scraped!");
+                Log("Void Trader Scraped!");
 #endif
-                    AddToVoidTraderPostQueue(e.Trader, false, e.Trader.IsExpired());
-                };
+                AddToVoidTraderPostQueue(e.Trader, false, e.Trader.IsExpired());
+            };
 
-                _eventsScraper.VoidFissureScraped += (sender, e) =>
-                {
+            _eventsScraper.VoidFissureScraped += (sender, e) =>
+            {
 #if DEBUG
-                    Log("Fissure Scraped!");
+                Log("Fissure Scraped!");
 #endif
-                    AddToVoidFissurePostQueue(e.Fissure, false, e.Fissure.IsExpired());
-                };
+                AddToVoidFissurePostQueue(e.Fissure, false, e.Fissure.IsExpired());
+            };
 
-                _eventsScraper.SortieScraped += (sender, e) =>
-                {
+            _eventsScraper.SortieScraped += (sender, e) =>
+            {
 #if DEBUG
-                    Log("Sortie Scraped!");
+                Log("Sortie Scraped!");
 #endif
-                    AddToSortiePostQueue(e.Sortie, false, e.Sortie.IsExpired());
-                };
+                AddToSortiePostQueue(e.Sortie, false, e.Sortie.IsExpired());
+            };
 
-                _eventsScraper.DayCycleScraped += (sender, e) =>
-                {
+            _eventsScraper.DayCycleScraped += (sender, e) =>
+            {
 #if DEBUG
-                    Log("Day Cycle Scraped!");
+                Log("Day Cycle Scraped!");
 #endif
-                    AddToTimeCyclePostQueue(e.cycleInfo, false);
-                };
+                AddToTimeCyclePostQueue(e.cycleInfo, false);
+            };
 
-                _eventsScraper.Start();
-                StartPostTimer();
-            });
+            _eventsScraper.Start();
+            StartPostTimer();
         }
 
         //Start application operation cycle
@@ -227,13 +217,13 @@ namespace DiscordSharpTest
             }
 
             if (_alertMessage == null)
-                _alertMessage = SendMessage(finalMessage.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
+                _alertMessage = SendMessageToAlertsChannel(finalMessage.ToString());
             else
             {
-                EditMessage(finalMessage.ToString(), _alertMessage, Client.GetChannelByName(ALERTS_CHANNEL));
-                foreach(var item in messagesToNotify)
+                EditEventMessage(finalMessage.ToString(), _alertMessage);
+                foreach (var item in messagesToNotify)
                 {
-                    NotifyClient(item, Client.GetChannelByName(ALERTS_CHANNEL));
+                    NotifyClient(item);
                 }
             }
             
@@ -286,16 +276,16 @@ namespace DiscordSharpTest
             if (_invasionMessages.Count > 0)
             {
                 foreach (var item in messagesToNotify)
-                    NotifyClient(item, Client.GetChannelByName(ALERTS_CHANNEL));
+                    NotifyClient(item);
             }
 
             for (var i = 0; i < finalMessagesToPost.Count; ++i)
             {
                 //If invasion messages already exist
                 if (i < _invasionMessages.Count)
-                    EditMessage(finalMessagesToPost.ElementAt(i).ToString(), _invasionMessages.ElementAt(i), Client.GetChannelByName(ALERTS_CHANNEL));
+                    EditEventMessage(finalMessagesToPost.ElementAt(i).ToString(), _invasionMessages.ElementAt(i));
                 else //When we run out of available invasion messages to edit
-                    _invasionMessages.Add(SendMessage(finalMessagesToPost.ElementAt(i).ToString(), Client.GetChannelByName(ALERTS_CHANNEL)));
+                    _invasionMessages.Add(SendMessageToAlertsChannel(finalMessagesToPost.ElementAt(i).ToString()));
             }
 
             //Get rid of any extra messages which have been created as a result of long character counts in Discord messages
@@ -332,13 +322,13 @@ namespace DiscordSharpTest
             finalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContent.ToString()));
 
             if (_traderMessage == null)
-                _traderMessage = SendMessage(finalMessage.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
+                _traderMessage = SendMessageToAlertsChannel(finalMessage.ToString());
             else
             {
-                EditMessage(finalMessage.ToString(), _traderMessage, Client.GetChannelByName(ALERTS_CHANNEL));
+                EditEventMessage(finalMessage.ToString(), _traderMessage);
                 foreach (var item in messagesToNotify)
                 {
-                    NotifyClient(item, Client.GetChannelByName(ALERTS_CHANNEL));
+                    NotifyClient(item);
                 }
             }
 
@@ -372,13 +362,13 @@ namespace DiscordSharpTest
             }
 
             if (_fissureMessage == null)
-                _fissureMessage = SendMessage(finalMessage.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
+                _fissureMessage = SendMessageToAlertsChannel(finalMessage.ToString());
             else
             {
-                EditMessage(finalMessage.ToString(), _fissureMessage, Client.GetChannelByName(ALERTS_CHANNEL));
+                EditEventMessage(finalMessage.ToString(), _fissureMessage);
                 foreach (var item in messagesToNotify)
                 {
-                    NotifyClient(item, Client.GetChannelByName(ALERTS_CHANNEL));
+                    NotifyClient(item);
                 }
             }
 
@@ -409,13 +399,13 @@ namespace DiscordSharpTest
             }
 
             if (_sortieMessage == null)
-                _sortieMessage = SendMessage(finalMessage.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
+                _sortieMessage = SendMessageToAlertsChannel(finalMessage.ToString());
             else
             {
-                EditMessage(finalMessage.ToString(), _sortieMessage, Client.GetChannelByName(ALERTS_CHANNEL));
+                EditEventMessage(finalMessage.ToString(), _sortieMessage);
                 foreach (var item in messagesToNotify)
                 {
-                    NotifyClient(item, Client.GetChannelByName(ALERTS_CHANNEL));
+                    NotifyClient(item);
                 }
             }
 
@@ -441,13 +431,13 @@ namespace DiscordSharpTest
             }
 
             if (_timeCycleMessage == null)
-                _timeCycleMessage = SendMessage(finalMessage.ToString(), Client.GetChannelByName(ALERTS_CHANNEL));
+                _timeCycleMessage = SendMessageToAlertsChannel(finalMessage.ToString());
             else
             {
-                EditMessage(finalMessage.ToString(), _timeCycleMessage, Client.GetChannelByName(ALERTS_CHANNEL));
+                EditEventMessage(finalMessage.ToString(), _timeCycleMessage);
                 foreach (var item in messagesToNotify)
                 {
-                    NotifyClient(item, Client.GetChannelByName(ALERTS_CHANNEL));
+                    NotifyClient(item);
                 }
             }
 
@@ -497,24 +487,26 @@ namespace DiscordSharpTest
             foreach (var i in _invasionMessages)
                 DeleteMessage(i);
 
-            Client.Logout();
+            Logout();
         }
 
-        public void SetGame(string gameName = "")
+        //Set the currently playing label in Discord
+        public void SetCurrentGame(bool isStreaming, string gameName = "", string url = "")
         {
-            //Update the "Playing" message with a random game from the list
+            //This method is not an override as the signature differs from the base method
+            //Update the "Playing" message with a random game from the list if gameName is not provided
             if ((File.Exists("gameslist.json")) && (string.IsNullOrEmpty(gameName)))
             {
                 var gamesList = JsonConvert.DeserializeObject<string[]>(File.ReadAllText("gameslist.json"));
                 gameName = gamesList != null ? gamesList[_randomNumGen.Next(0, gamesList.Length)] : "null!";
             }
 
-            Client.UpdateCurrentGame(gameName);
+            base.SetCurrentGame(gameName, isStreaming, url);
 #if DEBUG
             var assemblyName = Assembly.GetEntryAssembly().GetName();
             var assemblyVersion = assemblyName.Version;
 
-            Client.UpdateCurrentGame($"{assemblyVersion.Major}.{assemblyVersion.Minor}.{assemblyVersion.Build}");
+            base.SetCurrentGame($"{assemblyVersion.Major}.{assemblyVersion.Minor}.{assemblyVersion.Build}", false);
 #endif
         }
 
@@ -523,6 +515,23 @@ namespace DiscordSharpTest
             throw new NotImplementedException();
 
             //return _randomNumGen.Next(min, max);
+        }
+
+        private DiscordMessage SendMessageToAlertsChannel(string content)
+        {
+            return SendMessage(content, Client.GetChannelByID(_alertsChannelID));
+        }
+
+        private DiscordMessage EditEventMessage(string newContent, DiscordMessage targetMessage)
+        {
+            return EditMessage(newContent, targetMessage, Client.GetChannelByID(_alertsChannelID));
+        }
+
+        //Creates a new message which is automatically deleted shortly after to force a DiscordApp notification
+        private void NotifyClient(string content)
+        {
+            DiscordMessage message = SendMessageToAlertsChannel(content);
+            DeleteMessage(message);
         }
 
         //Contains information about the message as well as its content
