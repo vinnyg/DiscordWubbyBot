@@ -2,20 +2,23 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
-using DiscordSharp;
-using DiscordSharp.Objects;
+using System.Configuration;
 using Newtonsoft.Json;
+using DSharpPlus;
+using DSharpPlus.Objects;
 
 namespace DiscordWrapper
 {
     public abstract class DiscordBot
     {
         //Milliseconds which must pass before another Discord request can be made
-        private const int REQUEST_TIME_LIMIT = 1000;
+        private const int REQUEST_TIME_LIMIT = 1100;
         //Maximum character limit for a single Discord Message
         public const int MESSAGE_CHAR_LIMIT = 2000;
+        //Milliseconds which must pass before a delete request can be made.
+        private const int DELETE_REQUEST_TIME_LIMIT = 500;
 
-        public DiscordClient Client { get; internal set; }
+        public DiscordClient Client { get; set; }
         public string Name { get; set; }       //Display name of bot
         public DiscordMember Owner { get; set; }
         public Config BotConfig { get; internal set; }
@@ -23,6 +26,7 @@ namespace DiscordWrapper
         public string LogChannelName { get; internal set; }     //Name of channel to post log messages to
 
         private DateTime timeOfLastDiscordRequest;
+        private List<DiscordChannel> _channelList { get; set; }
 
         public DiscordBot(string name = "DiscordBot", string logChannelName = "")
         {
@@ -30,14 +34,10 @@ namespace DiscordWrapper
             LogChannelName = logChannelName;
             timeOfLastDiscordRequest = DateTime.Now;
 
-            if (File.Exists(Name + ".json"))
+            string fileName = "discordbot.json";//ConfigurationManager.AppSettings["DiscordBotSettings"].ToString();
+            if (File.Exists(fileName))
             {
-                BotConfig = JsonConvert.DeserializeObject<Config>(File.ReadAllText(Name + ".json"));
-            }
-            else
-            {
-                BotConfig = new Config();
-                Console.WriteLine("No config for " + Name + " was found.");
+                BotConfig = JsonConvert.DeserializeObject<Config>(File.ReadAllText(fileName));
             }
         }
 
@@ -46,12 +46,6 @@ namespace DiscordWrapper
             Client = new DiscordClient(tokenOverride: BotConfig.DiscordToken, isBotAccount: true, enableLogging: true);
             Client.RequestAllUsersOnStartup = true;
             Client.EnableVerboseLogging = true;
-
-            if (BotConfig.email == null || BotConfig.password == null)
-            {
-                Console.WriteLine("Please provide login credentials in \"" + Name + ".json\"");
-                return;
-            }
         }
 
         public abstract void Init();
@@ -67,7 +61,7 @@ namespace DiscordWrapper
             try
             {
                 System.Threading.Thread.Sleep(GetTimeUntilCanRequest());
-                message = Client.SendMessageToChannel(content, channel);
+                message = Client.SendMessageToChannel(content, channel, false);
                 timeOfLastDiscordRequest = DateTime.Now;
             }
             catch (NullReferenceException)
@@ -80,6 +74,14 @@ namespace DiscordWrapper
             }
 
             return message;
+        }
+
+        virtual public void Connect()
+        {
+            if (Client.SendLoginRequest() != null)
+            {
+                Client.Connect();
+            }
         }
 
         //Send a message to the specified user
@@ -124,14 +126,14 @@ namespace DiscordWrapper
             return message;
         }
 
-        virtual public void DeleteMessage(DiscordMessage targetMsg)
+        virtual public void DeleteMessage(DiscordMessage targetMessage)
         {
             try
             {
-                System.Threading.Thread.Sleep(GetTimeUntilCanRequest());
-                if (targetMsg != null)
+                System.Threading.Thread.Sleep(GetTimeUntilCanRequest(DELETE_REQUEST_TIME_LIMIT));
+                if (targetMessage != null)
                 {
-                    Client.DeleteMessage(targetMsg);
+                    Client.DeleteMessage(targetMessage);
                     timeOfLastDiscordRequest = DateTime.Now;
                 }
             }
@@ -170,12 +172,9 @@ namespace DiscordWrapper
             return targetMessage;
         }
 
-        //Creates a new message which is automatically deleted shortly after to force a DiscordApp notification
-        virtual public void NotifyClient(string content, DiscordChannel channel)
+        virtual public void SetCurrentGame(string gameName, bool isStreaming, string url = "")
         {
-            DiscordMessage message = SendMessage(content, channel);
-            System.Threading.Thread.Sleep(REQUEST_TIME_LIMIT);
-            Client.DeleteMessage(message);
+            Client.UpdateCurrentGame(gameName, isStreaming, url);
         }
 
         virtual public void Log(string message)
@@ -200,12 +199,17 @@ namespace DiscordWrapper
                 }
             }*/
         }
-
-        private int GetTimeUntilCanRequest()
+        
+        private int GetTimeUntilCanRequest(int limit = REQUEST_TIME_LIMIT)
         {
-            DateTime timeOfNextAvailableRequest = timeOfLastDiscordRequest.AddMilliseconds(REQUEST_TIME_LIMIT);
+            DateTime timeOfNextAvailableRequest = timeOfLastDiscordRequest.AddMilliseconds(limit);
             double timeUntilNextAvailableRequest = timeOfNextAvailableRequest.Subtract(DateTime.Now).TotalMilliseconds;
             return timeUntilNextAvailableRequest < 0 ? 0 : (int)timeUntilNextAvailableRequest;
+        }
+
+        virtual public void Logout()
+        {
+            Client.Logout();
         }
     }
 }
