@@ -20,17 +20,17 @@ namespace WFDBApplication.ViewModels
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        private WarframeItem _selectedItem;
-        public WarframeItem SelectedItem
+        private WarframeItem _selectedWFItem;
+        public WarframeItem SelectedWFItem
         {
             get
             {
-                return _selectedItem;
+                return _selectedWFItem;
             }
             set
             {
-                _selectedItem = value;
-                RaisePropertyChanged("SelectedItem");
+                _selectedWFItem = value;
+                RaisePropertyChanged("SelectedWFItem");
             }
         }
 

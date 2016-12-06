@@ -108,6 +108,7 @@
     <Compile Include="Converters\IsIgnoredToSQLiteBoolConverter.cs" />
     <Compile Include="Extensions\EnumerableExtensions.cs" />
     <Compile Include="ViewModelLocator.cs" />
+    <Compile Include="ViewModels\Commands\RelayCommand.cs" />
     <Compile Include="ViewModels\WFDBHomeViewModel.cs" />
     <Compile Include="ViewModels\WFItemResultsViewModel.cs" />
     <Compile Include="WFDBHome.xaml.cs">

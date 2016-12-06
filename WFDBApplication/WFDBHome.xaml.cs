@@ -30,17 +30,6 @@ namespace WFDBApplication
             //LoadData();
         }
 
-        /*private void LoadData()
-        {
-            //Create a unit of work and load all the entities into the list
-            using (var unit = new UnitOfWork(new WarframeDataContext()))
-            {
-                _warframeItems = unit.WarframeItems.GetAll().ToList();
-            }
-            //Then we specify the source for data
-            ItemListBox.ItemsSource = _warframeItems;
-        }*/
-
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             // View Expense Report

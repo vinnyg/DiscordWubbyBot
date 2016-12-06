@@ -38,15 +38,15 @@ namespace WFDBApplication
         {
             //Pass the object to the results page.
             //We are binding the data here.
-            /*_selectedItemURI = ((WarframeItem)data).ItemURI;*/
-            SelectedItem = (WarframeItem)data;
+
+            //SelectedItem = (WarframeItem)data;
             DataContext = data;
             Loaded += WFDBResultsPage_Loaded;
         }
 
         void WFDBResultsPage_Loaded(object sender, RoutedEventArgs e)
         {
-            DataContext = SelectedItem;
+            //DataContext = SelectedItem;
         }
 
         private void Butt_Finish_Click(object sender, RoutedEventArgs e)

@@ -23,31 +23,31 @@ namespace WFDBApplication.ViewModels
 
         //ObservableCollection implements INotifyCollectionChanged and INotifyPropertyChanged
         //Useful when you want to know when the collection has changed. Event is triggered which identifies what entries have been added/removed.
-        private ObservableCollection<WarframeItem> _warframeItem;
-        public ObservableCollection<WarframeItem> WarframeItem
+        private ObservableCollection<WarframeItem> _warframeItems;
+        public ObservableCollection<WarframeItem> WarframeItems
         {
             get
             {
-                return _warframeItem;
+                return _warframeItems;
             }
             set
             {
-                _warframeItem = value;
+                _warframeItems = value;
                 RaisePropertyChanged("WarframeItem");
             }
         }
 
-        private WarframeItem _selectedItem;
-        public WarframeItem SelectedItem
+        private WarframeItem _selectedWFItem;
+        public WarframeItem SelectedWFItem
         {
             get
             {
-                return _selectedItem;
+                return _selectedWFItem;
             }
             set
             {
-                _selectedItem = value;
-                RaisePropertyChanged("SelectedItem");
+                _selectedWFItem = value;
+                RaisePropertyChanged("SelectedWFItem");
             }
         }
 
@@ -60,7 +60,15 @@ namespace WFDBApplication.ViewModels
         {
             using (var unit = new UnitOfWork(new WarframeDataContext()))
             {
-                WarframeItem = unit.WarframeItems.GetAll().ToObservableCollection();
+                WarframeItems = unit.WarframeItems.GetAll().ToObservableCollection();
+            }
+        }
+
+        public string ButtonContent
+        {
+            get
+            {
+                return "View";
             }
         }
     }

@@ -7,8 +7,11 @@
       xmlns:viewmodels="clr-namespace:WFDBApplication.ViewModels"
       mc:Ignorable="d" 
       d:DesignHeight="350" d:DesignWidth="500"
-      Title="WFDB - WHome"
-      DataContext="{Binding Source={StaticResource mainViewModelLocator}, Path=WFDBHomeViewModel}">
+      Title="WFDB - WHome">
+    <Page.DataContext>
+        <viewmodels:WFDBHomeViewModel/>
+    </Page.DataContext>
+        <!--DataContext="{Binding Source={StaticResource mainViewModelLocator}, Path=WFDBHomeViewModel}"-->
 
     <Grid Margin="10,0,10,5">
         <Grid.ColumnDefinitions>
@@ -26,16 +29,16 @@
             View Information
         </Label>
 
-        <!-- People list -->
+        <!-- Warframe Item List -->
         <Border Grid.Column="0" Grid.Row="1" Height="35" Padding="5" Background="#4E87D4">
             <Label VerticalAlignment="Center" Foreground="White">Items</Label>
         </Border>
         <ListBox Name="ItemListBox"
                  Grid.Column="0"
                  Grid.Row="2"
-                 ItemsSource="{Binding WarframeItem, Converter={StaticResource localDoNothingConverter}}"
-                 IsSynchronizedWithCurrentItem="true"
-                 SelectedItem="{Binding SelectedItem}">
+                 SelectedItem="{Binding SelectedWFItem, Mode=TwoWay}"
+                 ItemsSource="{Binding WarframeItems, Converter={StaticResource localDoNothingConverter}}"
+                 IsSynchronizedWithCurrentItem="true">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <Border BorderBrush="#CCCCCC" BorderThickness="1">
@@ -59,7 +62,7 @@
         </ListBox>
 
         <!-- View report button -->
-        <Button CommandParameter="{Binding ElementName=ItemListBox, Path=SelectedItem}" Grid.Column="0" Grid.Row="3" Margin="0,10,0,0" Width="125" Height="25" HorizontalAlignment="Center" Click="Button_Click">View</Button>
+        <Button CommandParameter="{Binding ElementName=ItemListBox, Path=SelectedItem}" Grid.Column="0" Grid.Row="3" Margin="0,10,0,0" Width="125" Height="25" HorizontalAlignment="Center" Click="Button_Click" Content="{Binding ButtonContent}"/>
         <!--<Grid.Background>
             <ImageBrush ImageSource="catref.png"/>
         </Grid.Background>-->
