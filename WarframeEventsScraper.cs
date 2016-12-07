@@ -11,6 +11,7 @@ using DiscordSharpTest.Events;
 using WarframeDatabaseNet;
 using WarframeDatabaseNet.Persistence;
 using DiscordSharpTest.WarframeEvents;
+using System.Configuration;
 
 namespace DiscordSharpTest
 {
@@ -87,10 +88,9 @@ namespace DiscordSharpTest
 
         private void ScrapeWorldState()
         {
-            //TODO: Move literal to config
             using (WebClient wc = new WebClient())
             {
-                _worldState = JObject.Parse(wc.DownloadString("http://content.warframe.com/dynamic/worldState.php"));
+                _worldState = JObject.Parse(wc.DownloadString(ConfigurationManager.AppSettings["WarframeContentURL"]));
             }
         }
 
