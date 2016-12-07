@@ -28,7 +28,7 @@ namespace DiscordSharpTest
 #if DEBUG
         private long _alertsChannelID = long.Parse(ConfigurationManager.AppSettings["WubbyBotAlertsChannelDebug"]);
 #else
-        private string _alertsChannelID = ConfigurationManager.AppSettings["WubbyBotAlertsChannel"];
+        private long _alertsChannelID = long.Parse(ConfigurationManager.AppSettings["WubbyBotAlertsChannel"]);
 #endif
         private const string ALERTS_ARCHIVE_CHANNEL = "wf-alert-archive";
 
