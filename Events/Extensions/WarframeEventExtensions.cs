@@ -124,6 +124,22 @@ namespace WubbyBot.Events.Extensions
             return returnMessage.ToString();
         }
 
+        public static string DiscordMessage(this WarframeInvasionConstruction project, bool isNotification)
+        {
+            var factionName = project.Faction;
+            var projectName = project.ProjectName;
+            var progress = project.ProjectProgress;
+
+            var returnMessage = new StringBuilder();
+
+            if (progress > 0.0)
+            {
+                returnMessage.AppendLine($"{factionName} {projectName}: {string.Format("{0:0.00}", progress)}% Complete");
+            }
+
+            return returnMessage.ToString();
+        }
+
         public static string DiscordMessage(this WarframeSortie sortie, bool isNotification)
         {
             var info = sortie.VariantDetails;
@@ -250,14 +266,70 @@ namespace WubbyBot.Events.Extensions
         }
 
         //Encapsulates Discord Message formatting to aid with code reuse and maintainability
-        public static StringBuilder FormatMessage(string content, string markdownLanguageIdentifier = "xl")
+        public static StringBuilder FormatMessage(string content, string markdownLanguageIdentifier = "xl", MessageFormat formatType = MessageFormat.CodeBlocks)
         {
+            var formatString = string.Empty;
+
+            switch (formatType)
+            {
+                case MessageFormat.CodeBlocks:
+                    formatString = "```";
+                    break;
+                case MessageFormat.Bold:
+                    formatString = "**";
+                    break;
+                case MessageFormat.Italics:
+                    formatString = "*";
+                    break;
+                case MessageFormat.BoldItalics:
+                    formatString = "***";
+                    break;
+                case MessageFormat.Underline:
+                    formatString = "__";
+                    break;
+                case MessageFormat.Strikeout:
+                    formatString = "~~";
+                    break;
+                case MessageFormat.UnderlineItalics:
+                    formatString = "__*";
+                    break;
+                case MessageFormat.UnderlineBold:
+                    formatString = "__**";
+                    break;
+                case MessageFormat.UnderlineBoldItalics:
+                    formatString = "__***";
+                    break;
+                case MessageFormat.None:
+                    formatString = string.Empty;
+                    break;
+            }
+
+            //Only CodeBlocks and CodeLine format modes support a markdown language identifier
+            if ((formatType != MessageFormat.CodeBlocks) && (formatType != MessageFormat.CodeLine))
+                markdownLanguageIdentifier = string.Empty;
+
             var result = new StringBuilder();
-            result.AppendLine($"```{(string.IsNullOrEmpty(markdownLanguageIdentifier) ? string.Empty : markdownLanguageIdentifier)}");
+            result.AppendLine($"{formatString}{(string.IsNullOrEmpty(markdownLanguageIdentifier) ? string.Empty : markdownLanguageIdentifier)}");
             result.AppendLine(content);
-            result.AppendLine("```");
+            result.AppendLine($"{formatString.Reverse()}");
 
             return result;
         }
+    }
+
+    //Contains valid formatting types for Discord messages
+    public enum MessageFormat
+    {
+        CodeBlocks = 0,
+        Bold,
+        Italics,
+        BoldItalics,
+        CodeLine,
+        Underline,
+        Strikeout,
+        UnderlineItalics,
+        UnderlineBold,
+        UnderlineBoldItalics,
+        None
     }
 }
