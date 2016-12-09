@@ -7,27 +7,6 @@ using System.Text.RegularExpressions;
 
 namespace DiscordSharpTest.WarframeEvents
 {
-    /*----Message Example----/
-    Destination: Acanth, Eris (28-30)
-    Mission: Hive Sabotage (Infestation)
-    Reward: 1xNitain Extract, 11800cr    
-    Status: Expired 13:37
-    ------------------------*/
-
-    /*----Message Example----/
-    Destination: Acanth, Eris
-    Mission: Grineer (Extermination) vs Corpus (Spy)
-    Reward: Orokin Catalyst // Orokin Reactor
-    Progress: 69% (Corpus)
-    ------------------------*/
-
-    /*----Message Example----/
-    Destination: Acanth, Eris
-    Mission: Infestation vs Corpus (Spy)
-    Reward: 3xFieldron
-    Progress: 69% (Corpus)
-    ------------------------*/
-
     //Base class for all Warframe Events to extend.
     public abstract class WarframeEvent
     {

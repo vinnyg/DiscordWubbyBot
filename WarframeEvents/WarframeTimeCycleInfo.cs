@@ -15,9 +15,9 @@ namespace DiscordSharpTest.WarframeEvents
         private int CurrentTimeInSeconds { get; set; }
         private bool _isDay { get; set; }
 
-        public WarframeTimeCycleInfo(int currentTime) : base(String.Empty, "Earth", DateTime.Now)
+        public WarframeTimeCycleInfo(int currentWarframeServerTime) : base(string.Empty, "Earth", DateTime.Now)
         {
-            UpdateTimeInformation(currentTime);
+            UpdateTimeInformation(currentWarframeServerTime);
         }
 
         public void UpdateTimeInformation(int currentTime)

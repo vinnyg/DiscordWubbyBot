@@ -14,7 +14,7 @@ namespace DiscordSharpTest.WarframeEvents.Properties
         public const string INFESTATION = "Infestation";
         public const string OROKIN = "Orokin";
 
-        private static readonly Dictionary<string, string> FactionNames = new Dictionary<string, string>
+        private static readonly Dictionary<string, string> _factionNames = new Dictionary<string, string>
         {
             { "FC_GRINEER", "Grineer" },
             { "FC_CORPUS", "Corpus" },
@@ -23,9 +23,48 @@ namespace DiscordSharpTest.WarframeEvents.Properties
             { "FC_DE", "What?" }
         };
 
+        private static readonly string[] _projectName = {
+            "Balor Fomorian",
+            "Razorback",
+            "Juggernaut Behemoth",
+            "Orokin",
+            "Nerf Hammer"    
+        };
+
+        //Return the name of a faction using a string identifier
         public static string GetName(string faction)
         {
-            return FactionNames.ContainsKey(faction) ? FactionNames[faction] : faction;
+            return _factionNames.ContainsKey(faction) ? _factionNames[faction] : faction;
+        }
+
+        //Return the name of the faction using just an ID if no string identifier is available
+        public static string GetNameByID(int id)
+        {
+            try
+            {
+                return _factionNames.ElementAt(id).Value;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return GetName("FC_DE");
+            }
+            catch (ArgumentNullException)
+            {
+                return id.ToString();
+            }
+        }
+
+        //Return the name of a project using an ID
+        public static string GetProjectNameByID(int id)
+        {
+            try
+            {
+                return _projectName.ElementAt(id);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return id.ToString();
+            }
         }
     };
 

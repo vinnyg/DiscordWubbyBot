@@ -21,24 +21,27 @@ namespace DiscordSharpTest
         //TODO: Break this class down into two; a dedicated scraper class and JSON parser class
         //Consider responsibility of raising events
         private const int SECONDS_PER_DAY_CYCLE = 14400;
-        public List<WarframeAlert> AlertsList { get; private set; }
-        public List<WarframeInvasion> InvasionsList { get; private set; }
-        public List<WarframeVoidTrader> VoidTraders { get; private set; }
-        public List<WarframeVoidFissure> VoidFissures { get; private set; }
-        public List<WarframeSortie> SortieList { get; private set; }
+        public List<WarframeAlert> AlertsList { get; private set; } = new List<WarframeAlert>();
+        public List<WarframeInvasion> InvasionsList { get; private set; } = new List<WarframeInvasion>();
+        public List<WarframeInvasionConstruction> ConstructionProjectsList { get; private set; } = new List<WarframeInvasionConstruction>();
+        public List<WarframeVoidTrader> VoidTraders { get; private set; } = new List<WarframeVoidTrader>();
+        public List<WarframeVoidFissure> VoidFissures { get; private set; } = new List<WarframeVoidFissure>();
+        public List<WarframeSortie> SortieList { get; private set; } = new List<WarframeSortie>();
         public bool IsRunning { get; set; }
 
         //Store the JSON file
         private JObject _worldState { get; set; }
         private Timer _eventUpdateTimer { get; set; }
-        private List<WarframeAlert> _newAlerts { get; set; }
-        private List<WarframeInvasion> _newInvasions { get; set; }
-        private List<WarframeVoidFissure> _newVoidFissures { get; set; }
-        private List<WarframeSortie> _newSorties { get; set; }
+        private List<WarframeAlert> _newAlerts { get; set; } = new List<WarframeAlert>();
+        private List<WarframeInvasion> _newInvasions { get; set; } = new List<WarframeInvasion>();
+        private List<WarframeInvasionConstruction> _newProjects { get; set; } = new List<WarframeInvasionConstruction>();
+        private List<WarframeVoidFissure> _newVoidFissures { get; set; } = new List<WarframeVoidFissure>();
+        private List<WarframeSortie> _newSorties { get; set; } = new List<WarframeSortie>();
 
         #region Events
         public event EventHandler<WarframeAlertScrapedArgs> AlertScraped;
         public event EventHandler<WarframeInvasionScrapedArgs> InvasionScraped;
+        public event EventHandler<WarframeConstructionProjectsScrapedArgs> ConstructionProjectsScraped;
         public event EventHandler<WarframeVoidTraderScrapedArgs> VoidTraderScraped;
         public event EventHandler<WarframeVoidFissureScrapedArgs> VoidFissureScraped;
         public event EventHandler<WarframeSortieScrapedArgs> SortieScraped;
@@ -50,18 +53,9 @@ namespace DiscordSharpTest
 
         public WarframeJSONScraper()
         {
-            AlertsList = new List<WarframeAlert>();
-            InvasionsList = new List<WarframeInvasion>();
-            VoidTraders = new List<WarframeVoidTrader>();
-            VoidFissures = new List<WarframeVoidFissure>();
-            SortieList = new List<WarframeSortie>();
-
-            _newAlerts = new List<WarframeAlert>();
-            _newInvasions = new List<WarframeInvasion>();
-            _newVoidFissures = new List<WarframeVoidFissure>();
-            _newSorties = new List<WarframeSortie>();
         }
 
+        //Start scraping and processing data
         public void Start(int updateIntervalInMinutes = 1)
         {
             if (!IsRunning)
@@ -77,6 +71,7 @@ namespace DiscordSharpTest
             }
         }
 
+        //Stop the scraper
         public void Stop()
         {
             if (IsRunning)
@@ -86,11 +81,31 @@ namespace DiscordSharpTest
             }
         }
 
+        //Download Warframe content information
         private void ScrapeWorldState()
         {
+            const int NUMBER_OF_RETRIES = 3;
+            const int RETRY_DELAY_IN_MILLISECONDS = 2000;
+
             using (WebClient wc = new WebClient())
             {
-                _worldState = JObject.Parse(wc.DownloadString(ConfigurationManager.AppSettings["WarframeContentURL"]));
+                //If a failure to download the content occurs, retry two more times
+                for (int attempt = 0; attempt < NUMBER_OF_RETRIES; ++attempt)
+                {
+                    try
+                    {
+                        _worldState = JObject.Parse(wc.DownloadString(ConfigurationManager.AppSettings["WarframeContentURL"]));
+                        attempt = NUMBER_OF_RETRIES;
+                        return;
+                    }
+                    catch (WebException)
+                    {
+                        if (attempt >= NUMBER_OF_RETRIES)
+                            throw;
+
+                        Thread.Sleep(RETRY_DELAY_IN_MILLISECONDS);
+                    }
+                }
             }
         }
 
@@ -98,6 +113,7 @@ namespace DiscordSharpTest
         {
             ParseAlerts();
             ParseInvasions();
+            ParseInvasionConstruction();
             ParseVoidFissures();
             ParseSorties();
             ParseVoidTrader();
@@ -196,19 +212,20 @@ namespace DiscordSharpTest
 
                 if (currentInvasion == null)
                 {
-                    string id = jsonInvasion["_id"]["$id"].ToString();
-                    string loc = jsonInvasion["Node"].ToString();
+                    var id = jsonInvasion["_id"]["$id"].ToString();
+                    var loc = jsonInvasion["Node"].ToString();
 
-                    JArray attackerCountables = new JArray(),
-                    defenderCountables = new JArray();
+                    var attackerCountables = new JArray();
+                    var defenderCountables = new JArray();
 
                     JToken attackerCountablesInfo = jsonInvasion["AttackerReward"];
                     JToken defenderCountablesInfo = jsonInvasion["DefenderReward"];
 
-                    int attackerCredits = 0, defenderCredits = 0;
+                    var attackerCredits = 0;
+                    var defenderCredits = 0;
 
-                    bool attackersGiveReward = !attackerCountablesInfo.IsNullOrEmpty();
-                    bool defendersGiveReward = !defenderCountablesInfo.IsNullOrEmpty();
+                    var attackersGiveReward = !attackerCountablesInfo.IsNullOrEmpty();
+                    var defendersGiveReward = !defenderCountablesInfo.IsNullOrEmpty();
 
                     if (defendersGiveReward)
                     {
@@ -226,9 +243,9 @@ namespace DiscordSharpTest
                             attackerCredits = int.Parse((jsonInvasion["AttackerReward"]["credits"]).ToString());
                     }
 
-                    string attackerRewardStr = string.Empty,
-                        defenderRewardStr = string.Empty,
-                        nodeName = string.Empty;
+                    var attackerRewardStr = string.Empty;
+                    var defenderRewardStr = string.Empty;
+                    var nodeName = string.Empty;
 
                     using (var unit = new UnitOfWork(new WarframeDataContext()))
                     {
@@ -240,55 +257,45 @@ namespace DiscordSharpTest
 
                     //Store mission information in variables so that we don't have to keep parsing the JSON
                     var attackerRewardParam = string.Empty;
-                    if (attackersGiveReward) attackerRewardParam = attackerCountables[0]["ItemType"].ToString();
+                    if (attackersGiveReward)
+                        attackerRewardParam = attackerCountables[0]["ItemType"].ToString();
                     var defenderRewardParam = string.Empty;
-                    if (defendersGiveReward) defenderRewardParam = defenderCountables[0]["ItemType"].ToString();
+                    if (defendersGiveReward)
+                        defenderRewardParam = defenderCountables[0]["ItemType"].ToString();
 
                     var attackerRewardQuantityParam = attackersGiveReward ? (attackerCountables[0]["ItemCount"] != null ? int.Parse(attackerCountables[0]["ItemCount"].ToString()) : 1) : 0;
                     var defenderRewardQuantityParam = defendersGiveReward ? (defenderCountables[0]["ItemCount"] != null ? int.Parse(defenderCountables[0]["ItemCount"].ToString()) : 1) : 0;
 
-                    int goal = int.Parse(jsonInvasion["Goal"].ToString()), progress = int.Parse(jsonInvasion["Count"].ToString());
+                    var goal = int.Parse(jsonInvasion["Goal"].ToString());
+                    var progress = int.Parse(jsonInvasion["Count"].ToString());
 
                     if (System.Math.Abs(progress) < goal)
                     {
                         //Check attacker conditions
-                        if (RewardIsNotIgnored(
-                            attackerCredits,
-                            itemURI: (attackerRewardParam ?? string.Empty).ToString(),
-                            itemQuantity:attackerRewardQuantityParam)
+                        if (RewardIsNotIgnored(attackerCredits, itemURI: (attackerRewardParam ?? string.Empty).ToString(),itemQuantity:attackerRewardQuantityParam)
                             //Check defender conditions
-                            || RewardIsNotIgnored(
-                            defenderCredits,
-                            itemURI: (defenderRewardParam ?? string.Empty).ToString(),
-                            itemQuantity:defenderRewardQuantityParam))
+                            || RewardIsNotIgnored(defenderCredits, itemURI: (defenderRewardParam ?? string.Empty).ToString(), itemQuantity:defenderRewardQuantityParam))
                         {
                             //Mission Info corresponds to the faction to fight against.
                             //JSON file has currently removed mission levels and mission types from the JSON file.
-                            //We are keeping the old parsing code in hopes that these elements return in the future.
-                            MissionInfo attackerInfo = new MissionInfo(jsonInvasion["AttackerMissionInfo"]["faction"].ToString(),
+                            var attackerInfo = new MissionInfo(jsonInvasion["AttackerMissionInfo"]["faction"].ToString(),
                                 string.Empty,
-                                //jsonInvasion["DefenderMissionInfo"]["missionType"].ToString(),
                                 attackerCredits,
                                 string.IsNullOrEmpty(attackerRewardStr) ? "" : attackerRewardStr,
                                 attackerRewardQuantityParam,
                                 0, 0,
-                                //int.Parse(jsonInvasion["DefenderMissionInfo"]["minEnemyLevel"].ToString()),
-                                //int.Parse(jsonInvasion["DefenderMissionInfo"]["maxEnemyLevel"].ToString()),
                                 false);
 
-                            MissionInfo defenderInfo = new MissionInfo(jsonInvasion["DefenderMissionInfo"]["faction"].ToString(),
+                            var defenderInfo = new MissionInfo(jsonInvasion["DefenderMissionInfo"]["faction"].ToString(),
                                 string.Empty,
-                                //jsonInvasion["AttackerMissionInfo"]["missionType"].ToString(),
                                 defenderCredits,
                                 string.IsNullOrEmpty(defenderRewardStr) ? "" : defenderRewardStr,
                                 defenderRewardQuantityParam,
                                 0, 0,
-                                //int.Parse(jsonInvasion["AttackerMissionInfo"]["minEnemyLevel"].ToString()),
-                                //int.Parse(jsonInvasion["AttackerMissionInfo"]["maxEnemyLevel"].ToString()),
                                 false);
 
-                            double secondsUntilStart = double.Parse(jsonInvasion["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
-                            DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
+                            var secondsUntilStart = double.Parse(jsonInvasion["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                            var startTime = DateTime.Now.AddSeconds(secondsUntilStart);
 
                             currentInvasion = new WarframeInvasion(attackerInfo, defenderInfo, id, nodeName, startTime, int.Parse(jsonInvasion["Goal"].ToString()));
                             InvasionsList.Add(currentInvasion);
@@ -316,6 +323,46 @@ namespace DiscordSharpTest
             }
         }
 
+        //Parse information about the faction construction projects
+        private void ParseInvasionConstruction()
+        {
+            const string IDENTIFIER_PREFIX = "ProjectPct";
+
+            _newProjects.Clear();
+
+            var currentIteration = 0;
+            //Find Projects
+            foreach (var jsonInvasionConstructionProject in _worldState["ProjectPct"])
+            {
+                var projectIdentifier = new StringBuilder(IDENTIFIER_PREFIX + currentIteration);
+                WarframeInvasionConstruction currentConstructionProject = ConstructionProjectsList.Find(x => x.GUID == projectIdentifier.ToString());
+                var progress = double.Parse(jsonInvasionConstructionProject.ToString());
+
+                if (currentConstructionProject == null)
+                {
+                    currentConstructionProject = new WarframeInvasionConstruction(projectIdentifier.ToString(), currentIteration, progress);
+                    ConstructionProjectsList.Add(currentConstructionProject);
+                    _newProjects.Add(currentConstructionProject);
+#if DEBUG
+                    Console.WriteLine("New Construction Project Event");
+#endif
+                }
+                else
+                {
+                    if (currentConstructionProject.IsExpired())
+                        ConstructionProjectsList.Remove(currentConstructionProject);
+                }
+
+                if ((currentConstructionProject != null) && (!currentConstructionProject.IsExpired()))
+                {
+                    currentConstructionProject.UpdateProgress(progress);
+                    CreateConstructionProjectReceivedEvent(currentConstructionProject);
+                }
+
+                ++currentIteration;
+            }
+        }
+
         private void ParseVoidTrader()
         {
             foreach (var jsonTrader in _worldState["VoidTraders"])
@@ -323,17 +370,18 @@ namespace DiscordSharpTest
                 WarframeVoidTrader currentTrader = VoidTraders.Find(x => x.GUID == jsonTrader["_id"]["$id"].ToString());
                 if (currentTrader == null)
                 {
-                    string id = jsonTrader["_id"]["$id"].ToString();
-                    string loc = jsonTrader["Node"].ToString();
+                    var id = jsonTrader["_id"]["$id"].ToString();
+                    var loc = jsonTrader["Node"].ToString();
 
-                    double secondsUntilStart = double.Parse(jsonTrader["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
-                    double secondsUntilExpire = double.Parse(jsonTrader["Expiry"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
-                    DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
-                    DateTime expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
+                    var secondsUntilStart = double.Parse(jsonTrader["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                    var secondsUntilExpire = double.Parse(jsonTrader["Expiry"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                    var startTime = DateTime.Now.AddSeconds(secondsUntilStart);
+                    var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
 
                     if (DateTime.Now < expireTime)
                     {
-                        string nodeName = loc, itemName = string.Empty;
+                        var nodeName = loc;
+                        var itemName = string.Empty;
 
                         using (var unit = new UnitOfWork(new WarframeDataContext()))
                         {
@@ -342,7 +390,6 @@ namespace DiscordSharpTest
 
                         currentTrader = new WarframeVoidTrader(id, nodeName, startTime, expireTime);
                         VoidTraders.Add(currentTrader);
-
 
                         JToken traderInventory = jsonTrader["Manifest"];
                         if (traderInventory != null)
@@ -379,17 +426,21 @@ namespace DiscordSharpTest
 
                 if (currentVoidFissure == null)
                 {
-                    string id = jsonFissure["_id"]["$id"].ToString();
-                    string loc = jsonFissure["Node"].ToString();
+                    var id = jsonFissure["_id"]["$id"].ToString();
+                    var loc = jsonFissure["Node"].ToString();
 
-                    double secondsUntilStart = double.Parse(jsonFissure["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
-                    double secondsUntilExpire = double.Parse(jsonFissure["Expiry"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
-                    DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
-                    DateTime expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
+                    var secondsUntilStart = double.Parse(jsonFissure["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                    var secondsUntilExpire = double.Parse(jsonFissure["Expiry"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                    var startTime = DateTime.Now.AddSeconds(secondsUntilStart);
+                    var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
 
-                    string nodeName = loc, faction = string.Empty, missionType = string.Empty, fissure = string.Empty;
-                    int minLevel = 0, maxLevel = 0;
-                    bool archwingRequired = false;
+                    var nodeName = loc;
+                    var faction = string.Empty;
+                    var missionType = string.Empty;
+                    var fissure = string.Empty;
+                    var minLevel = 0;
+                    var maxLevel = 0;
+                    var archwingRequired = false;
 
                     using (var unit = new UnitOfWork(new WarframeDataContext()))
                     {
@@ -404,10 +455,7 @@ namespace DiscordSharpTest
 
                     if (DateTime.Now < expireTime)
                     {
-                        MissionInfo fissureInfo = new MissionInfo(faction,
-                            missionType,
-                            0, fissure,
-                            0, minLevel, maxLevel, archwingRequired);
+                        var fissureInfo = new MissionInfo(faction, missionType, 0, fissure, 0, minLevel, maxLevel, archwingRequired);
 
                         currentVoidFissure = new WarframeVoidFissure(fissureInfo, id, nodeName, startTime, expireTime);
                         VoidFissures.Add(currentVoidFissure);
@@ -442,31 +490,31 @@ namespace DiscordSharpTest
 
                 if (currentSortie == null)
                 {
-                    string id = jsonSortie["_id"]["$id"].ToString();
+                    var id = jsonSortie["_id"]["$id"].ToString();
 
                     //Variant details
                     var varDests = new List<string>();
                     var varMissions = new List<MissionInfo>();
                     var varConditions = new List<string>();
 
-                    double secondsUntilStart = double.Parse(jsonSortie["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
-                    double secondsUntilExpire = double.Parse(jsonSortie["Expiry"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
-                    DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
-                    DateTime expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
+                    var secondsUntilStart = double.Parse(jsonSortie["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                    var secondsUntilExpire = double.Parse(jsonSortie["Expiry"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                    var startTime = DateTime.Now.AddSeconds(secondsUntilStart);
+                    var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
 
                     //If this sortie doesn't exist in the current list, then loop through the variant node to get mission info for all variants
                     foreach (var variant in jsonSortie["Variants"])
                     {
                         using (var unit = new UnitOfWork(new WarframeDataContext()))
                         {
-                            string loc = variant["node"].ToString();
+                            var loc = variant["node"].ToString();
                             varDests.Add(unit.WFSolarNodes.GetNodeName(loc));
                             varConditions.Add(unit.WFSorties.GetCondition(int.Parse(variant["modifierIndex"].ToString())));
 
                             //Mission type varies depending on the region
-                            int regionIndex = int.Parse(variant["regionIndex"].ToString());
-                            int missionIndex = int.Parse(variant["missionIndex"].ToString());
-                            int bossIndex = int.Parse(variant["bossIndex"].ToString());
+                            var regionIndex = int.Parse(variant["regionIndex"].ToString());
+                            var missionIndex = int.Parse(variant["missionIndex"].ToString());
+                            var bossIndex = int.Parse(variant["bossIndex"].ToString());
 
                             string regionName = unit.WFSorties.GetRegion(regionIndex);
                             string missionName = unit.WFSorties.GetMissionType(missionIndex, regionIndex);
@@ -503,8 +551,8 @@ namespace DiscordSharpTest
 
         private void ParseTimeCycle()
         {
-            int currentTime = int.Parse(_worldState["Time"].ToString());
-            WarframeTimeCycleInfo cycleInfo = new WarframeTimeCycleInfo(currentTime);
+            var currentTime = int.Parse(_worldState["Time"].ToString());
+            var cycleInfo = new WarframeTimeCycleInfo(currentTime);
             CreateDayCycleUpdateReceivedEvent(cycleInfo);
         }
 
@@ -513,7 +561,7 @@ namespace DiscordSharpTest
         private bool RewardIsNotIgnored(int credits = 0, string itemURI = "", int itemQuantity = 1)
         {
             const string CREDITS_URI = "/Lotus/Language/Menu/Monies";
-            bool result = true;
+            var result = true;
             using (var unit = new UnitOfWork(new WarframeDataContext()))
             {
                 if (string.IsNullOrEmpty(itemURI))
@@ -544,7 +592,7 @@ namespace DiscordSharpTest
             // immediately after the null check and before the event is raised.
             EventHandler<WarframeAlertScrapedArgs> handler = AlertScraped;
 
-            WarframeAlertScrapedArgs e = new WarframeAlertScrapedArgs(newAlert);
+            var e = new WarframeAlertScrapedArgs(newAlert);
 
             if (handler != null)    //Check if there are any subscribers
                 handler(this, e);
@@ -554,7 +602,17 @@ namespace DiscordSharpTest
         {
             EventHandler<WarframeInvasionScrapedArgs> handler = InvasionScraped;
 
-            WarframeInvasionScrapedArgs e = new WarframeInvasionScrapedArgs(newInvasion);
+            var e = new WarframeInvasionScrapedArgs(newInvasion);
+
+            if (handler != null)
+                handler(this, e);
+        }
+
+        private void CreateConstructionProjectReceivedEvent(WarframeInvasionConstruction newConstruction)
+        {
+            EventHandler<WarframeConstructionProjectsScrapedArgs> handler = ConstructionProjectsScraped;
+
+            var e = new WarframeConstructionProjectsScrapedArgs(newConstruction);
 
             if (handler != null)
                 handler(this, e);
@@ -564,7 +622,7 @@ namespace DiscordSharpTest
         {
             EventHandler<WarframeVoidTraderScrapedArgs> handler = VoidTraderScraped;
 
-            WarframeVoidTraderScrapedArgs e = new WarframeVoidTraderScrapedArgs(newTrader);
+            var e = new WarframeVoidTraderScrapedArgs(newTrader);
 
             if (handler != null)
                 handler(this, e);
@@ -574,7 +632,7 @@ namespace DiscordSharpTest
         {
             EventHandler<WarframeVoidFissureScrapedArgs> handler = VoidFissureScraped;
 
-            WarframeVoidFissureScrapedArgs e = new WarframeVoidFissureScrapedArgs(newFissure);
+            var e = new WarframeVoidFissureScrapedArgs(newFissure);
 
             if (handler != null)
                 handler(this, e);
@@ -584,7 +642,7 @@ namespace DiscordSharpTest
         {
             EventHandler<WarframeSortieScrapedArgs> handler = SortieScraped;
 
-            WarframeSortieScrapedArgs e = new WarframeSortieScrapedArgs(newSortie);
+            var e = new WarframeSortieScrapedArgs(newSortie);
 
             if (handler != null)
                 handler(this, e);
@@ -594,7 +652,7 @@ namespace DiscordSharpTest
         {
             EventHandler<DayCycleTimeScrapedArgs> handler = DayCycleScraped;
 
-            DayCycleTimeScrapedArgs e = new DayCycleTimeScrapedArgs(cycleInfo);
+            var e = new DayCycleTimeScrapedArgs(cycleInfo);
 
             if (handler != null)
                 handler(this, e);
@@ -604,7 +662,7 @@ namespace DiscordSharpTest
         {
             EventHandler<WarframeAlertExpiredArgs> handler = AlertExpired;
 
-            WarframeAlertExpiredArgs e = new WarframeAlertExpiredArgs(expiredAlert, messageID);
+            var e = new WarframeAlertExpiredArgs(expiredAlert, messageID);
 
             if (handler != null)
                 handler(this, e);
@@ -614,7 +672,7 @@ namespace DiscordSharpTest
         {
             EventHandler<WarframeVoidFissureExpiredArgs> handler = VoidFissureExpired;
 
-            WarframeVoidFissureExpiredArgs e = new WarframeVoidFissureExpiredArgs(expiredFissure, messageID);
+            var e = new WarframeVoidFissureExpiredArgs(expiredFissure, messageID);
 
             if (handler != null)
                 handler(this, e);

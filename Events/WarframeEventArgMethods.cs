@@ -21,24 +21,30 @@ namespace DiscordSharpTest.Events
 
     public class WarframeInvasionScrapedArgs : EventArgs
     {
-        /*public WarframeEventMessage Message { get; set; }*/
         public WarframeInvasion Invasion { get; private set; }
 
         public WarframeInvasionScrapedArgs(WarframeInvasion invasion)
         {
-            //Message = new WarframeEventMessage(content, unformattedContent);
             Invasion = invasion;
+        }
+    }
+
+    public class WarframeConstructionProjectsScrapedArgs : EventArgs
+    {
+        public WarframeInvasionConstruction ConstructionProject { get; private set; }
+
+        public WarframeConstructionProjectsScrapedArgs(WarframeInvasionConstruction project)
+        {
+            ConstructionProject = project;
         }
     }
 
     public class WarframeVoidTraderScrapedArgs : EventArgs
     {
-        /*public WarframeEventMessage Message { get; set; }*/
         public WarframeVoidTrader Trader { get; private set; }
 
         public WarframeVoidTraderScrapedArgs(WarframeVoidTrader trader)
         {
-            //Message = new WarframeEventMessage(content, unformattedContent);
             Trader = trader;
         }
     }

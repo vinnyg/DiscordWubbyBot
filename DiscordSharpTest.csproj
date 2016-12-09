@@ -272,6 +272,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="Events\Extensions\ExtensionMethods.cs" />
     <Compile Include="WarframeEvents\MissionInfo.cs" />
     <Compile Include="WarframeEvents\Properties\MissionInformationProperties.cs" />
     <Compile Include="WarframeEvents\WarframeAlert.cs" />
@@ -281,6 +282,7 @@
     <Compile Include="WarframeEventsScraper.cs" />
     <Compile Include="WarframeEvents\WarframeInvasion.cs" />
     <Compile Include="Events\WarframeEventArgMethods.cs" />
+    <Compile Include="WarframeEvents\WarframeInvasionConstruction.cs" />
     <Compile Include="WarframeEvents\WarframeSortie.cs" />
     <Compile Include="WarframeEvents\WarframeTimeCycleInfo.cs" />
     <Compile Include="WarframeEvents\WarframeVoidFissure.cs" />
