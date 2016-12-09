@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using DiscordSharpTest;
 using DiscordSharpTest.WarframeEvents;
 using DiscordSharpTest.WarframeEvents.Properties;
+using DiscordSharpTest.Events.Extensions;
 
 namespace WubbyBot.Events.Extensions
 {
