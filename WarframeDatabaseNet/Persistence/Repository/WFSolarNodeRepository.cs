@@ -93,7 +93,7 @@ namespace WarframeDatabaseNet.Persistence.Repository
             {
                 result = WFDataContext.SolarNodes.Where(x => x.NodeURI == nodeURI).Single().NodeName;
             }
-            catch (ArgumentNullException)
+            catch (InvalidOperationException)
             {
                 result = nodeURI;
             }
