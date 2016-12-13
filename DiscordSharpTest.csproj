@@ -273,20 +273,8 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Events\Extensions\ExtensionMethods.cs" />
-    <Compile Include="WarframeEvents\MissionInfo.cs" />
-    <Compile Include="WarframeEvents\Properties\MissionInformationProperties.cs" />
-    <Compile Include="WarframeEvents\WarframeAlert.cs" />
     <Compile Include="DiscordShMain.cs" />
     <Compile Include="Events\Extensions\WarframeEventExtensions.cs" />
-    <Compile Include="WarframeEvents\WarframeEvent.cs" />
-    <Compile Include="WarframeEventsScraper.cs" />
-    <Compile Include="WarframeEvents\WarframeInvasion.cs" />
-    <Compile Include="Events\WarframeEventArgMethods.cs" />
-    <Compile Include="WarframeEvents\WarframeInvasionConstruction.cs" />
-    <Compile Include="WarframeEvents\WarframeSortie.cs" />
-    <Compile Include="WarframeEvents\WarframeTimeCycleInfo.cs" />
-    <Compile Include="WarframeEvents\WarframeVoidFissure.cs" />
-    <Compile Include="WarframeEvents\WarframeVoidTrader.cs" />
     <Compile Include="WubbyBot.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -297,6 +285,10 @@
     <ProjectReference Include="WarframeDatabaseNet\WarframeDatabaseNET.csproj">
       <Project>{71eef9c5-1871-4489-b6e2-38b8da3e6c32}</Project>
       <Name>WarframeDatabaseNET</Name>
+    </ProjectReference>
+    <ProjectReference Include="WarframeWorldStateAPI\WarframeWorldStateAPI.csproj">
+      <Project>{47301cf9-3c42-4026-b0e6-e167ef22c0b0}</Project>
+      <Name>WarframeWorldStateAPI</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

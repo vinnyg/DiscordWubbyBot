@@ -15,10 +15,11 @@ using System.Xml;
 using System.Xml.Linq;
 using WubbyBot.Events.Extensions;
 using DiscordWrapper;
-using DiscordSharpTest.WarframeEvents;
 using System.Reflection;
 using System.Configuration;
 using DSharpPlus.Objects;
+using WarframeWorldStateAPI.Components;
+using WarframeWorldStateAPI.WarframeEvents;
 
 namespace DiscordSharpTest
 {
@@ -39,8 +40,7 @@ namespace DiscordSharpTest
 
         //This is how often we will  update our Discord messages and scrape for new event information
         private Timer _eventUpdateTimer;
-        private WarframeJSONScraper _eventsScraper;
-        //private Dictionary<WarframeAlert, DiscordMessage> _alertMessageAssociations { get; set; }
+        private WarframeEventInformationParser _eventsParser = new WarframeEventInformationParser();
 
         //These lists store containers which hold information such as message content and additional property information
         private List<MessageQueueElement> _alertMessagePostQueue = new List<MessageQueueElement>();
@@ -89,8 +89,6 @@ namespace DiscordSharpTest
             Client.Connected += (sender, e) =>
             {
                 Log($"Connected as {e.User.Username}");
-
-                InitSystems();
                 SetupWarframeEventsTask();
 
                 SetCurrentGame(false);
@@ -110,18 +108,18 @@ namespace DiscordSharpTest
             Connect();
         }
 
-        private void InitSystems()
+        /*private void InitSystems()
         {
             //We want to wait until the bot has connected to the Discord server before we can do anything
             Log("Initialising Warframe JSON Parser...");
             _eventsScraper = new WarframeJSONScraper();
 
             Log("Initialisation complete.");
-        }
+        }*/
         
         private void SetupWarframeEventsTask()
         {
-            _eventsScraper.AlertScraped += (sender, e) =>
+            /*_eventsScraper.AlertScraped += (sender, e) =>
             {
 #if DEBUG
                 Log("Alert Scraped!");
@@ -177,8 +175,60 @@ namespace DiscordSharpTest
                 AddToTimeCyclePostQueue(e.cycleInfo, false);
             };
 
-            _eventsScraper.Start();
+            _eventsScraper.Start();*/
             StartPostTimer();
+        }
+
+        private void CheckForWarframeEvents()
+        {
+            foreach (var alert in _eventsParser.GetAlerts())
+            {
+#if DEBUG
+                Log("Alert Scraped!");
+#endif
+                bool alertIsNew = _eventsParser.IsAlertNew(alert);
+                AddToAlertPostQueue(alert, alertIsNew, alert.IsExpired());
+            }
+
+            foreach (var invasion in _eventsParser.GetInvasions())
+            {
+#if DEBUG
+                Log("Invasion Scraped!");
+#endif
+                bool invasionIsNew = _eventsParser.IsInvasionNew(invasion);
+                AddToInvasionPostQueue(invasion, invasionIsNew, invasion.IsExpired());
+            }
+            
+            foreach (var project in _eventsParser.GetInvasionConstruction())
+            {
+                AddToInvasionConstructionPostQueue(project, false);
+            }
+
+            foreach (var fissure in _eventsParser.GetVoidFissures())
+            {
+#if DEBUG
+                Log("Fissure Scraped!");
+#endif
+                AddToVoidFissurePostQueue(fissure, false, fissure.IsExpired());
+            }
+            
+            foreach (var sortie in _eventsParser.GetSorties())
+            {
+#if DEBUG
+                Log("Sortie Scraped!");
+#endif
+                AddToSortiePostQueue(sortie, false, sortie.IsExpired());
+            }
+
+            foreach (var trader in _eventsParser.GetVoidTrader())
+            {
+#if DEBUG
+                Log("Void Trader Scraped!");
+#endif
+                AddToVoidTraderPostQueue(trader, false, trader.IsExpired());
+            }
+
+            AddToTimeCyclePostQueue(_eventsParser.GetTimeCycle(), false);
         }
 
         //Start application operation cycle
@@ -186,6 +236,7 @@ namespace DiscordSharpTest
         {
             _eventUpdateTimer = new Timer((e) =>
             {
+                CheckForWarframeEvents();
                 PostAlertMessage();
                 PostInvasionMessage();
                 PostSortieMessage();
@@ -493,7 +544,6 @@ namespace DiscordSharpTest
         public void Shutdown()
         {
             Log("Shutting down...");
-            _eventsScraper.Stop();
             DeleteMessage(_alertMessage);
             DeleteMessage(_fissureMessage);
             DeleteMessage(_sortieMessage);
