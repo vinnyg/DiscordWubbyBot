@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DiscordSharpTest.WarframeEvents
+namespace WarframeWorldStateAPI.WarframeEvents
 {
     public class VoidTraderItem
     {

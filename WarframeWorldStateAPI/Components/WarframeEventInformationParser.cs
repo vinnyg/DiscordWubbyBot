@@ -1,132 +1,41 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using Newtonsoft.Json.Linq;
-using System.Threading;
-using System.Net;
-using DiscordSharpTest.Events;
 using WarframeDatabaseNet;
 using WarframeDatabaseNet.Persistence;
-using DiscordSharpTest.WarframeEvents;
-using System.Configuration;
+using WarframeWorldStateAPI.WarframeEvents;
 
-namespace DiscordSharpTest
+namespace WarframeWorldStateAPI.Components
 {
-    //This class parses a JSON file and raises events regarding the contents
-    public class WarframeJSONScraper
+    public class WarframeEventInformationParser
     {
-        //TODO: Break this class down into two; a dedicated scraper class and JSON parser class
         //Consider responsibility of raising events
         private const int SECONDS_PER_DAY_CYCLE = 14400;
+
         public List<WarframeAlert> AlertsList { get; private set; } = new List<WarframeAlert>();
         public List<WarframeInvasion> InvasionsList { get; private set; } = new List<WarframeInvasion>();
         public List<WarframeInvasionConstruction> ConstructionProjectsList { get; private set; } = new List<WarframeInvasionConstruction>();
         public List<WarframeVoidTrader> VoidTraders { get; private set; } = new List<WarframeVoidTrader>();
         public List<WarframeVoidFissure> VoidFissures { get; private set; } = new List<WarframeVoidFissure>();
         public List<WarframeSortie> SortieList { get; private set; } = new List<WarframeSortie>();
-        public bool IsRunning { get; set; }
 
-        //Store the JSON file
-        private JObject _worldState { get; set; }
-        private Timer _eventUpdateTimer { get; set; }
+        private WarframeJSONScraper _scraper = new WarframeJSONScraper();
         private List<WarframeAlert> _newAlerts { get; set; } = new List<WarframeAlert>();
         private List<WarframeInvasion> _newInvasions { get; set; } = new List<WarframeInvasion>();
         private List<WarframeInvasionConstruction> _newProjects { get; set; } = new List<WarframeInvasionConstruction>();
         private List<WarframeVoidFissure> _newVoidFissures { get; set; } = new List<WarframeVoidFissure>();
         private List<WarframeSortie> _newSorties { get; set; } = new List<WarframeSortie>();
 
-        #region Events
-        public event EventHandler<WarframeAlertScrapedArgs> AlertScraped;
-        public event EventHandler<WarframeInvasionScrapedArgs> InvasionScraped;
-        public event EventHandler<WarframeConstructionProjectsScrapedArgs> ConstructionProjectsScraped;
-        public event EventHandler<WarframeVoidTraderScrapedArgs> VoidTraderScraped;
-        public event EventHandler<WarframeVoidFissureScrapedArgs> VoidFissureScraped;
-        public event EventHandler<WarframeSortieScrapedArgs> SortieScraped;
-        public event EventHandler<DayCycleTimeScrapedArgs> DayCycleScraped;
-        public event EventHandler<WarframeAlertExpiredArgs> AlertExpired;
-        public event EventHandler<WarframeVoidFissureExpiredArgs> VoidFissureExpired;
-        public event EventHandler<WarframeSortieExpiredArgs> SortieExpired;
-        #endregion
-
-        public WarframeJSONScraper()
-        {
-        }
-
-        //Start scraping and processing data
-        public void Start(int updateIntervalInMinutes = 1)
-        {
-            if (!IsRunning)
-            {
-                //Establish event update interval (every minute)
-                _eventUpdateTimer = new Timer((e) =>
-                {
-                    ScrapeWorldState();
-                    ParseJsonEvents();
-                }, null, 0, (int)(TimeSpan.FromMinutes((double)updateIntervalInMinutes).TotalMilliseconds));
-
-                IsRunning = true;
-            }
-        }
-
-        //Stop the scraper
-        public void Stop()
-        {
-            if (IsRunning)
-            {
-                _eventUpdateTimer.Dispose();
-                IsRunning = false;
-            }
-        }
-
-        //Download Warframe content information
-        private void ScrapeWorldState()
-        {
-            const int NUMBER_OF_RETRIES = 3;
-            const int RETRY_DELAY_IN_MILLISECONDS = 2000;
-
-            using (WebClient wc = new WebClient())
-            {
-                //If a failure to download the content occurs, retry two more times
-                for (int attempt = 0; attempt < NUMBER_OF_RETRIES; ++attempt)
-                {
-                    try
-                    {
-                        _worldState = JObject.Parse(wc.DownloadString(ConfigurationManager.AppSettings["WarframeContentURL"]));
-                        attempt = NUMBER_OF_RETRIES;
-                        return;
-                    }
-                    catch (WebException)
-                    {
-                        if (attempt >= NUMBER_OF_RETRIES)
-                            throw;
-
-                        Thread.Sleep(RETRY_DELAY_IN_MILLISECONDS);
-                    }
-                }
-            }
-        }
-
-        private void ParseJsonEvents()
-        {
-            ParseAlerts();
-            ParseInvasions();
-            ParseInvasionConstruction();
-            ParseVoidFissures();
-            ParseSorties();
-            ParseVoidTrader();
-            ParseTimeCycle();
-        }
-
         #region ParseJSONMethods
-        private void ParseAlerts()
+        public IEnumerable<WarframeAlert> GetAlerts()
         {
+            JObject worldState = _scraper.ScrapeWorldState();
             _newAlerts.Clear();
+            var resultAlerts = new List<WarframeAlert>();
 
             //Find Alerts
-            foreach (var jsonAlert in _worldState["Alerts"])
+            foreach (var jsonAlert in worldState["Alerts"])
             {
                 WarframeAlert currentAlert = AlertsList.Find(x => x.GUID == jsonAlert["_id"]["$id"].ToString());
 
@@ -150,9 +59,9 @@ namespace DiscordSharpTest
 
                         nodeName = unit.WFSolarNodes.GetNodeName(loc);
                     }
-                    
-                    var secondsUntilStart = double.Parse(jsonAlert["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
-                    var secondsUntilExpire = double.Parse(jsonAlert["Expiry"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+
+                    var secondsUntilStart = double.Parse(jsonAlert["Activation"]["sec"].ToString()) - double.Parse(worldState["Time"].ToString());
+                    var secondsUntilExpire = double.Parse(jsonAlert["Expiry"]["sec"].ToString()) - double.Parse(worldState["Time"].ToString());
                     DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
                     DateTime expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
 
@@ -195,18 +104,20 @@ namespace DiscordSharpTest
                 }
 
                 if ((currentAlert != null) && (currentAlert.ExpireTime > DateTime.Now))
-                    CreateNewAlertReceivedEvent(currentAlert);
-                else
-                    CreateAlertExpiredEvent(currentAlert);
+                    resultAlerts.Add(currentAlert);
             }
+
+            return resultAlerts;
         }
 
-        private void ParseInvasions()
+        public IEnumerable<WarframeInvasion> GetInvasions()
         {
             _newInvasions.Clear();
+            JObject worldState = _scraper.ScrapeWorldState();
+            var resultInvasions = new List<WarframeInvasion>();
 
             //Find Invasions
-            foreach (var jsonInvasion in _worldState["Invasions"])
+            foreach (var jsonInvasion in worldState["Invasions"])
             {
                 WarframeInvasion currentInvasion = InvasionsList.Find(x => x.GUID == jsonInvasion["_id"]["$id"].ToString());
 
@@ -272,9 +183,9 @@ namespace DiscordSharpTest
                     if (System.Math.Abs(progress) < goal)
                     {
                         //Check attacker conditions
-                        if (RewardIsNotIgnored(attackerCredits, itemURI: (attackerRewardParam ?? string.Empty).ToString(),itemQuantity:attackerRewardQuantityParam)
+                        if (RewardIsNotIgnored(attackerCredits, itemURI: (attackerRewardParam ?? string.Empty).ToString(), itemQuantity: attackerRewardQuantityParam)
                             //Check defender conditions
-                            || RewardIsNotIgnored(defenderCredits, itemURI: (defenderRewardParam ?? string.Empty).ToString(), itemQuantity:defenderRewardQuantityParam))
+                            || RewardIsNotIgnored(defenderCredits, itemURI: (defenderRewardParam ?? string.Empty).ToString(), itemQuantity: defenderRewardQuantityParam))
                         {
                             //Mission Info corresponds to the faction to fight against.
                             //JSON file has currently removed mission levels and mission types from the JSON file.
@@ -294,7 +205,7 @@ namespace DiscordSharpTest
                                 0, 0,
                                 false);
 
-                            var secondsUntilStart = double.Parse(jsonInvasion["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                            var secondsUntilStart = double.Parse(jsonInvasion["Activation"]["sec"].ToString()) - double.Parse(worldState["Time"].ToString());
                             var startTime = DateTime.Now.AddSeconds(secondsUntilStart);
 
                             currentInvasion = new WarframeInvasion(attackerInfo, defenderInfo, id, nodeName, startTime, int.Parse(jsonInvasion["Goal"].ToString()));
@@ -318,21 +229,26 @@ namespace DiscordSharpTest
                 if (currentInvasion != null && !currentInvasion.IsExpired())
                 {
                     currentInvasion.UpdateProgress(int.Parse(jsonInvasion["Count"].ToString()));
-                    CreateNewInvasionReceivedEvent(currentInvasion);
+                    //CreateNewInvasionReceivedEvent(currentInvasion);
+                    resultInvasions.Add(currentInvasion);
                 }
             }
+
+            return resultInvasions;
         }
 
         //Parse information about the faction construction projects
-        private void ParseInvasionConstruction()
+        public IEnumerable<WarframeInvasionConstruction> GetInvasionConstruction()
         {
             const string IDENTIFIER_PREFIX = "ProjectPct";
+            JObject worldState = _scraper.ScrapeWorldState();
+            var resultConstructionProjects = new List<WarframeInvasionConstruction>();
 
             _newProjects.Clear();
 
             var currentIteration = 0;
             //Find Projects
-            foreach (var jsonInvasionConstructionProject in _worldState["ProjectPct"])
+            foreach (var jsonInvasionConstructionProject in worldState["ProjectPct"])
             {
                 var projectIdentifier = new StringBuilder(IDENTIFIER_PREFIX + currentIteration);
                 WarframeInvasionConstruction currentConstructionProject = ConstructionProjectsList.Find(x => x.GUID == projectIdentifier.ToString());
@@ -356,16 +272,21 @@ namespace DiscordSharpTest
                 if ((currentConstructionProject != null) && (!currentConstructionProject.IsExpired()))
                 {
                     currentConstructionProject.UpdateProgress(progress);
-                    CreateConstructionProjectReceivedEvent(currentConstructionProject);
+                    //CreateConstructionProjectReceivedEvent(currentConstructionProject);
+                    resultConstructionProjects.Add(currentConstructionProject);
                 }
 
                 ++currentIteration;
             }
+            return resultConstructionProjects;
         }
 
-        private void ParseVoidTrader()
+        public IEnumerable<WarframeVoidTrader> GetVoidTrader()
         {
-            foreach (var jsonTrader in _worldState["VoidTraders"])
+            JObject worldState = _scraper.ScrapeWorldState();
+            var resultVoidTraders = new List<WarframeVoidTrader>();
+
+            foreach (var jsonTrader in worldState["VoidTraders"])
             {
                 WarframeVoidTrader currentTrader = VoidTraders.Find(x => x.GUID == jsonTrader["_id"]["$id"].ToString());
                 if (currentTrader == null)
@@ -373,8 +294,8 @@ namespace DiscordSharpTest
                     var id = jsonTrader["_id"]["$id"].ToString();
                     var loc = jsonTrader["Node"].ToString();
 
-                    var secondsUntilStart = double.Parse(jsonTrader["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
-                    var secondsUntilExpire = double.Parse(jsonTrader["Expiry"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                    var secondsUntilStart = double.Parse(jsonTrader["Activation"]["sec"].ToString()) - double.Parse(worldState["Time"].ToString());
+                    var secondsUntilExpire = double.Parse(jsonTrader["Expiry"]["sec"].ToString()) - double.Parse(worldState["Time"].ToString());
                     var startTime = DateTime.Now.AddSeconds(secondsUntilStart);
                     var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
 
@@ -411,16 +332,20 @@ namespace DiscordSharpTest
                 }
 
                 if ((currentTrader != null) && (currentTrader.ExpireTime > DateTime.Now))
-                    CreateNewVoidTraderReceivedEvent(currentTrader);
+                    //CreateNewVoidTraderReceivedEvent(currentTrader);
+                    resultVoidTraders.Add(currentTrader);
             }
+            return resultVoidTraders;
         }
 
-        private void ParseVoidFissures()
+        public IEnumerable<WarframeVoidFissure> GetVoidFissures()
         {
             _newVoidFissures.Clear();
+            JObject worldState = _scraper.ScrapeWorldState();
+            var resultVoidFissures = new List<WarframeVoidFissure>();
 
             //Find Alerts
-            foreach (var jsonFissure in _worldState["ActiveMissions"])
+            foreach (var jsonFissure in worldState["ActiveMissions"])
             {
                 WarframeVoidFissure currentVoidFissure = VoidFissures.Find(x => x.GUID == jsonFissure["_id"]["$id"].ToString());
 
@@ -429,8 +354,8 @@ namespace DiscordSharpTest
                     var id = jsonFissure["_id"]["$id"].ToString();
                     var loc = jsonFissure["Node"].ToString();
 
-                    var secondsUntilStart = double.Parse(jsonFissure["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
-                    var secondsUntilExpire = double.Parse(jsonFissure["Expiry"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                    var secondsUntilStart = double.Parse(jsonFissure["Activation"]["sec"].ToString()) - double.Parse(worldState["Time"].ToString());
+                    var secondsUntilExpire = double.Parse(jsonFissure["Expiry"]["sec"].ToString()) - double.Parse(worldState["Time"].ToString());
                     var startTime = DateTime.Now.AddSeconds(secondsUntilStart);
                     var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
 
@@ -472,18 +397,19 @@ namespace DiscordSharpTest
                 }
 
                 if ((currentVoidFissure != null) && (currentVoidFissure.ExpireTime > DateTime.Now))
-                    CreateNewVoidFissureReceivedEvent(currentVoidFissure);
-                else
-                    CreateVoidFissureExpiredEvent(currentVoidFissure);
+                    resultVoidFissures.Add(currentVoidFissure);
             }
+            return resultVoidFissures;
         }
 
-        private void ParseSorties()
+        public IEnumerable<WarframeSortie> GetSorties()
         {
             _newSorties.Clear();
+            JObject worldState = _scraper.ScrapeWorldState();
+            var resultSorties = new List<WarframeSortie>();
 
             //Find Sorties
-            foreach (var jsonSortie in _worldState["Sorties"])
+            foreach (var jsonSortie in worldState["Sorties"])
             {
                 //Check if the sortie has already being tracked
                 WarframeSortie currentSortie = SortieList.Find(x => x.GUID == jsonSortie["_id"]["$id"].ToString());
@@ -497,8 +423,8 @@ namespace DiscordSharpTest
                     var varMissions = new List<MissionInfo>();
                     var varConditions = new List<string>();
 
-                    var secondsUntilStart = double.Parse(jsonSortie["Activation"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
-                    var secondsUntilExpire = double.Parse(jsonSortie["Expiry"]["sec"].ToString()) - double.Parse(_worldState["Time"].ToString());
+                    var secondsUntilStart = double.Parse(jsonSortie["Activation"]["sec"].ToString()) - double.Parse(worldState["Time"].ToString());
+                    var secondsUntilExpire = double.Parse(jsonSortie["Expiry"]["sec"].ToString()) - double.Parse(worldState["Time"].ToString());
                     var startTime = DateTime.Now.AddSeconds(secondsUntilStart);
                     var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
 
@@ -543,17 +469,19 @@ namespace DiscordSharpTest
                 }
 
                 if ((currentSortie != null) && (currentSortie.ExpireTime > DateTime.Now))
-                    CreateNewSortieReceivedEvent(currentSortie);
-                else
-                    CreateSortieExpiredEvent(currentSortie);
+                    resultSorties.Add(currentSortie);
             }
+            return resultSorties;
         }
 
-        private void ParseTimeCycle()
+        public WarframeTimeCycleInfo GetTimeCycle()
         {
-            var currentTime = int.Parse(_worldState["Time"].ToString());
+            JObject worldState = _scraper.ScrapeWorldState();
+
+            var currentTime = int.Parse(worldState["Time"].ToString());
             var cycleInfo = new WarframeTimeCycleInfo(currentTime);
-            CreateDayCycleUpdateReceivedEvent(cycleInfo);
+            return cycleInfo;
+            //CreateDayCycleUpdateReceivedEvent(cycleInfo);
         }
 
         #endregion
@@ -585,112 +513,9 @@ namespace DiscordSharpTest
             return result;
         }
 
-        private void CreateNewAlertReceivedEvent(WarframeAlert newAlert)
-        {
-            // Make a temporary copy of the event to potential
-            // race condition if the last subscriber unsubscribes
-            // immediately after the null check and before the event is raised.
-            EventHandler<WarframeAlertScrapedArgs> handler = AlertScraped;
-
-            var e = new WarframeAlertScrapedArgs(newAlert);
-
-            if (handler != null)    //Check if there are any subscribers
-                handler(this, e);
-        }
-
-        private void CreateNewInvasionReceivedEvent(WarframeInvasion newInvasion)
-        {
-            EventHandler<WarframeInvasionScrapedArgs> handler = InvasionScraped;
-
-            var e = new WarframeInvasionScrapedArgs(newInvasion);
-
-            if (handler != null)
-                handler(this, e);
-        }
-
-        private void CreateConstructionProjectReceivedEvent(WarframeInvasionConstruction newConstruction)
-        {
-            EventHandler<WarframeConstructionProjectsScrapedArgs> handler = ConstructionProjectsScraped;
-
-            var e = new WarframeConstructionProjectsScrapedArgs(newConstruction);
-
-            if (handler != null)
-                handler(this, e);
-        }
-
-        private void CreateNewVoidTraderReceivedEvent(WarframeVoidTrader newTrader)
-        {
-            EventHandler<WarframeVoidTraderScrapedArgs> handler = VoidTraderScraped;
-
-            var e = new WarframeVoidTraderScrapedArgs(newTrader);
-
-            if (handler != null)
-                handler(this, e);
-        }
-
-        private void CreateNewVoidFissureReceivedEvent(WarframeVoidFissure newFissure)
-        {
-            EventHandler<WarframeVoidFissureScrapedArgs> handler = VoidFissureScraped;
-
-            var e = new WarframeVoidFissureScrapedArgs(newFissure);
-
-            if (handler != null)
-                handler(this, e);
-        }
-
-        private void CreateNewSortieReceivedEvent(WarframeSortie newSortie)
-        {
-            EventHandler<WarframeSortieScrapedArgs> handler = SortieScraped;
-
-            var e = new WarframeSortieScrapedArgs(newSortie);
-
-            if (handler != null)
-                handler(this, e);
-        }
-
-        private void CreateDayCycleUpdateReceivedEvent(WarframeTimeCycleInfo cycleInfo)
-        {
-            EventHandler<DayCycleTimeScrapedArgs> handler = DayCycleScraped;
-
-            var e = new DayCycleTimeScrapedArgs(cycleInfo);
-
-            if (handler != null)
-                handler(this, e);
-        }
-
-        private void CreateAlertExpiredEvent(WarframeAlert expiredAlert, string messageID = "")
-        {
-            EventHandler<WarframeAlertExpiredArgs> handler = AlertExpired;
-
-            var e = new WarframeAlertExpiredArgs(expiredAlert, messageID);
-
-            if (handler != null)
-                handler(this, e);
-        }
-
-        private void CreateVoidFissureExpiredEvent(WarframeVoidFissure expiredFissure, string messageID = "")
-        {
-            EventHandler<WarframeVoidFissureExpiredArgs> handler = VoidFissureExpired;
-
-            var e = new WarframeVoidFissureExpiredArgs(expiredFissure, messageID);
-
-            if (handler != null)
-                handler(this, e);
-        }
-
-        private void CreateSortieExpiredEvent(WarframeSortie expiredSortie, string messageID = "")
-        {
-            EventHandler<WarframeSortieExpiredArgs> handler = SortieExpired;
-
-            var e = new WarframeSortieExpiredArgs(expiredSortie, messageID);
-
-            if (handler != null)
-                handler(this, e);
-        }
-
         public bool IsAlertNew(WarframeAlert alert)
         {
-            return (_newAlerts.Exists( x => x.GUID == alert.GUID));
+            return (_newAlerts.Exists(x => x.GUID == alert.GUID));
         }
 
         public bool IsInvasionNew(WarframeInvasion invasion)

@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.ComponentModel;
 
-namespace DiscordSharpTest.WarframeEvents.Properties
+namespace WarframeWorldStateAPI.WarframeEvents.Properties
 {
     public static class Faction
     {

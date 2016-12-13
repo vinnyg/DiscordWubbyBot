@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 //using DiscordSharpTest.WarframeEvents.Properties;
 
-namespace DiscordSharpTest.WarframeEvents
+namespace WarframeWorldStateAPI.WarframeEvents
 {
     /*----Message Example----/
     Grineer Balor Fomorian 21%

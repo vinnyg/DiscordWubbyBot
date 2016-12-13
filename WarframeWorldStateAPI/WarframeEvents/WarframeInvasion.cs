@@ -1,12 +1,12 @@
-﻿using DiscordSharpTest.WarframeEvents;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DiscordSharpTest.WarframeEvents.Properties;
+using WarframeWorldStateAPI.WarframeEvents.Properties;
+using WarframeWorldStateAPI.WarframeEvents;
 
-namespace DiscordSharpTest.WarframeEvents
+namespace WarframeWorldStateAPI.WarframeEvents
 {
     public class WarframeInvasion : WarframeEvent
     {

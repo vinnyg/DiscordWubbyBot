@@ -1,11 +1,11 @@
-﻿using DiscordSharpTest.WarframeEvents;
+﻿//using DiscordSharpTest.WarframeEvents;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DiscordSharpTest.WarframeEvents
+namespace WarframeWorldStateAPI.WarframeEvents
 {
     public class WarframeVoidFissure : WarframeEvent
     {
