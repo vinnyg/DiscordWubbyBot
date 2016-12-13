@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
-namespace WarframeWorldStateAPI.Components
+namespace WarframeWorldStateAPI.Extensions
 {
     public static class JsonExtensions
     {
