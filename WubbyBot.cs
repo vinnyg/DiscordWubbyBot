@@ -89,7 +89,7 @@ namespace DiscordSharpTest
             Client.Connected += (sender, e) =>
             {
                 Log($"Connected as {e.User.Username}");
-                SetupWarframeEventsTask();
+                StartPostTimer();
 
                 SetCurrentGame(false);
             };
@@ -106,77 +106,6 @@ namespace DiscordSharpTest
             };
 #endif
             Connect();
-        }
-
-        /*private void InitSystems()
-        {
-            //We want to wait until the bot has connected to the Discord server before we can do anything
-            Log("Initialising Warframe JSON Parser...");
-            _eventsScraper = new WarframeJSONScraper();
-
-            Log("Initialisation complete.");
-        }*/
-        
-        private void SetupWarframeEventsTask()
-        {
-            /*_eventsScraper.AlertScraped += (sender, e) =>
-            {
-#if DEBUG
-                Log("Alert Scraped!");
-#endif
-                bool alertIsNew = _eventsScraper.IsAlertNew(e.Alert);
-                AddToAlertPostQueue(e.Alert, alertIsNew, e.Alert.IsExpired());
-            };
-
-            _eventsScraper.InvasionScraped += (sender, e) =>
-            {
-#if DEBUG
-                Log("Invasion Scraped!");
-#endif
-                bool invasionIsNew = _eventsScraper.IsInvasionNew(e.Invasion);
-                AddToInvasionPostQueue(e.Invasion, invasionIsNew, e.Invasion.IsExpired());
-            };
-
-            _eventsScraper.ConstructionProjectsScraped += (sender, e) =>
-            {
-                //bool invasionIsNew = _eventsScraper.IsInvasionNew(e.Invasion);
-                AddToInvasionConstructionPostQueue(e.ConstructionProject, false);
-            };
-
-            _eventsScraper.VoidTraderScraped += (sender, e) =>
-            {
-#if DEBUG
-                Log("Void Trader Scraped!");
-#endif
-                AddToVoidTraderPostQueue(e.Trader, false, e.Trader.IsExpired());
-            };
-
-            _eventsScraper.VoidFissureScraped += (sender, e) =>
-            {
-#if DEBUG
-                Log("Fissure Scraped!");
-#endif
-                AddToVoidFissurePostQueue(e.Fissure, false, e.Fissure.IsExpired());
-            };
-
-            _eventsScraper.SortieScraped += (sender, e) =>
-            {
-#if DEBUG
-                Log("Sortie Scraped!");
-#endif
-                AddToSortiePostQueue(e.Sortie, false, e.Sortie.IsExpired());
-            };
-
-            _eventsScraper.DayCycleScraped += (sender, e) =>
-            {
-#if DEBUG
-                Log("Day Cycle Scraped!");
-#endif
-                AddToTimeCyclePostQueue(e.cycleInfo, false);
-            };
-
-            _eventsScraper.Start();*/
-            StartPostTimer();
         }
 
         private void CheckForWarframeEvents()
@@ -580,8 +509,6 @@ namespace DiscordSharpTest
         private int RollDice(int min, int max)
         {
             throw new NotImplementedException();
-
-            //return _randomNumGen.Next(min, max);
         }
 
         private DiscordMessage SendMessageToAlertsChannel(string content)
