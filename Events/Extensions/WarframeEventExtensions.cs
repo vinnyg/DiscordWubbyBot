@@ -4,14 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DiscordSharpTest;
-using DiscordSharpTest.WarframeEvents;
-using DiscordSharpTest.WarframeEvents.Properties;
 using DiscordSharpTest.Events.Extensions;
+using WarframeWorldStateAPI.WarframeEvents;
+using WarframeWorldStateAPI.WarframeEvents.Properties;
 
 namespace WubbyBot.Events.Extensions
 {
-    //These extension methods exist as they are not directly relevant to the functionality of the classes concerned.
-    //As such they exist to prevent class responsibility bloat.
+    //Implemented as extension methods as they are not core responsibilities of the classes in question
     public static class WarframeEventExtensions
     {
         private static string ParseMinutesAsTime(int minutes)
@@ -152,9 +151,9 @@ namespace WubbyBot.Events.Extensions
             if (!sortie.IsExpired())
             {
                 if (DateTime.Now < sortie.StartTime)
-                    statusMessage.Append($"Starts {sortie.StartTime:HH:mm} ({sortie.GetMinutesRemaining(true)}m)");
+                    statusMessage.Append($"Starts {sortie.StartTime:HH:mm} ({ParseMinutesAsTime(sortie.GetMinutesRemaining(true))})");
                 else
-                    statusMessage.Append($"Expires {sortie.ExpireTime:HH:mm} ({sortie.GetMinutesRemaining(false)}m)");
+                    statusMessage.Append($"Expires {sortie.ExpireTime:HH:mm} ({ParseMinutesAsTime(sortie.GetMinutesRemaining(false))})");
             }
             else
             {
