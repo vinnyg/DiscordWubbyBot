@@ -44,14 +44,7 @@ namespace DiscordSharpTest
             bot.Login();
             bot.Init();
 
-            /*if ((bot.Connect()) != null)
-                Console.WriteLine(string.Format("{0} successfully connected.", bot._name));
-            else
-                Console.WriteLine(string.Format("{0} failed to connect.", bot._name));*/
-            //if (client.SendLoginRequest() != null)
-            //    ClientTask(client);
             Console.ReadLine();
-            //bot.Client.GetTextClientLogger.Save(@"C:\Users\Sam\Desktop\discord.txt");
 
             bot.Shutdown();
 

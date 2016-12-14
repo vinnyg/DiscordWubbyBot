@@ -199,7 +199,7 @@ namespace DiscordWrapper
                 }
             }*/
         }
-        
+
         private int GetTimeUntilCanRequest(int limit = REQUEST_TIME_LIMIT)
         {
             DateTime timeOfNextAvailableRequest = timeOfLastDiscordRequest.AddMilliseconds(limit);
