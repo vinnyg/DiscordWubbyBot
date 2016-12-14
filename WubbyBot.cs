@@ -115,8 +115,7 @@ namespace DiscordSharpTest
 #if DEBUG
                 Log("Alert Scraped!");
 #endif
-                bool alertIsNew = _eventsParser.IsAlertNew(alert);
-                AddToAlertPostQueue(alert, alertIsNew, alert.IsExpired());
+                AddToAlertPostQueue(alert, _eventsParser.IsEventNew(alert), alert.IsExpired());
             }
 
             foreach (var invasion in _eventsParser.GetInvasions())
@@ -124,8 +123,7 @@ namespace DiscordSharpTest
 #if DEBUG
                 Log("Invasion Scraped!");
 #endif
-                bool invasionIsNew = _eventsParser.IsInvasionNew(invasion);
-                AddToInvasionPostQueue(invasion, invasionIsNew, invasion.IsExpired());
+                AddToInvasionPostQueue(invasion, _eventsParser.IsEventNew(invasion), invasion.IsExpired());
             }
             
             foreach (var project in _eventsParser.GetInvasionConstruction())

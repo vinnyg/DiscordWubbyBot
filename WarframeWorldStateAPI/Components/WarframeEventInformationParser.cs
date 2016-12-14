@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using WarframeDatabaseNet;
 using WarframeDatabaseNet.Persistence;
+using WarframeWorldStateAPI.Extensions;
 using WarframeWorldStateAPI.WarframeEvents;
 
 namespace WarframeWorldStateAPI.Components
@@ -12,32 +13,26 @@ namespace WarframeWorldStateAPI.Components
     {
         //Consider responsibility of raising events
         private const int SECONDS_PER_DAY_CYCLE = 14400;
+        private const int SECONDS_UNTIL_EVENT_NOT_NEW = 60;
 
-        public List<WarframeAlert> AlertsList { get; private set; } = new List<WarframeAlert>();
-        public List<WarframeInvasion> InvasionsList { get; private set; } = new List<WarframeInvasion>();
-        public List<WarframeInvasionConstruction> ConstructionProjectsList { get; private set; } = new List<WarframeInvasionConstruction>();
-        public List<WarframeVoidTrader> VoidTraders { get; private set; } = new List<WarframeVoidTrader>();
-        public List<WarframeVoidFissure> VoidFissures { get; private set; } = new List<WarframeVoidFissure>();
-        public List<WarframeSortie> SortieList { get; private set; } = new List<WarframeSortie>();
-
+        private List<WarframeAlert> _alertsList { get; set; } = new List<WarframeAlert>();
+        private List<WarframeInvasion> _invasionsList { get; set; } = new List<WarframeInvasion>();
+        private List<WarframeInvasionConstruction> _constructionProjectsList { get; set; } = new List<WarframeInvasionConstruction>();
+        private List<WarframeVoidTrader> _voidTraders { get; set; } = new List<WarframeVoidTrader>();
+        private List<WarframeVoidFissure> _voidFissures { get; set; } = new List<WarframeVoidFissure>();
+        private List<WarframeSortie> _sortieList { get; set; } = new List<WarframeSortie>();
         private WarframeJSONScraper _scraper = new WarframeJSONScraper();
-        private List<WarframeAlert> _newAlerts { get; set; } = new List<WarframeAlert>();
-        private List<WarframeInvasion> _newInvasions { get; set; } = new List<WarframeInvasion>();
-        private List<WarframeInvasionConstruction> _newProjects { get; set; } = new List<WarframeInvasionConstruction>();
-        private List<WarframeVoidFissure> _newVoidFissures { get; set; } = new List<WarframeVoidFissure>();
-        private List<WarframeSortie> _newSorties { get; set; } = new List<WarframeSortie>();
 
         #region ParseJSONMethods
         public IEnumerable<WarframeAlert> GetAlerts()
         {
             JObject worldState = _scraper.ScrapeWorldState();
-            _newAlerts.Clear();
             var resultAlerts = new List<WarframeAlert>();
 
             //Find Alerts
             foreach (var jsonAlert in worldState["Alerts"])
             {
-                WarframeAlert currentAlert = AlertsList.Find(x => x.GUID == jsonAlert["_id"]["$id"].ToString());
+                WarframeAlert currentAlert = _alertsList.Find(x => x.GUID == jsonAlert["_id"]["$id"].ToString());
 
                 if (currentAlert == null)
                 {
@@ -89,8 +84,7 @@ namespace WarframeWorldStateAPI.Components
                                 requiresArchwing);
 
                             currentAlert = new WarframeAlert(alertInfo, id, nodeName, startTime, expireTime);
-                            AlertsList.Add(currentAlert);
-                            _newAlerts.Add(currentAlert);
+                            _alertsList.Add(currentAlert);
 #if DEBUG
                             Console.WriteLine("New Alert Event");
 #endif
@@ -100,26 +94,25 @@ namespace WarframeWorldStateAPI.Components
                 else
                 {
                     if (currentAlert.ExpireTime < DateTime.Now)
-                        AlertsList.Remove(currentAlert);
+                        _alertsList.Remove(currentAlert);
                 }
 
                 if ((currentAlert != null) && (currentAlert.ExpireTime > DateTime.Now))
                     resultAlerts.Add(currentAlert);
             }
-
-            return resultAlerts;
+            
+            return _alertsList;
         }
 
         public IEnumerable<WarframeInvasion> GetInvasions()
         {
-            _newInvasions.Clear();
             JObject worldState = _scraper.ScrapeWorldState();
             var resultInvasions = new List<WarframeInvasion>();
 
             //Find Invasions
             foreach (var jsonInvasion in worldState["Invasions"])
             {
-                WarframeInvasion currentInvasion = InvasionsList.Find(x => x.GUID == jsonInvasion["_id"]["$id"].ToString());
+                WarframeInvasion currentInvasion = _invasionsList.Find(x => x.GUID == jsonInvasion["_id"]["$id"].ToString());
 
                 if (currentInvasion == null)
                 {
@@ -209,8 +202,7 @@ namespace WarframeWorldStateAPI.Components
                             var startTime = DateTime.Now.AddSeconds(secondsUntilStart);
 
                             currentInvasion = new WarframeInvasion(attackerInfo, defenderInfo, id, nodeName, startTime, int.Parse(jsonInvasion["Goal"].ToString()));
-                            InvasionsList.Add(currentInvasion);
-                            _newInvasions.Add(currentInvasion);
+                            _invasionsList.Add(currentInvasion);
                         }
                     }
                     else
@@ -223,18 +215,17 @@ namespace WarframeWorldStateAPI.Components
                 else
                 {
                     if (currentInvasion.IsExpired())
-                        InvasionsList.Remove(currentInvasion);
+                        _invasionsList.Remove(currentInvasion);
                 }
 
                 if (currentInvasion != null && !currentInvasion.IsExpired())
                 {
                     currentInvasion.UpdateProgress(int.Parse(jsonInvasion["Count"].ToString()));
-                    //CreateNewInvasionReceivedEvent(currentInvasion);
                     resultInvasions.Add(currentInvasion);
                 }
             }
-
-            return resultInvasions;
+            
+            return _invasionsList;
         }
 
         //Parse information about the faction construction projects
@@ -244,21 +235,18 @@ namespace WarframeWorldStateAPI.Components
             JObject worldState = _scraper.ScrapeWorldState();
             var resultConstructionProjects = new List<WarframeInvasionConstruction>();
 
-            _newProjects.Clear();
-
             var currentIteration = 0;
             //Find Projects
             foreach (var jsonInvasionConstructionProject in worldState["ProjectPct"])
             {
                 var projectIdentifier = new StringBuilder(IDENTIFIER_PREFIX + currentIteration);
-                WarframeInvasionConstruction currentConstructionProject = ConstructionProjectsList.Find(x => x.GUID == projectIdentifier.ToString());
+                WarframeInvasionConstruction currentConstructionProject = _constructionProjectsList.Find(x => x.GUID == projectIdentifier.ToString());
                 var progress = double.Parse(jsonInvasionConstructionProject.ToString());
 
                 if (currentConstructionProject == null)
                 {
                     currentConstructionProject = new WarframeInvasionConstruction(projectIdentifier.ToString(), currentIteration, progress);
-                    ConstructionProjectsList.Add(currentConstructionProject);
-                    _newProjects.Add(currentConstructionProject);
+                    _constructionProjectsList.Add(currentConstructionProject);
 #if DEBUG
                     Console.WriteLine("New Construction Project Event");
 #endif
@@ -266,19 +254,19 @@ namespace WarframeWorldStateAPI.Components
                 else
                 {
                     if (currentConstructionProject.IsExpired())
-                        ConstructionProjectsList.Remove(currentConstructionProject);
+                        _constructionProjectsList.Remove(currentConstructionProject);
                 }
 
                 if ((currentConstructionProject != null) && (!currentConstructionProject.IsExpired()))
                 {
                     currentConstructionProject.UpdateProgress(progress);
-                    //CreateConstructionProjectReceivedEvent(currentConstructionProject);
                     resultConstructionProjects.Add(currentConstructionProject);
                 }
 
                 ++currentIteration;
             }
-            return resultConstructionProjects;
+            
+            return _constructionProjectsList;
         }
 
         public IEnumerable<WarframeVoidTrader> GetVoidTrader()
@@ -288,7 +276,7 @@ namespace WarframeWorldStateAPI.Components
 
             foreach (var jsonTrader in worldState["VoidTraders"])
             {
-                WarframeVoidTrader currentTrader = VoidTraders.Find(x => x.GUID == jsonTrader["_id"]["$id"].ToString());
+                WarframeVoidTrader currentTrader = _voidTraders.Find(x => x.GUID == jsonTrader["_id"]["$id"].ToString());
                 if (currentTrader == null)
                 {
                     var id = jsonTrader["_id"]["$id"].ToString();
@@ -310,10 +298,13 @@ namespace WarframeWorldStateAPI.Components
                         }
 
                         currentTrader = new WarframeVoidTrader(id, nodeName, startTime, expireTime);
-                        VoidTraders.Add(currentTrader);
+                        _voidTraders.Add(currentTrader);
+                    }
 
+                    if (currentTrader != null)
+                    {
                         JToken traderInventory = jsonTrader["Manifest"];
-                        if (traderInventory != null)
+                        if (!traderInventory.IsNullOrEmpty())
                         {
                             foreach (var i in traderInventory)
                             {
@@ -328,26 +319,24 @@ namespace WarframeWorldStateAPI.Components
                 else
                 {
                     if (currentTrader.ExpireTime < DateTime.Now)
-                        VoidTraders.Remove(currentTrader);
+                        _voidTraders.Remove(currentTrader);
                 }
 
                 if ((currentTrader != null) && (currentTrader.ExpireTime > DateTime.Now))
-                    //CreateNewVoidTraderReceivedEvent(currentTrader);
                     resultVoidTraders.Add(currentTrader);
             }
-            return resultVoidTraders;
+            return _voidTraders;
         }
 
         public IEnumerable<WarframeVoidFissure> GetVoidFissures()
         {
-            _newVoidFissures.Clear();
             JObject worldState = _scraper.ScrapeWorldState();
             var resultVoidFissures = new List<WarframeVoidFissure>();
 
             //Find Alerts
             foreach (var jsonFissure in worldState["ActiveMissions"])
             {
-                WarframeVoidFissure currentVoidFissure = VoidFissures.Find(x => x.GUID == jsonFissure["_id"]["$id"].ToString());
+                WarframeVoidFissure currentVoidFissure = _voidFissures.Find(x => x.GUID == jsonFissure["_id"]["$id"].ToString());
 
                 if (currentVoidFissure == null)
                 {
@@ -383,8 +372,7 @@ namespace WarframeWorldStateAPI.Components
                         var fissureInfo = new MissionInfo(faction, missionType, 0, fissure, 0, minLevel, maxLevel, archwingRequired);
 
                         currentVoidFissure = new WarframeVoidFissure(fissureInfo, id, nodeName, startTime, expireTime);
-                        VoidFissures.Add(currentVoidFissure);
-                        _newVoidFissures.Add(currentVoidFissure);
+                        _voidFissures.Add(currentVoidFissure);
 #if DEBUG
                         Console.WriteLine("New Fissure Event");
 #endif
@@ -393,18 +381,17 @@ namespace WarframeWorldStateAPI.Components
                 else
                 {
                     if (currentVoidFissure.ExpireTime < DateTime.Now)
-                        VoidFissures.Remove(currentVoidFissure);
+                        _voidFissures.Remove(currentVoidFissure);
                 }
 
                 if ((currentVoidFissure != null) && (currentVoidFissure.ExpireTime > DateTime.Now))
                     resultVoidFissures.Add(currentVoidFissure);
             }
-            return resultVoidFissures;
+            return _voidFissures;
         }
 
         public IEnumerable<WarframeSortie> GetSorties()
         {
-            _newSorties.Clear();
             JObject worldState = _scraper.ScrapeWorldState();
             var resultSorties = new List<WarframeSortie>();
 
@@ -412,7 +399,7 @@ namespace WarframeWorldStateAPI.Components
             foreach (var jsonSortie in worldState["Sorties"])
             {
                 //Check if the sortie has already being tracked
-                WarframeSortie currentSortie = SortieList.Find(x => x.GUID == jsonSortie["_id"]["$id"].ToString());
+                WarframeSortie currentSortie = _sortieList.Find(x => x.GUID == jsonSortie["_id"]["$id"].ToString());
 
                 if (currentSortie == null)
                 {
@@ -455,8 +442,7 @@ namespace WarframeWorldStateAPI.Components
                     if (DateTime.Now < expireTime)
                     {
                         currentSortie = new WarframeSortie(varMissions, id, varDests, varConditions, startTime, expireTime);
-                        SortieList.Add(currentSortie);
-                        _newSorties.Add(currentSortie);
+                        _sortieList.Add(currentSortie);
 #if DEBUG
                         Console.WriteLine("New Sortie Event");
 #endif
@@ -465,13 +451,13 @@ namespace WarframeWorldStateAPI.Components
                 else
                 {
                     if (currentSortie.ExpireTime < DateTime.Now)
-                        SortieList.Remove(currentSortie);
+                        _sortieList.Remove(currentSortie);
                 }
 
                 if ((currentSortie != null) && (currentSortie.ExpireTime > DateTime.Now))
                     resultSorties.Add(currentSortie);
             }
-            return resultSorties;
+            return _sortieList;
         }
 
         public WarframeTimeCycleInfo GetTimeCycle()
@@ -481,7 +467,6 @@ namespace WarframeWorldStateAPI.Components
             var currentTime = int.Parse(worldState["Time"].ToString());
             var cycleInfo = new WarframeTimeCycleInfo(currentTime);
             return cycleInfo;
-            //CreateDayCycleUpdateReceivedEvent(cycleInfo);
         }
 
         #endregion
@@ -513,14 +498,11 @@ namespace WarframeWorldStateAPI.Components
             return result;
         }
 
-        public bool IsAlertNew(WarframeAlert alert)
+        //Check if the event started recently
+        public bool IsEventNew(WarframeEvent warframeEvent)
         {
-            return (_newAlerts.Exists(x => x.GUID == alert.GUID));
-        }
-
-        public bool IsInvasionNew(WarframeInvasion invasion)
-        {
-            return (_newInvasions.Exists(x => x.GUID == invasion.GUID));
+            var timeEventIsNotNew = warframeEvent.StartTime.AddSeconds(SECONDS_UNTIL_EVENT_NOT_NEW);
+            return ((DateTime.Now >= warframeEvent.StartTime) && (DateTime.Now < timeEventIsNotNew));
         }
     }
 }
