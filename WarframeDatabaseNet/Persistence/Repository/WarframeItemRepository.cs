@@ -11,7 +11,6 @@ namespace WarframeDatabaseNet.Persistence.Repository
     {
         public WarframeItemRepository(WarframeDataContext context) : base(context)
         {
-
         }
 
         public WarframeDataContext WFDataContext
@@ -58,13 +57,14 @@ namespace WarframeDatabaseNet.Persistence.Repository
 
         public int GetItemID(string itemURI)
         {
+            const int NON_EXISTANT_ITEM = -1;
             try
             {
                 return WFDataContext.WarframeItems.Where(x => x.ItemURI == itemURI).Single().ID;
             }
             catch (InvalidOperationException)
             {
-                return -1;
+                return NON_EXISTANT_ITEM;
             }
         }
 
@@ -126,7 +126,7 @@ namespace WarframeDatabaseNet.Persistence.Repository
                 return 0;
 
             var item = GetItemByURI(itemURI);
-            int result = 0;
+            int result;
 
             try
             {
