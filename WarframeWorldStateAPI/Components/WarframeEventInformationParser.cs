@@ -9,18 +9,17 @@ using WarframeWorldStateAPI.WarframeEvents;
 
 namespace WarframeWorldStateAPI.Components
 {
+    //Parses the contents of a JSON file for Warframe events
     public class WarframeEventInformationParser
     {
-        //Consider responsibility of raising events
         private const int SECONDS_PER_DAY_CYCLE = 14400;
-        private const int SECONDS_UNTIL_EVENT_NOT_NEW = 60;
 
-        private List<WarframeAlert> _alertsList { get; set; } = new List<WarframeAlert>();
-        private List<WarframeInvasion> _invasionsList { get; set; } = new List<WarframeInvasion>();
-        private List<WarframeInvasionConstruction> _constructionProjectsList { get; set; } = new List<WarframeInvasionConstruction>();
-        private List<WarframeVoidTrader> _voidTraders { get; set; } = new List<WarframeVoidTrader>();
-        private List<WarframeVoidFissure> _voidFissures { get; set; } = new List<WarframeVoidFissure>();
-        private List<WarframeSortie> _sortieList { get; set; } = new List<WarframeSortie>();
+        private List<WarframeAlert> _alertsList = new List<WarframeAlert>();
+        private List<WarframeInvasion> _invasionsList = new List<WarframeInvasion>();
+        private List<WarframeInvasionConstruction> _constructionProjectsList = new List<WarframeInvasionConstruction>();
+        private List<WarframeVoidTrader> _voidTraders = new List<WarframeVoidTrader>();
+        private List<WarframeVoidFissure> _voidFissures = new List<WarframeVoidFissure>();
+        private List<WarframeSortie> _sortieList = new List<WarframeSortie>();
         private WarframeJSONScraper _scraper = new WarframeJSONScraper();
 
         #region ParseJSONMethods
@@ -91,11 +90,8 @@ namespace WarframeWorldStateAPI.Components
                         }
                     }
                 }
-                else
-                {
-                    if (currentAlert.ExpireTime < DateTime.Now)
-                        _alertsList.Remove(currentAlert);
-                }
+
+                _alertsList.RemoveAll(x => x.ExpireTime < DateTime.Now);
 
                 if ((currentAlert != null) && (currentAlert.ExpireTime > DateTime.Now))
                     resultAlerts.Add(currentAlert);
@@ -212,11 +208,8 @@ namespace WarframeWorldStateAPI.Components
 #endif
                     }
                 }
-                else
-                {
-                    if (currentInvasion.IsExpired())
-                        _invasionsList.Remove(currentInvasion);
-                }
+
+                _invasionsList.RemoveAll(x => x.IsExpired());
 
                 if (currentInvasion != null && !currentInvasion.IsExpired())
                 {
@@ -316,11 +309,8 @@ namespace WarframeWorldStateAPI.Components
                         }
                     }
                 }
-                else
-                {
-                    if (currentTrader.ExpireTime < DateTime.Now)
-                        _voidTraders.Remove(currentTrader);
-                }
+
+                _voidTraders.RemoveAll(x => x.ExpireTime < DateTime.Now);
 
                 if ((currentTrader != null) && (currentTrader.ExpireTime > DateTime.Now))
                     resultVoidTraders.Add(currentTrader);
@@ -378,11 +368,8 @@ namespace WarframeWorldStateAPI.Components
 #endif
                     }
                 }
-                else
-                {
-                    if (currentVoidFissure.ExpireTime < DateTime.Now)
-                        _voidFissures.Remove(currentVoidFissure);
-                }
+
+                _voidFissures.RemoveAll(x => x.ExpireTime < DateTime.Now);
 
                 if ((currentVoidFissure != null) && (currentVoidFissure.ExpireTime > DateTime.Now))
                     resultVoidFissures.Add(currentVoidFissure);
@@ -448,11 +435,8 @@ namespace WarframeWorldStateAPI.Components
 #endif
                     }
                 }
-                else
-                {
-                    if (currentSortie.ExpireTime < DateTime.Now)
-                        _sortieList.Remove(currentSortie);
-                }
+
+                _sortieList.RemoveAll(x => x.ExpireTime < DateTime.Now);
 
                 if ((currentSortie != null) && (currentSortie.ExpireTime > DateTime.Now))
                     resultSorties.Add(currentSortie);
@@ -496,13 +480,6 @@ namespace WarframeWorldStateAPI.Components
             }
 
             return result;
-        }
-
-        //Check if the event started recently
-        public bool IsEventNew(WarframeEvent warframeEvent)
-        {
-            var timeEventIsNotNew = warframeEvent.StartTime.AddSeconds(SECONDS_UNTIL_EVENT_NOT_NEW);
-            return ((DateTime.Now >= warframeEvent.StartTime) && (DateTime.Now < timeEventIsNotNew));
         }
     }
 }
