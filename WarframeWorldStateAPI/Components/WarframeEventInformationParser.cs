@@ -409,18 +409,14 @@ namespace WarframeWorldStateAPI.Components
                         {
                             var loc = variant["node"].ToString();
                             varDests.Add(unit.WFSolarNodes.GetNodeName(loc));
-                            varConditions.Add(unit.WFSorties.GetCondition(int.Parse(variant["modifierIndex"].ToString())));
+                            varConditions.Add(unit.WFSorties.GetCondition(variant["modifierType"].ToString()));
 
                             //Mission type varies depending on the region
-                            var regionIndex = int.Parse(variant["regionIndex"].ToString());
-                            var missionIndex = int.Parse(variant["missionIndex"].ToString());
-                            var bossIndex = int.Parse(variant["bossIndex"].ToString());
+                            var sortieBossID = jsonSortie["Boss"].ToString();
+                            string missionName = variant["missionType"].ToString();
 
-                            string regionName = unit.WFSorties.GetRegion(regionIndex);
-                            string missionName = unit.WFSorties.GetMissionType(missionIndex, regionIndex);
-
-                            var varMission = new MissionInfo(unit.WFSorties.GetFaction(bossIndex), missionName,
-                                    0, unit.WFSorties.GetBoss(bossIndex), 0, 0, 0, false);
+                            var varMission = new MissionInfo(unit.WFSorties.GetFaction(sortieBossID), missionName,
+                                    0, unit.WFSorties.GetBoss(sortieBossID), 0, 0, 0, false);
 
                             varMissions.Add(varMission);
                         }

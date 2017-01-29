@@ -20,6 +20,7 @@ namespace WarframeDatabaseNet.Persistence.Repository
             get { return Context as WarframeDataContext; }
         }
 
+        [Obsolete]
         public string GetBoss(int bossIndex)
         {
             var result = $"boss{bossIndex}";
@@ -31,17 +32,41 @@ namespace WarframeDatabaseNet.Persistence.Repository
             return result;
         }
 
-        public string GetCondition(int conditionIndex)
+        public string GetBoss(string sortieBossID)
         {
-            var result = $"ConditionIndex{conditionIndex}";
-            
-            var item = WFDataContext.WFSortieConditions.Where(x => x.ConditionIndex == conditionIndex);
+            var result = sortieBossID;
+
+            var item = WFDataContext.WFSortieBosses.Where(x => x.SortieBossID == sortieBossID);
             if (item.Count() > 0)
-                result = item.Single().ConditionName;
-                
+                result = item.Single().BossName;
+
             return result;
         }
 
+        [Obsolete]
+        public string GetCondition(int conditionIndex)
+        {
+            var result = $"ConditionIndex{conditionIndex}";
+
+            var item = WFDataContext.WFSortieConditions.Where(x => x.ConditionIndex == conditionIndex);
+            if (item.Count() > 0)
+                result = item.Single().ConditionName;
+
+            return result;
+        }
+
+        public string GetCondition(string sortieConditionID)
+        {
+            var result = sortieConditionID;
+
+            var item = WFDataContext.WFNewSortieConditions.Where(x => x.SortieConditionID == sortieConditionID);
+            if (item.Count() > 0)
+                result = item.Single().ConditionName;
+
+            return result;
+        }
+
+        [Obsolete]
         public string GetFaction(int bossIndex)
         {
             var result = $"faction{bossIndex}";
@@ -49,10 +74,22 @@ namespace WarframeDatabaseNet.Persistence.Repository
             var item = WFDataContext.WFBossInfo.Where(x => x.Index == bossIndex);
             if (item.Count() > 0)
                 result = item.Single().FactionIndex;
-                
+
             return result;
         }
 
+        public string GetFaction(string sortieBossID)
+        {
+            var result = sortieBossID;
+
+            var item = WFDataContext.WFSortieBosses.Where(x => x.SortieBossID == sortieBossID);
+            if (item.Count() > 0)
+                result = item.Single().FactionIndex;
+
+            return result;
+        }
+
+        [Obsolete]
         public string GetMissionType(int missionID, int regionID)
         {
             //TODO: 11 is MT_GENERIC - please change this
@@ -67,7 +104,7 @@ namespace WarframeDatabaseNet.Persistence.Repository
             var item = WFDataContext.WFSortieMissions.Where(x => x.ID == missionID);
             if (item.Count() > 0)
                 result = item.Single().MissionType;
-            
+
             return result;
         }
 

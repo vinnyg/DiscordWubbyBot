@@ -23,10 +23,13 @@ namespace WarframeDatabaseNet
         public DbSet<WFMiscIgnoreSettings> WFMiscIgnoreOptions { get; set; }
         public DbSet<WFVoidFissure> WFVoidFissures { get; set; }
         public DbSet<WFBoss> WFBossInfo { get; set; }
+        public DbSet<WFSortieBoss> WFSortieBosses { get; set; }
         public DbSet<WFRegion> WFRegionNames { get; set; }
         public DbSet<WFSortieMission> WFSortieMissions { get; set; }
         public DbSet<WFSortieCondition> WFSortieConditions { get; set; }
+        public DbSet<WFNewSortieCondition> WFNewSortieConditions {get;set;}
         public DbSet<WFPlanetRegionMission> WFPlanetRegionMissions { get; set; }
+
         public DbSet<SolarMapMission> SolarMapMissions { get; set; }
         public string DataSource { get; private set; }
 

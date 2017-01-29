@@ -126,9 +126,11 @@
     <Compile Include="Core\Domain\WarframeItemCategory.cs" />
     <Compile Include="Core\Domain\WFBoss.cs" />
     <Compile Include="Core\Domain\WFMiscIgnoreSettings.cs" />
+    <Compile Include="Core\Domain\WFNewSortieCondition.cs" />
     <Compile Include="Core\Domain\WFPlanetRegionMission.cs" />
     <Compile Include="Core\Domain\WFRegion.cs" />
     <Compile Include="Core\Domain\WFSolarNode.cs" />
+    <Compile Include="Core\Domain\WFSortieBoss.cs" />
     <Compile Include="Core\Domain\WFSortieCondition.cs" />
     <Compile Include="Core\Domain\WFSortieMission.cs" />
     <Compile Include="Core\Domain\WFVoidFissure.cs" />
