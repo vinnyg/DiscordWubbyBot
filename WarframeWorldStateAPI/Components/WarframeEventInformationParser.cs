@@ -13,6 +13,7 @@ namespace WarframeWorldStateAPI.Components
     public class WarframeEventInformationParser
     {
         private const int SECONDS_PER_DAY_CYCLE = 14400;
+        private const int TIME_TO_LONG_MULTIPLIER = 1000;
 
         private List<WarframeAlert> _alertsList = new List<WarframeAlert>();
         private List<WarframeInvasion> _invasionsList = new List<WarframeInvasion>();
@@ -31,11 +32,11 @@ namespace WarframeWorldStateAPI.Components
             //Find Alerts
             foreach (var jsonAlert in worldState["Alerts"])
             {
-                WarframeAlert currentAlert = _alertsList.Find(x => x.GUID == jsonAlert["_id"]["$id"].ToString());
+                WarframeAlert currentAlert = _alertsList.Find(x => x.GUID == jsonAlert["_id"]["$oid"].ToString());
 
                 if (currentAlert == null)
                 {
-                    string id = jsonAlert["_id"]["$id"].ToString();
+                    string id = jsonAlert["_id"]["$oid"].ToString();
                     string loc = jsonAlert["MissionInfo"]["location"].ToString();
 
                     //Loot - Can be countable (Alertium etc.) or single (Blueprints) items
@@ -54,10 +55,10 @@ namespace WarframeWorldStateAPI.Components
                         nodeName = unit.WFSolarNodes.GetNodeName(loc);
                     }
 
-                    var secondsUntilStart = double.Parse(jsonAlert["Activation"]["sec"].ToString()) - double.Parse(worldState["Time"].ToString());
-                    var secondsUntilExpire = double.Parse(jsonAlert["Expiry"]["sec"].ToString()) - double.Parse(worldState["Time"].ToString());
-                    DateTime startTime = DateTime.Now.AddSeconds(secondsUntilStart);
-                    DateTime expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
+                    var secondsUntilStart = long.Parse(jsonAlert["Activation"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
+                    var secondsUntilExpire = long.Parse(jsonAlert["Expiry"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
+                    var startTime = DateTime.Now.AddSeconds(secondsUntilStart / TIME_TO_LONG_MULTIPLIER);
+                    var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire / TIME_TO_LONG_MULTIPLIER);
 
                     var creditReward = int.Parse(jsonAlert["MissionInfo"]["missionReward"]["credits"].ToString());
                     var reqArchwingData = jsonAlert["MissionInfo"]["archwingRequired"];
@@ -108,11 +109,11 @@ namespace WarframeWorldStateAPI.Components
             //Find Invasions
             foreach (var jsonInvasion in worldState["Invasions"])
             {
-                WarframeInvasion currentInvasion = _invasionsList.Find(x => x.GUID == jsonInvasion["_id"]["$id"].ToString());
+                WarframeInvasion currentInvasion = _invasionsList.Find(x => x.GUID == jsonInvasion["_id"]["$oid"].ToString());
 
                 if (currentInvasion == null)
                 {
-                    var id = jsonInvasion["_id"]["$id"].ToString();
+                    var id = jsonInvasion["_id"]["$oid"].ToString();
                     var loc = jsonInvasion["Node"].ToString();
 
                     var attackerCountables = new JArray();
@@ -194,7 +195,7 @@ namespace WarframeWorldStateAPI.Components
                                 0, 0,
                                 false);
 
-                            var secondsUntilStart = double.Parse(jsonInvasion["Activation"]["sec"].ToString()) - double.Parse(worldState["Time"].ToString());
+                            var secondsUntilStart = long.Parse(jsonInvasion["Activation"]["$date"]["$numberLong"].ToString()) - long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER;
                             var startTime = DateTime.Now.AddSeconds(secondsUntilStart);
 
                             currentInvasion = new WarframeInvasion(attackerInfo, defenderInfo, id, nodeName, startTime, int.Parse(jsonInvasion["Goal"].ToString()));
@@ -269,16 +270,16 @@ namespace WarframeWorldStateAPI.Components
 
             foreach (var jsonTrader in worldState["VoidTraders"])
             {
-                WarframeVoidTrader currentTrader = _voidTraders.Find(x => x.GUID == jsonTrader["_id"]["$id"].ToString());
+                WarframeVoidTrader currentTrader = _voidTraders.Find(x => x.GUID == jsonTrader["_id"]["$oid"].ToString());
                 if (currentTrader == null)
                 {
-                    var id = jsonTrader["_id"]["$id"].ToString();
+                    var id = jsonTrader["_id"]["$oid"].ToString();
                     var loc = jsonTrader["Node"].ToString();
 
-                    var secondsUntilStart = double.Parse(jsonTrader["Activation"]["sec"].ToString()) - double.Parse(worldState["Time"].ToString());
-                    var secondsUntilExpire = double.Parse(jsonTrader["Expiry"]["sec"].ToString()) - double.Parse(worldState["Time"].ToString());
-                    var startTime = DateTime.Now.AddSeconds(secondsUntilStart);
-                    var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
+                    var secondsUntilStart = long.Parse(jsonTrader["Activation"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
+                    var secondsUntilExpire = long.Parse(jsonTrader["Expiry"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
+                    var startTime = DateTime.Now.AddSeconds(secondsUntilStart / TIME_TO_LONG_MULTIPLIER);
+                    var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire / TIME_TO_LONG_MULTIPLIER);
 
                     if (DateTime.Now < expireTime)
                     {
@@ -326,17 +327,17 @@ namespace WarframeWorldStateAPI.Components
             //Find Alerts
             foreach (var jsonFissure in worldState["ActiveMissions"])
             {
-                WarframeVoidFissure currentVoidFissure = _voidFissures.Find(x => x.GUID == jsonFissure["_id"]["$id"].ToString());
+                WarframeVoidFissure currentVoidFissure = _voidFissures.Find(x => x.GUID == jsonFissure["_id"]["$oid"].ToString());
 
                 if (currentVoidFissure == null)
                 {
-                    var id = jsonFissure["_id"]["$id"].ToString();
+                    var id = jsonFissure["_id"]["$oid"].ToString();
                     var loc = jsonFissure["Node"].ToString();
 
-                    var secondsUntilStart = double.Parse(jsonFissure["Activation"]["sec"].ToString()) - double.Parse(worldState["Time"].ToString());
-                    var secondsUntilExpire = double.Parse(jsonFissure["Expiry"]["sec"].ToString()) - double.Parse(worldState["Time"].ToString());
-                    var startTime = DateTime.Now.AddSeconds(secondsUntilStart);
-                    var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
+                    var secondsUntilStart = long.Parse(jsonFissure["Activation"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
+                    var secondsUntilExpire = long.Parse(jsonFissure["Expiry"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
+                    var startTime = DateTime.Now.AddSeconds(secondsUntilStart / TIME_TO_LONG_MULTIPLIER);
+                    var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire / TIME_TO_LONG_MULTIPLIER);
 
                     var nodeName = loc;
                     var faction = string.Empty;
@@ -386,21 +387,21 @@ namespace WarframeWorldStateAPI.Components
             foreach (var jsonSortie in worldState["Sorties"])
             {
                 //Check if the sortie has already being tracked
-                WarframeSortie currentSortie = _sortieList.Find(x => x.GUID == jsonSortie["_id"]["$id"].ToString());
+                WarframeSortie currentSortie = _sortieList.Find(x => x.GUID == jsonSortie["_id"]["$oid"].ToString());
 
                 if (currentSortie == null)
                 {
-                    var id = jsonSortie["_id"]["$id"].ToString();
+                    var id = jsonSortie["_id"]["$oid"].ToString();
 
                     //Variant details
                     var varDests = new List<string>();
                     var varMissions = new List<MissionInfo>();
                     var varConditions = new List<string>();
 
-                    var secondsUntilStart = double.Parse(jsonSortie["Activation"]["sec"].ToString()) - double.Parse(worldState["Time"].ToString());
-                    var secondsUntilExpire = double.Parse(jsonSortie["Expiry"]["sec"].ToString()) - double.Parse(worldState["Time"].ToString());
-                    var startTime = DateTime.Now.AddSeconds(secondsUntilStart);
-                    var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire);
+                    var secondsUntilStart = long.Parse(jsonSortie["Activation"]["$date"]["$numberLong"].ToString()) - long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER;
+                    var secondsUntilExpire = long.Parse(jsonSortie["Expiry"]["$date"]["$numberLong"].ToString()) - long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER;
+                    var startTime = DateTime.Now.AddSeconds(secondsUntilStart / TIME_TO_LONG_MULTIPLIER);
+                    var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire / TIME_TO_LONG_MULTIPLIER);
 
                     //If this sortie doesn't exist in the current list, then loop through the variant node to get mission info for all variants
                     foreach (var variant in jsonSortie["Variants"])
@@ -444,7 +445,7 @@ namespace WarframeWorldStateAPI.Components
         {
             JObject worldState = _scraper.ScrapeWorldState();
 
-            var currentTime = int.Parse(worldState["Time"].ToString());
+            var currentTime = long.Parse(worldState["Time"].ToString());
             var cycleInfo = new WarframeTimeCycleInfo(currentTime);
             return cycleInfo;
         }

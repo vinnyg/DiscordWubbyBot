@@ -8,21 +8,21 @@ namespace WarframeWorldStateAPI.WarframeEvents
 {
     public class WarframeTimeCycleInfo : WarframeEvent
     {
-        const int SECONDS_PER_DAY_CYCLE = 14400;
+        const long SECONDS_PER_DAY_CYCLE = 14400;
         public TimeSpan TimeUntilNextCycleChange { get; private set; }
         public DateTime TimeOfNextCycleChange { get; private set; }
         public TimeSpan TimeSinceLastCycleChange { get; private set; }
-        private int CurrentTimeInSeconds { get; set; }
+        private long CurrentTimeInSeconds { get; set; }
         private bool _isDay { get; set; }
 
-        public WarframeTimeCycleInfo(int currentWarframeServerTime) : base(string.Empty, "Earth", DateTime.Now)
+        public WarframeTimeCycleInfo(long currentWarframeServerTime) : base(string.Empty, "Earth", DateTime.Now)
         {
             UpdateTimeInformation(currentWarframeServerTime);
         }
 
-        public void UpdateTimeInformation(int currentTime)
+        public void UpdateTimeInformation(long currentTime)
         {
-            int secondsSinceLastCycleChange = currentTime % SECONDS_PER_DAY_CYCLE;
+            long secondsSinceLastCycleChange = currentTime % SECONDS_PER_DAY_CYCLE;
 
             CurrentTimeInSeconds = currentTime;
             TimeSinceLastCycleChange = TimeSpan.FromSeconds(currentTime % SECONDS_PER_DAY_CYCLE);
@@ -34,11 +34,11 @@ namespace WarframeWorldStateAPI.WarframeEvents
         public bool TimeIsDay()
         {
             //Store the seconds since last change; we don't want this as a TimeSpan yet.
-            int secondsSinceLastCycleChange = CurrentTimeInSeconds % SECONDS_PER_DAY_CYCLE;
+            long secondsSinceLastCycleChange = CurrentTimeInSeconds % SECONDS_PER_DAY_CYCLE;
             //Time information is updated every minute, so using old info has negligible effects
-            int timeOfLastChangeInSeconds = CurrentTimeInSeconds - secondsSinceLastCycleChange;
+            long timeOfLastChangeInSeconds = CurrentTimeInSeconds - secondsSinceLastCycleChange;
             //Check whether the cycle is day/night
-            int cycleCountMod = ((timeOfLastChangeInSeconds / SECONDS_PER_DAY_CYCLE) % 2);
+            long cycleCountMod = ((timeOfLastChangeInSeconds / SECONDS_PER_DAY_CYCLE) % 2);
             return (cycleCountMod == 0);
         }
 

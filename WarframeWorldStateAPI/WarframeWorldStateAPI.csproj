@@ -58,7 +58,6 @@
     <Compile Include="WarframeEvents\WarframeTimeCycleInfo.cs" />
     <Compile Include="WarframeEvents\WarframeVoidFissure.cs" />
     <Compile Include="WarframeEvents\WarframeVoidTrader.cs" />
-    <Compile Include="WarframeWorldStateParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

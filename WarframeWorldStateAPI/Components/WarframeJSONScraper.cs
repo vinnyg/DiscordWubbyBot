@@ -1,25 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 using Newtonsoft.Json.Linq;
 using System.Threading;
 using System.Net;
-//using DiscordSharpTest.Events;
-//using DiscordSharpTest.WarframeEvents;
 using System.Configuration;
-using WarframeDatabaseNet;
-using WarframeDatabaseNet.Persistence;
 
 namespace WarframeWorldStateAPI.Components
 {
     //This class parses a JSON file and raises events regarding the contents
     internal class WarframeJSONScraper
     {
-        //TODO: Break this class down into two; a dedicated scraper class and JSON parser class
-        //Consider responsibility of raising events
         private const int SECONDS_PER_DAY_CYCLE = 14400;
         //Limit how often we can scrape the URL
         private const int SCRAPE_LIMIT_INTERVAL_IN_SECONDS = 60;
@@ -28,7 +17,7 @@ namespace WarframeWorldStateAPI.Components
         private JObject _worldState { get; set; }
         private DateTime _lastScraped;
 
-        //Download Warframe content information
+        //Download Warframe content informatino
         internal JObject ScrapeWorldState()
         {
             const int NUMBER_OF_RETRIES = 3;
