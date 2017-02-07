@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-//using System.Threading.Tasks;
 using System.IO;
 using Newtonsoft.Json;
 using System.Net.Http;
@@ -221,19 +220,16 @@ namespace DiscordSharpTest
             //Due to the potential length of an invasion message, it may need to be broken down into smaller messages. Hence - entryForFinalMessage
             var entryForFinalMessage = new StringBuilder();
             finalMessagesToPost.Add(entryForFinalMessage);
-
-            //Sometimes new invasions are added while the loop is still iterating, which causes problems.
-            //Creating a copy to reduce the risk of concurrency problems.
-            var invasionMessageQueue = new List<MessageQueueElement>(_invasionMessagePostQueue);
-            var invasionConstructionMessageQueue = new List<MessageQueueElement>(_invasionConstructionMessagePostQueue);
             
-            entryForFinalMessage.Append(WarframeEventExtensions.FormatMessage($"{(invasionMessageQueue.Count > 0 ? string.Empty : "NO ")}ACTIVE INVASIONS", formatType: MessageFormat.Bold));
+            //var invasionConstructionMessageQueue = new List<MessageQueueElement>(_invasionConstructionMessagePostQueue);
+            
+            entryForFinalMessage.Append(WarframeEventExtensions.FormatMessage($"{(_invasionMessagePostQueue.Count > 0 ? string.Empty : "NO ")}ACTIVE INVASIONS", formatType: MessageFormat.Bold));
 
             //Project Construction Information
             var constructionMessage = new StringBuilder();
-            if (invasionConstructionMessageQueue.Count > 0)
+            if (_invasionConstructionMessagePostQueue.Count > 0)
             {
-                foreach (var message in invasionConstructionMessageQueue)
+                foreach (var message in _invasionConstructionMessagePostQueue)
                 {
                     constructionMessage.Append(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
                 }
@@ -241,7 +237,7 @@ namespace DiscordSharpTest
                 entryForFinalMessage.Append(WarframeEventExtensions.FormatMessage(constructionMessage.ToString(), formatType: MessageFormat.CodeBlocks));
             }
 
-            foreach (var message in invasionMessageQueue)
+            foreach (var message in _invasionMessagePostQueue)
             {
                 //Core content of the Discord message without any formatting
                 var coreMessageContentEntry = new StringBuilder();
