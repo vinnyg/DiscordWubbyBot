@@ -49,6 +49,7 @@ namespace DiscordSharpTest
         private List<MessageQueueElement> _voidFissureMessagePostQueue = new List<MessageQueueElement>();
         private List<MessageQueueElement> _sortieMessagePostQueue = new List<MessageQueueElement>();
         private List<MessageQueueElement> _timeCycleMessagePostQueue = new List<MessageQueueElement>();
+        private List<MessageQueueElement> _acolyteMessagePostQueue = new List<MessageQueueElement>();
 
         //These are the Discord message representations of all Warframe events
         private DiscordMessage _alertMessage;
@@ -56,6 +57,7 @@ namespace DiscordSharpTest
         private DiscordMessage _fissureMessage;
         private DiscordMessage _sortieMessage;
         private DiscordMessage _timeCycleMessage;
+        private DiscordMessage _acolyteMessage;
 
         //Store invasion discord messages in a list, as the number of invasions can sometimes cause the Discord message to exceed the maximum character limit
         private List<DiscordMessage> _invasionMessages =  new List<DiscordMessage>();
@@ -154,6 +156,14 @@ namespace DiscordSharpTest
                 AddToVoidTraderPostQueue(trader, false, trader.IsExpired());
             }
 
+            foreach (var acolyte in _eventsParser.GetAcolytes())
+            {
+#if DEBUG
+                Log("Acolyte Scraped!");
+#endif
+                AddToAcolytePostQueue(acolyte, acolyte.IsLocated(), acolyte.IsExpired());
+            }
+
             AddToTimeCyclePostQueue(_eventsParser.GetTimeCycle(), false);
         }
 
@@ -169,6 +179,7 @@ namespace DiscordSharpTest
                 PostVoidFissureMessage();
                 PostVoidTraderMessage();
                 PostTimeCycleMessage();
+                PostAcolyteMessage();
             },
             null, EVENT_UPDATE_TIMER_DUE_TIME_MILLISECONDS, EVENT_UPDATE_INTERVAL_MILLISECONDS);
         }
@@ -429,6 +440,45 @@ namespace DiscordSharpTest
             _timeCycleMessagePostQueue.Clear();
         }
 
+        private void PostAcolyteMessage()
+        {
+            //Ignore the acolytes section if there aren't any
+            if (_acolyteMessagePostQueue.Count() == 0)
+                return;
+
+            var finalMessage = new StringBuilder();
+            var messagesToNotify = new List<string>();
+            //Build all acolyte messages into a single message
+            finalMessage.Append(WarframeEventExtensions.FormatMessage($"{(_acolyteMessagePostQueue.Count > 0 ? string.Empty : "NO ")}ACTIVE ACOLYTES", formatType: MessageFormat.Bold));
+
+            foreach (var message in _acolyteMessagePostQueue)
+            {
+                //Provides code block formatting for Discord Messages
+                //Core content of the Discord message without any formatting
+                var coreMessageContent = new StringBuilder();
+                coreMessageContent.AppendLine(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
+
+                if (message.NotifyClient)
+                {
+                    coreMessageContent.Append("( new )");
+                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, true));
+                }
+                finalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContent.ToString(), formatType: MessageFormat.CodeBlocks));
+            }
+
+            if (_acolyteMessage == null)
+                _acolyteMessage = SendMessageToAlertsChannel(finalMessage.ToString());
+            else
+            {
+                EditEventMessage(finalMessage.ToString(), _acolyteMessage);
+                foreach (var item in messagesToNotify)
+                {
+                    NotifyClient(item);
+                }
+            }
+            _acolyteMessagePostQueue.Clear();
+        }
+
         private void AddToAlertPostQueue(WarframeAlert alert, bool notifyClient, bool alertHasExpired)
         {
             _alertMessagePostQueue.Add(new MessageQueueElement(alert, notifyClient, alertHasExpired));
@@ -464,6 +514,11 @@ namespace DiscordSharpTest
             _timeCycleMessagePostQueue.Add(new MessageQueueElement(cycle, notifyClient, false));
         }
 
+        private void AddToAcolytePostQueue(WarframeAcolyte acolyte, bool notifyClient, bool acolyteHasExpired)
+        {
+            _acolyteMessagePostQueue.Add(new MessageQueueElement(acolyte, notifyClient, acolyteHasExpired));
+        }
+
         public void Shutdown()
         {
             Log("Shutting down...");
@@ -472,6 +527,7 @@ namespace DiscordSharpTest
             DeleteMessage(_sortieMessage);
             DeleteMessage(_traderMessage);
             DeleteMessage(_timeCycleMessage);
+            DeleteMessage(_acolyteMessage);
 
             //Sometimes the invasions message may be split up over multiple Discord messages so each one needs to be deleted.
             foreach (var i in _invasionMessages)

@@ -265,6 +265,49 @@ namespace WubbyBot.Events.Extensions
             return returnMessage.ToString();
         }
 
+        //Parse the mission information into a readable presentation
+        public static string DiscordMessage(this WarframeAcolyte acolyte, bool isNotification)
+        {
+            //MissionInfo info = acolyte.MissionDetails;
+            //string rewardMessage = (!string.IsNullOrEmpty(info.Reward) ? info.Reward : string.Empty);
+            //string rewardQuantityMessage = (info.RewardQuantity > 1 ? info.RewardQuantity + "x" : string.Empty);
+            //string creditMessage = (!string.IsNullOrEmpty(rewardMessage) ? ", " : "") + (info.Credits > 0 ? info.Credits + "cr" : string.Empty);
+
+            var statusMessage = new StringBuilder();
+
+            /*if (!acolyte.IsExpired())
+            {
+                if (acolyte.Health > .0f)
+                    statusMessage.Append($"Health: {acolyte.Health}%");
+                else
+                    statusMessage.Append($"Expires {acolyte.ExpireTime:HH:mm} ({acolyte.GetMinutesRemaining(false)}m)");
+            }*/
+            /*else
+            {
+                statusMessage.Append($"Expired ({acolyte.ExpireTime:HH:mm})");
+            }*/
+
+            var returnMessage = new StringBuilder();
+            //var expireMessage = $"Expires {acolyte.ExpireTime:HH:mm} ({acolyte.GetMinutesRemaining(false)}m)";
+
+            if (!isNotification)
+            {
+                returnMessage.AppendLine(acolyte.Name);
+                returnMessage.AppendLine($"Health: {string.Format("{0:0.00}", acolyte.Health * 100.0f)}%");
+                var discoveryMessage = acolyte.IsDiscovered ? acolyte.DestinationName : "Location: Unknown";
+                returnMessage.AppendLine(discoveryMessage);
+                //returnMessage.Append(statusMessage.ToString());
+            }
+            else
+            {
+                returnMessage.AppendLine("New Acolyte");
+                returnMessage.AppendLine(acolyte.Name);
+                returnMessage.Append(acolyte.DestinationName);
+            }
+
+            return returnMessage.ToString();
+        }
+
         //Encapsulates Discord Message formatting to aid with code reuse and maintainability
         public static StringBuilder FormatMessage(string content, string markdownLanguageIdentifier = "xl", MessageFormat formatType = MessageFormat.CodeBlocks)
         {

@@ -21,6 +21,7 @@ namespace WarframeWorldStateAPI.Components
         private List<WarframeVoidTrader> _voidTraders = new List<WarframeVoidTrader>();
         private List<WarframeVoidFissure> _voidFissures = new List<WarframeVoidFissure>();
         private List<WarframeSortie> _sortieList = new List<WarframeSortie>();
+        private List<WarframeAcolyte> _acolytesList = new List<WarframeAcolyte>();
         private WarframeJSONScraper _scraper = new WarframeJSONScraper();
 
         #region ParseJSONMethods
@@ -448,6 +449,94 @@ namespace WarframeWorldStateAPI.Components
             var currentTime = long.Parse(worldState["Time"].ToString());
             var cycleInfo = new WarframeTimeCycleInfo(currentTime);
             return cycleInfo;
+        }
+
+        public IEnumerable<WarframeAcolyte> GetAcolytes()
+        {
+            JObject worldState = _scraper.ScrapeWorldState();
+            var resultAcolytes = new List<WarframeAcolyte>();
+
+            //Find Alerts
+            foreach (var jsonAcolyte in worldState["PersistentEnemies"])
+            {
+                WarframeAcolyte currentAcolyte = _acolytesList.Find(x => x.GUID == jsonAcolyte["_id"]["$oid"].ToString());
+
+                //We want to know this information regardless of whether or not the acolyte has been previously discovered
+                var jsonAcolyteName = jsonAcolyte["AgentType"].ToString();
+                var loc = jsonAcolyte["LastDiscoveredLocation"].ToString();
+
+                var nodeName = loc;
+                var acolyteName = jsonAcolyteName;
+                var acolyteHealth = float.Parse(jsonAcolyte["HealthPercent"].ToString());
+                var isDiscovered = bool.Parse(jsonAcolyte["Discovered"].ToString());
+
+                using (var unit = new UnitOfWork(new WarframeDataContext()))
+                {
+                    acolyteName = unit.WFEnemies.GetNameByURI(jsonAcolyteName);
+                    nodeName = unit.WFSolarNodes.GetNodeName(loc);
+                }
+
+                if (currentAcolyte == null)
+                {
+                    var id = jsonAcolyte["_id"]["$oid"].ToString();
+                    var lastDiscoveredTime = jsonAcolyte["LastDiscoveredTime"]["$date"]["$numberLong"].ToString();
+                    var regionIndex = isDiscovered ? int.Parse(jsonAcolyte["Region"].ToString()) : -1;
+
+
+                    //Loot - Can be countable (Alertium etc.) or single (Blueprints) items
+                    //JToken countables = (jsonAcolyte["MissionInfo"]["missionReward"]["countedItems"]),
+                    //    nonCountables = (jsonAcolyte["MissionInfo"]["missionReward"]["items"]);
+
+                    //var rewardStr = string.Empty;
+                    
+
+                    //var secondsUntilStart = long.Parse(jsonAcolyte["Activation"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
+                    //var secondsUntilExpire = long.Parse(jsonAcolyte["Expiry"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
+                    //var startTime = DateTime.Now.AddSeconds(secondsUntilStart / TIME_TO_LONG_MULTIPLIER);
+                    //var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire / TIME_TO_LONG_MULTIPLIER);
+
+                    //var creditReward = int.Parse(jsonAcolyte["MissionInfo"]["missionReward"]["credits"].ToString());
+                    //var reqArchwingData = jsonAcolyte["MissionInfo"]["archwingRequired"];
+                    //bool requiresArchwing = reqArchwingData != null ? bool.Parse(reqArchwingData.ToString()) : false;
+
+                    //JToken rewardParam = null;
+                    //if (countables != null) rewardParam = countables[0]["ItemType"].ToString();
+                    //else if (nonCountables != null) rewardParam = nonCountables[0].ToString();
+
+                    //if (RewardIsNotIgnored(creditReward, (rewardParam != null) ? rewardParam.ToString() : null))
+                    if (acolyteHealth > .0f)
+                    {
+                        /*MissionInfo alertInfo = new MissionInfo(jsonAcolyte["MissionInfo"]["faction"].ToString(),
+                            jsonAcolyte["MissionInfo"]["missionType"].ToString(),
+                            creditReward,
+                            //If for whatever reason, an alert returns both countables and non-countables, currently only the countables will be returned.
+                            //In addition, if an alert returns multiple different countables, only the first instance will be returned. This affects invasions as well!
+                            rewardStr,
+                            int.Parse((countables != null ? countables[0]["ItemCount"] : 1).ToString()),
+                            int.Parse(jsonAcolyte["MissionInfo"]["minEnemyLevel"].ToString()),
+                            int.Parse(jsonAcolyte["MissionInfo"]["maxEnemyLevel"].ToString()),
+                            requiresArchwing);*/
+
+                        currentAcolyte = new WarframeAcolyte(id, acolyteName, nodeName, acolyteHealth, regionIndex, isDiscovered);
+                        _acolytesList.Add(currentAcolyte);
+#if DEBUG
+                        Console.WriteLine("New Acolyte Event");
+#endif
+                    }
+                }
+
+                _acolytesList.RemoveAll(x => x.Health <= .0f);
+
+                if ((currentAcolyte != null) && (currentAcolyte.Health > .0f))
+                {
+                    currentAcolyte.IsDiscovered = isDiscovered;
+                    currentAcolyte.UpdateLocation(nodeName);
+                    currentAcolyte.UpdateHealth(acolyteHealth);
+                    resultAcolytes.Add(currentAcolyte);
+                }
+            }
+
+            return _acolytesList;
         }
 
         #endregion

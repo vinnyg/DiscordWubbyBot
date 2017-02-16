@@ -29,6 +29,7 @@ namespace WarframeDatabaseNet
         public DbSet<WFSortieCondition> WFSortieConditions { get; set; }
         public DbSet<WFNewSortieCondition> WFNewSortieConditions {get;set;}
         public DbSet<WFPlanetRegionMission> WFPlanetRegionMissions { get; set; }
+        public DbSet<WFEnemy> WFEnemies { get; set; }
 
         public DbSet<SolarMapMission> SolarMapMissions { get; set; }
         public string DataSource { get; private set; }

@@ -125,6 +125,7 @@
     <Compile Include="Core\Domain\WarframeItem.cs" />
     <Compile Include="Core\Domain\WarframeItemCategory.cs" />
     <Compile Include="Core\Domain\WFBoss.cs" />
+    <Compile Include="Core\Domain\WFEnemy.cs" />
     <Compile Include="Core\Domain\WFMiscIgnoreSettings.cs" />
     <Compile Include="Core\Domain\WFNewSortieCondition.cs" />
     <Compile Include="Core\Domain\WFPlanetRegionMission.cs" />
@@ -136,6 +137,7 @@
     <Compile Include="Core\Domain\WFVoidFissure.cs" />
     <Compile Include="Core\IUnitOfWork.cs" />
     <Compile Include="Core\Repository\Interfaces\IWFDBOptionsRepository.cs" />
+    <Compile Include="Core\Repository\Interfaces\IWFEnemyRepository.cs" />
     <Compile Include="Core\Repository\Interfaces\IWFVoidFissureRepository.cs" />
     <Compile Include="Core\Repository\Interfaces\IWFSortieRepository.cs" />
     <Compile Include="Core\Repository\Interfaces\IWFSolarNodeRepository.cs" />
@@ -144,6 +146,7 @@
     <Compile Include="Enums\EnumMissionType.cs" />
     <Compile Include="Persistence\Repository\Repository.cs" />
     <Compile Include="Persistence\Repository\WarframeItemRepository.cs" />
+    <Compile Include="Persistence\Repository\WFEnemyRepository.cs" />
     <Compile Include="Persistence\Repository\WFSolarNodeRepository.cs" />
     <Compile Include="Persistence\Repository\WFSortieRepository.cs" />
     <Compile Include="Persistence\Repository\WFDBOptionsRepository.cs" />

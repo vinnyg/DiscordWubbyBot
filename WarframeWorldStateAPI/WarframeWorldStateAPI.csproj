@@ -50,6 +50,7 @@
     <Compile Include="Components\WarframeJSONScraper.cs" />
     <Compile Include="WarframeEvents\MissionInfo.cs" />
     <Compile Include="WarframeEvents\Properties\MissionInformationProperties.cs" />
+    <Compile Include="WarframeEvents\WarframeAcolyte.cs" />
     <Compile Include="WarframeEvents\WarframeAlert.cs" />
     <Compile Include="WarframeEvents\WarframeEvent.cs" />
     <Compile Include="WarframeEvents\WarframeInvasion.cs" />

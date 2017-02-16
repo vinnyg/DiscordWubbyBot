@@ -14,6 +14,7 @@ namespace WarframeDatabaseNet.Core
         IWFSolarNodeRepository WFSolarNodes { get; }
         IWFSortieRepository WFSorties { get; }
         IWFVoidFissureRepository WFVoidFissures { get; }
+        IWFEnemyRepository WFEnemies { get; }
         int Complete();
 
     }
