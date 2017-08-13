@@ -7,6 +7,7 @@ using DiscordSharpTest;
 using DiscordSharpTest.Events.Extensions;
 using WarframeWorldStateAPI.WarframeEvents;
 using WarframeWorldStateAPI.WarframeEvents.Properties;
+using System.Configuration;
 
 namespace WubbyBot.Events.Extensions
 {
@@ -309,9 +310,26 @@ namespace WubbyBot.Events.Extensions
         }
 
         //Encapsulates Discord Message formatting to aid with code reuse and maintainability
-        public static StringBuilder FormatMessage(string content, string markdownLanguageIdentifier = "xl", MessageFormat formatType = MessageFormat.CodeBlocks)
+        public static StringBuilder FormatMessage(string content, MessageMarkdownLanguageIdPreset preset, string customLanguageIdentifier = "xl", MessageFormat formatType = MessageFormat.CodeBlocks)
         {
             var formatString = string.Empty;
+            var markdownLanguageIdentifier = string.Empty;
+
+            switch (preset)
+            {
+                case MessageMarkdownLanguageIdPreset.ExpiredEvent:
+                    markdownLanguageIdentifier = ConfigurationManager.AppSettings["WarframeMessageMarkdown.ExpiredEvent"];
+                    break;
+                case MessageMarkdownLanguageIdPreset.NewEvent:
+                    markdownLanguageIdentifier = ConfigurationManager.AppSettings["WarframeMessageMarkdown.NewEvent"];
+                    break;
+                case MessageMarkdownLanguageIdPreset.Custom:
+                    markdownLanguageIdentifier = customLanguageIdentifier;
+                    break;
+                default:
+                    markdownLanguageIdentifier = ConfigurationManager.AppSettings["WarframeMessageMarkdown.ActiveEvent"];
+                    break;
+            }
 
             switch (formatType)
             {
@@ -374,5 +392,13 @@ namespace WubbyBot.Events.Extensions
         UnderlineBold,
         UnderlineBoldItalics,
         None
+    }
+
+    public enum MessageMarkdownLanguageIdPreset
+    {
+        ActiveEvent = 0,
+        NewEvent,
+        ExpiredEvent,
+        Custom
     }
 }

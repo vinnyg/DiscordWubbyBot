@@ -4,7 +4,7 @@ using System.Text;
 
 namespace DiscordSharpTest.Events.Extensions
 {
-    //Generic/non-specific extension methods
+    //General extension methods
     public static class ExtensionMethods
     {
         public static string Reverse(this string str)
