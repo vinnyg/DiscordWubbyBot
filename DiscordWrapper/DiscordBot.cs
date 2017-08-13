@@ -16,7 +16,7 @@ namespace DiscordWrapper
         //Maximum character limit for a single Discord Message
         public const int MESSAGE_CHAR_LIMIT = 2000;
         //Milliseconds which must pass before a delete request can be made.
-        private const int DELETE_REQUEST_TIME_LIMIT = 500;
+        private const int DELETE_REQUEST_TIME_LIMIT = 250;
 
         public DiscordClient Client { get; set; }
         public string Name { get; set; }       //Display name of bot
@@ -43,14 +43,24 @@ namespace DiscordWrapper
 
         public void Login()
         {
-            Client = new DiscordClient(tokenOverride: BotConfig.DiscordToken, isBotAccount: true, enableLogging: true);
-            Client.RequestAllUsersOnStartup = true;
-            Client.EnableVerboseLogging = true;
+            //Client = new DiscordClient(tokenOverride: BotConfig.DiscordToken, isBotAccount: true, enableLogging: true);
+            DiscordConfig config = new DiscordConfig();
+            config.AutoReconnect = true;
+            config.Token = BotConfig.DiscordToken;
+            config.LogLevel = LogLevel.Warning;
+            Client = new DiscordClient(config);
+            //Client.RequestAllUsersOnStartup = true;
+            //Client.EnableVerboseLogging = true;
         }
 
         public abstract void Init();
-
-        //Send a message to the specified channel
+        
+        /// <summary>
+        /// Send a message to the specified channel
+        /// </summary>
+        /// <param name="content">Content of the message to be sent</param>
+        /// <param name="channel">Detination channel to send the message to</param>
+        /// <returns></returns>
         virtual public DiscordMessage SendMessage(string content, DiscordChannel channel)
         {
 #if DEBUG
@@ -61,7 +71,8 @@ namespace DiscordWrapper
             try
             {
                 System.Threading.Thread.Sleep(GetTimeUntilCanRequest());
-                message = Client.SendMessageToChannel(content, channel, false);
+                message = Client.SendMessageAsync(channel, content, false).Result;
+                
                 timeOfLastDiscordRequest = DateTime.Now;
             }
             catch (NullReferenceException)
@@ -78,20 +89,28 @@ namespace DiscordWrapper
 
         virtual public void Connect()
         {
-            if (Client.SendLoginRequest() != null)
+            /*if (Client.SendLoginRequest() != null)
             {
                 Client.Connect();
-            }
+            }*/
+
+            Client.ConnectAsync().Wait();
         }
 
-        //Send a message to the specified user
+        /// <summary>
+        /// Send a message to the specified user
+        /// </summary>
+        /// <param name="content">Content of the message to be sent</param>
+        /// <param name="user">Target user to send the message at</param>
+        /// <returns></returns>
         virtual public DiscordMessage SendMessage(string content, DiscordMember user)
         {
             DiscordMessage message = null;
             try
             {
                 System.Threading.Thread.Sleep(GetTimeUntilCanRequest());
-                message = Client.SendMessageToUser(content, user);
+                var dmChannel = Client.CreateDmAsync(user).Result;
+                message = dmChannel.SendMessageAsync(content).Result;
                 timeOfLastDiscordRequest = DateTime.Now;
             }
             catch (NullReferenceException)
@@ -112,7 +131,8 @@ namespace DiscordWrapper
             try
             {
                 System.Threading.Thread.Sleep(GetTimeUntilCanRequest());
-                message = Client.EditMessage(targetMessage.ID, newContent, channel);
+                message = Client.GetMessageAsync(channel, targetMessage.Id).Result;
+                message.EditAsync(newContent).Wait();
                 timeOfLastDiscordRequest = DateTime.Now;
             }
             catch (NullReferenceException)
@@ -133,7 +153,9 @@ namespace DiscordWrapper
                 System.Threading.Thread.Sleep(GetTimeUntilCanRequest(DELETE_REQUEST_TIME_LIMIT));
                 if (targetMessage != null)
                 {
-                    Client.DeleteMessage(targetMessage);
+                    targetMessage.DeleteAsync().Wait(); 
+
+                    //Client.DeleteMessage(targetMessage);
                     timeOfLastDiscordRequest = DateTime.Now;
                 }
             }
@@ -150,14 +172,15 @@ namespace DiscordWrapper
         //Return a reference to the specific instance of a DiscordMessage using the message ID
         virtual public DiscordMessage GetMessageByID(string messageID, DiscordChannel channel)
         {
-            var messageHistory = new List<DiscordMessage>();
+            /*var messageHistory = new List<DiscordMessage>();
             DiscordMessage targetMessage = null;
             var lastDiscordMessage = string.Empty;
             var messageBatch = 0;
 
             do
             {
-                messageHistory = Client.GetMessageHistory(channel, 40, lastDiscordMessage);
+                //messageHistory = Client.GetMessageHistory(channel, 40, lastDiscordMessage);
+                channel.GetMessagesAsync(40);
 #if DEBUG
                 Log($"Looping for message ({messageID}) in batch {messageBatch * 40}-{((messageBatch * 40) + 39)}");
 #endif
@@ -167,14 +190,18 @@ namespace DiscordWrapper
                     lastDiscordMessage = messageHistory.Last().ID;
 
                 ++messageBatch;
-            } while ((targetMessage == null) && (messageHistory.Count > 0));
+            } while ((targetMessage == null) && (messageHistory.Count > 0));*/
 
-            return targetMessage;
+            return channel.GetMessageAsync(ulong.Parse(messageID)).Result;
+
+            //return targetMessage;
         }
 
         virtual public void SetCurrentGame(string gameName, bool isStreaming, string url = "")
         {
-            Client.UpdateCurrentGame(gameName, isStreaming, url);
+            //Client.UpdateCurrentGame(gameName, isStreaming, url);
+
+            Client.UpdateStatusAsync(new Game(gameName) { Url = url }, UserStatus.Online);
         }
 
         virtual public void Log(string message)
@@ -209,7 +236,7 @@ namespace DiscordWrapper
 
         virtual public void Logout()
         {
-            Client.Logout();
+            Client.DisconnectAsync().Wait();
         }
     }
 }
