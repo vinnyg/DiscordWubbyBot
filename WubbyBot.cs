@@ -19,10 +19,14 @@ using System.Configuration;
 using DSharpPlus.Objects;
 using WarframeWorldStateAPI.Components;
 using WarframeWorldStateAPI.WarframeEvents;
+using DSharpPlus;
+using System.Threading.Tasks;
 
 namespace DiscordSharpTest
 {
-    //This is an extension of DiscordBot implementing specific features for Warframe
+    /// <summary>
+    /// This is an extension of DiscordBot implementing specific features for Warframe
+    /// </summary>
     public class WubbyBot : DiscordBot
     {
 #if DEBUG
@@ -37,11 +41,15 @@ namespace DiscordSharpTest
 
         private readonly Random _randomNumGen;
 
-        //This is how often we will  update our Discord messages and scrape for new event information
+        /// <summary>
+        /// This is how often we will update our Discord messages and scrape for new event information
+        /// </summary>
         private Timer _eventUpdateTimer;
         private WarframeEventInformationParser _eventsParser = new WarframeEventInformationParser();
 
-        //These lists store containers which hold information such as message content and additional property information
+        /// <summary>
+        /// These lists store containers which hold information such as message content and additional property information
+        /// </summary>
         private List<MessageQueueElement> _alertMessagePostQueue = new List<MessageQueueElement>();
         private List<MessageQueueElement> _invasionMessagePostQueue = new List<MessageQueueElement>();
         private List<MessageQueueElement> _invasionConstructionMessagePostQueue = new List<MessageQueueElement>();
@@ -50,8 +58,10 @@ namespace DiscordSharpTest
         private List<MessageQueueElement> _sortieMessagePostQueue = new List<MessageQueueElement>();
         private List<MessageQueueElement> _timeCycleMessagePostQueue = new List<MessageQueueElement>();
         private List<MessageQueueElement> _acolyteMessagePostQueue = new List<MessageQueueElement>();
-
-        //These are the Discord message representations of all Warframe events
+        
+        /// <summary>
+        /// These are the Discord message representations of all Warframe events
+        /// </summary>
         private DiscordMessage _alertMessage;
         private DiscordMessage _traderMessage;
         private DiscordMessage _fissureMessage;
@@ -59,9 +69,11 @@ namespace DiscordSharpTest
         private DiscordMessage _timeCycleMessage;
         private DiscordMessage _acolyteMessage;
 
-        //Store invasion discord messages in a list, as the number of invasions can sometimes cause the Discord message to exceed the maximum character limit
-        private List<DiscordMessage> _invasionMessages =  new List<DiscordMessage>();
-        
+        /// <summary>
+        /// Store invasion discord messages in a list, as the number of invasions can sometimes cause the Discord message to exceed the maximum character limit
+        /// </summary>
+        private List<DiscordMessage> _invasionMessages = new List<DiscordMessage>();
+
         public WubbyBot(string name, string devLogName = "") : base(name, devLogName)
         {
             _randomNumGen = new Random((int)DateTime.Now.Ticks);
@@ -80,31 +92,50 @@ namespace DiscordSharpTest
         private void SetupEvents()
         {
             Console.ForegroundColor = ConsoleColor.White;
-            Client.MessageReceived += (sender, e) =>
+            //Client.MessageCreated += (e) =>
+            //{
+
+            //    //Don't log messages posted in the log channel
+            //    if (e.Channel.Name != LogChannelName)
+            //        Log($"Message from {e.Author.Username} in #{e.Channel.Name} on {e.Channel.Parent.Name}: {e.Message.ID}");
+
+            //};
+            Client.MessageCreated += e =>
             {
-                //Don't log messages posted in the log channel
-                if (e.Channel.Name != LogChannelName)
-                    Log($"Message from {e.Author.Username} in #{e.Channel.Name} on {e.Channel.Parent.Name}: {e.Message.ID}");
+                var task = new Task(() =>
+                {
+                    if (e.Channel.Name != LogChannelName)
+                        Log($"Message from {e.Author.Username} in #{e.Channel.Name} on {e.Guild.Name}: {e.Message.Id}");
+                });
+                task.Start();
+                return task;
             };
 
-            Client.Connected += (sender, e) =>
+            Client.Ready += e =>
             {
-                Log($"Connected as {e.User.Username}");
-                StartPostTimer();
+                var task = new Task(() =>
+                {
+                    Log($"Connected as {e.Client.CurrentUser.Username}");
+                    StartPostTimer();
 
-                SetCurrentGame(false);
+                    SetCurrentGame(false);
+                });
+                task.Start();
+                return task;
             };
 
 #if DEBUG
-            Client.SocketOpened += (sender, e) =>
+            /*Client.SocketOpened += () =>
             {
+                var t = new Tasks.Task();
                 Log("Socket was opened!");
+                return new Task();
             };
 
-            Client.SocketClosed += (sender, e) =>
+            Client.SocketClosed += () =>
             {
                 Log("Socket was closed!");
-            };
+            };*/
 #endif
             Connect();
         }
@@ -126,7 +157,7 @@ namespace DiscordSharpTest
 #endif
                 AddToInvasionPostQueue(invasion, invasion.IsNew(), invasion.IsExpired());
             }
-            
+
             foreach (var project in _eventsParser.GetInvasionConstruction())
             {
                 AddToInvasionConstructionPostQueue(project, false);
@@ -139,7 +170,7 @@ namespace DiscordSharpTest
 #endif
                 AddToVoidFissurePostQueue(fissure, false, fissure.IsExpired());
             }
-            
+
             foreach (var sortie in _eventsParser.GetSorties())
             {
 #if DEBUG
@@ -166,8 +197,10 @@ namespace DiscordSharpTest
 
             AddToTimeCyclePostQueue(_eventsParser.GetTimeCycle(), false);
         }
-
-        //Start application operation cycle
+        
+        /// <summary>
+        /// Start application operation cycle
+        /// </summary>
         private void StartPostTimer()
         {
             _eventUpdateTimer = new Timer((e) =>
@@ -180,17 +213,20 @@ namespace DiscordSharpTest
                 PostVoidTraderMessage();
                 PostTimeCycleMessage();
                 PostAcolyteMessage();
+                SetCurrentGame(false, "test");
             },
             null, EVENT_UPDATE_TIMER_DUE_TIME_MILLISECONDS, EVENT_UPDATE_INTERVAL_MILLISECONDS);
         }
-
-        //Build and post the Discord message for alerts
+        
+        /// <summary>
+        /// Build and post the Discord message for alerts
+        /// </summary>
         private void PostAlertMessage()
         {
             var finalMessage = new StringBuilder();
             var messagesToNotify = new List<string>();
             //Build all alert strings into a single message
-            finalMessage.Append(WarframeEventExtensions.FormatMessage($"{(_alertMessagePostQueue.Count > 0 ? string.Empty : "NO ")}ACTIVE ALERTS", formatType: MessageFormat.Bold));
+            finalMessage.Append(WarframeEventExtensions.FormatMessage($"{(_alertMessagePostQueue.Count > 0 ? string.Empty : "NO ")}ACTIVE ALERTS", preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.Bold));
 
             foreach (var message in _alertMessagePostQueue)
             {
@@ -198,13 +234,15 @@ namespace DiscordSharpTest
                 //Core content of the Discord message without any formatting
                 var coreMessageContent = new StringBuilder();
                 coreMessageContent.AppendLine(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
+                var messageMarkdownPreset = MessageMarkdownLanguageIdPreset.ActiveEvent;
 
                 if (message.NotifyClient)
                 {
                     coreMessageContent.Append("( new )");
                     messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, true));
+                    messageMarkdownPreset = MessageMarkdownLanguageIdPreset.NewEvent;
                 }
-                finalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContent.ToString(), formatType: MessageFormat.CodeBlocks));
+                finalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContent.ToString(), preset: messageMarkdownPreset, formatType: MessageFormat.CodeBlocks));
             }
 
             if (_alertMessage == null)
@@ -219,8 +257,10 @@ namespace DiscordSharpTest
             }
             _alertMessagePostQueue.Clear();
         }
-
-        //Build and post the Discord message for invasions
+        
+        /// <summary>
+        /// Build and post the Discord message for invasions
+        /// </summary>
         private void PostInvasionMessage()
         {
             //Build all invasion strings into a single message
@@ -231,10 +271,10 @@ namespace DiscordSharpTest
             //Due to the potential length of an invasion message, it may need to be broken down into smaller messages. Hence - entryForFinalMessage
             var entryForFinalMessage = new StringBuilder();
             finalMessagesToPost.Add(entryForFinalMessage);
-            
+
             //var invasionConstructionMessageQueue = new List<MessageQueueElement>(_invasionConstructionMessagePostQueue);
-            
-            entryForFinalMessage.Append(WarframeEventExtensions.FormatMessage($"{(_invasionMessagePostQueue.Count > 0 ? string.Empty : "NO ")}ACTIVE INVASIONS", formatType: MessageFormat.Bold));
+
+            entryForFinalMessage.Append(WarframeEventExtensions.FormatMessage($"{(_invasionMessagePostQueue.Count > 0 ? string.Empty : "NO ")}ACTIVE INVASIONS", preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.Bold));
 
             //Project Construction Information
             var constructionMessage = new StringBuilder();
@@ -245,7 +285,7 @@ namespace DiscordSharpTest
                     constructionMessage.Append(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
                 }
 
-                entryForFinalMessage.Append(WarframeEventExtensions.FormatMessage(constructionMessage.ToString(), formatType: MessageFormat.CodeBlocks));
+                entryForFinalMessage.Append(WarframeEventExtensions.FormatMessage(constructionMessage.ToString(), preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.CodeBlocks));
             }
 
             foreach (var message in _invasionMessagePostQueue)
@@ -254,22 +294,25 @@ namespace DiscordSharpTest
                 var coreMessageContentEntry = new StringBuilder();
                 coreMessageContentEntry.AppendLine(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
 
+                MessageMarkdownLanguageIdPreset markdownPreset = MessageMarkdownLanguageIdPreset.ActiveEvent;
+
                 if (message.NotifyClient)
                 {
                     messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, true));
                     coreMessageContentEntry.Append("( new )");
+                    markdownPreset = MessageMarkdownLanguageIdPreset.NewEvent;
                 }
 
                 //Create a new entry in the post queue if the character length of the current message hits the character limit
                 if (entryForFinalMessage.Length + coreMessageContentEntry.Length < MESSAGE_CHAR_LIMIT)
-                    entryForFinalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContentEntry.ToString(), formatType: MessageFormat.CodeBlocks));
+                    entryForFinalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContentEntry.ToString(), preset: markdownPreset, formatType: MessageFormat.CodeBlocks));
                 else
                 {
                     entryForFinalMessage.Append(coreMessageContentEntry.ToString());
                     finalMessagesToPost.Add(entryForFinalMessage);
                 }
             }
-            
+
             if (_invasionMessages.Count > 0)
             {
                 foreach (var item in messagesToNotify)
@@ -294,7 +337,7 @@ namespace DiscordSharpTest
                 _invasionMessages.RemoveRange(finalMessagesToPost.Count, _invasionMessages.Count - finalMessagesToPost.Count);
             }
 #if DEBUG
-            foreach(var i in finalMessagesToPost)
+            foreach (var i in finalMessagesToPost)
             {
                 Log(i.Length + " characters long");
             }
@@ -302,13 +345,15 @@ namespace DiscordSharpTest
             _invasionMessagePostQueue.Clear();
             _invasionConstructionMessagePostQueue.Clear();
         }
-
-        //Build and post the Discord message for Void Traders
+        
+        /// <summary>
+        /// Build and post the Discord message for Void Traders
+        /// </summary>
         private void PostVoidTraderMessage()
         {
             var finalMessage = new StringBuilder();
             var messagesToNotify = new List<string>();
-            finalMessage.Append(WarframeEventExtensions.FormatMessage($"VOID TRADER{(_voidTraderMessagePostQueue.Count == 0 ? " HAS LEFT" : string.Empty)}", string.Empty, MessageFormat.Bold));
+            finalMessage.Append(WarframeEventExtensions.FormatMessage($"VOID TRADER{(_voidTraderMessagePostQueue.Count == 0 ? " HAS LEFT" : string.Empty)}", MessageMarkdownLanguageIdPreset.ActiveEvent, string.Empty,  MessageFormat.Bold));
 
             //Core content of the Discord message without any formatting
             var coreMessageContent = new StringBuilder();
@@ -317,7 +362,7 @@ namespace DiscordSharpTest
             {
                 coreMessageContent.AppendLine(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false) + Environment.NewLine);
             }
-            finalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContent.ToString(), formatType: MessageFormat.CodeBlocks));
+            finalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContent.ToString(), preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.CodeBlocks));
 
             if (_traderMessage == null)
                 _traderMessage = SendMessageToAlertsChannel(finalMessage.ToString());
@@ -332,14 +377,16 @@ namespace DiscordSharpTest
 
             _voidTraderMessagePostQueue.Clear();
         }
-
-        //Build and post the Discord message for Void Fissures
+        
+        /// <summary>
+        /// Build and post the Discord message for Void Fissures
+        /// </summary>
         private void PostVoidFissureMessage()
         {
             var finalMessage = new StringBuilder();
             var messagesToNotify = new List<string>();
 
-            finalMessage.Append(WarframeEventExtensions.FormatMessage($"{(_voidFissureMessagePostQueue.Count > 0 ? string.Empty : "NO ")}VOID FISSURES", formatType: MessageFormat.Bold));
+            finalMessage.Append(WarframeEventExtensions.FormatMessage($"{(_voidFissureMessagePostQueue.Count > 0 ? string.Empty : "NO ")}VOID FISSURES", preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.Bold));
 
             _voidFissureMessagePostQueue.OrderBy(s => (s.WarframeEvent as WarframeVoidFissure).GetFissureIndex());
 
@@ -348,13 +395,15 @@ namespace DiscordSharpTest
                 //Core content of the Discord message without any formatting
                 var coreMessageContent = new StringBuilder();
                 coreMessageContent.AppendLine(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
+                MessageMarkdownLanguageIdPreset markdownPreset = MessageMarkdownLanguageIdPreset.ActiveEvent;
 
                 if (message.NotifyClient)
                 {
                     coreMessageContent.Append("( new )");
                     messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
+                    markdownPreset = MessageMarkdownLanguageIdPreset.NewEvent;
                 }
-                finalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContent.ToString(), formatType: MessageFormat.CodeBlocks));
+                finalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContent.ToString(), preset: markdownPreset, formatType: MessageFormat.CodeBlocks));
             }
 
             if (_fissureMessage == null)
@@ -370,14 +419,16 @@ namespace DiscordSharpTest
 
             _voidFissureMessagePostQueue.Clear();
         }
-
-        //Build and post the Discord message for sorties
+        
+        /// <summary>
+        /// Build and post the Discord message for sorties
+        /// </summary>
         private void PostSortieMessage()
         {
             var finalMessage = new StringBuilder();
             var messagesToNotify = new List<string>();
 
-            finalMessage.Append(WarframeEventExtensions.FormatMessage($"{(_sortieMessagePostQueue.Count > 0 ? string.Empty : "NO ")}SORTIES", formatType: MessageFormat.Bold));
+            finalMessage.Append(WarframeEventExtensions.FormatMessage($"{(_sortieMessagePostQueue.Count > 0 ? string.Empty : "NO ")}SORTIES", preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.Bold));
 
             foreach (var message in _sortieMessagePostQueue)
             {
@@ -389,7 +440,7 @@ namespace DiscordSharpTest
                 {
                     messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, true));
                 }
-                finalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContent.ToString(), formatType: MessageFormat.CodeBlocks));
+                finalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContent.ToString(), preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.CodeBlocks));
             }
 
             if (_sortieMessage == null)
@@ -405,14 +456,16 @@ namespace DiscordSharpTest
 
             _sortieMessagePostQueue.Clear();
         }
-
-        //Build and post the Discord message for day cycle information
+        
+        /// <summary>
+        /// Build and post the Discord message for day cycle information
+        /// </summary>
         private void PostTimeCycleMessage()
         {
             var finalMessage = new StringBuilder();
             var messagesToNotify = new List<string>();
-            
-            finalMessage.Append(WarframeEventExtensions.FormatMessage("DAY CYCLE", formatType: MessageFormat.Bold));
+
+            finalMessage.Append(WarframeEventExtensions.FormatMessage("DAY CYCLE", preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.Bold));
 
             foreach (var message in _timeCycleMessagePostQueue)
             {
@@ -423,7 +476,7 @@ namespace DiscordSharpTest
                 if (message.NotifyClient)
                     messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
 
-                finalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContent.ToString(), formatType: MessageFormat.CodeBlocks));
+                finalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContent.ToString(), preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.CodeBlocks));
             }
 
             if (_timeCycleMessage == null)
@@ -449,7 +502,7 @@ namespace DiscordSharpTest
             var finalMessage = new StringBuilder();
             var messagesToNotify = new List<string>();
             //Build all acolyte messages into a single message
-            finalMessage.Append(WarframeEventExtensions.FormatMessage($"{(_acolyteMessagePostQueue.Count > 0 ? string.Empty : "NO ")}ACTIVE ACOLYTES", formatType: MessageFormat.Bold));
+            finalMessage.Append(WarframeEventExtensions.FormatMessage($"{(_acolyteMessagePostQueue.Count > 0 ? string.Empty : "NO ")}ACTIVE ACOLYTES", preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.Bold));
 
             foreach (var message in _acolyteMessagePostQueue)
             {
@@ -457,13 +510,15 @@ namespace DiscordSharpTest
                 //Core content of the Discord message without any formatting
                 var coreMessageContent = new StringBuilder();
                 coreMessageContent.AppendLine(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
+                var markdownPreset = MessageMarkdownLanguageIdPreset.ActiveEvent;
 
                 if (message.NotifyClient)
                 {
                     coreMessageContent.Append("( new )");
                     messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, true));
+                    markdownPreset = MessageMarkdownLanguageIdPreset.NewEvent;
                 }
-                finalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContent.ToString(), formatType: MessageFormat.CodeBlocks));
+                finalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContent.ToString(), preset: markdownPreset, formatType: MessageFormat.CodeBlocks));
             }
 
             if (_acolyteMessage == null)
@@ -536,7 +591,12 @@ namespace DiscordSharpTest
             Logout();
         }
 
-        //Set the currently playing label in Discord
+        /// <summary>
+        /// Set the "currently playing" label in Discord
+        /// </summary>
+        /// <param name="isStreaming"></param>
+        /// <param name="gameName">Name of the game</param>
+        /// <param name="url"></param>
         public void SetCurrentGame(bool isStreaming, string gameName = "", string url = "")
         {
             //This method is not an override as the signature differs from the base method
@@ -563,22 +623,27 @@ namespace DiscordSharpTest
 
         private DiscordMessage SendMessageToAlertsChannel(string content)
         {
-            return SendMessage(content, Client.GetChannelByID(_alertsChannelID));
+            return SendMessage(content, Client.GetChannelAsync((ulong)_alertsChannelID).Result);
         }
 
         private DiscordMessage EditEventMessage(string newContent, DiscordMessage targetMessage)
         {
-            return EditMessage(newContent, targetMessage, Client.GetChannelByID(_alertsChannelID));
+            return EditMessage(newContent, targetMessage, Client.GetChannelAsync((ulong)_alertsChannelID).Result);
         }
-
-        //Creates a new message which is automatically deleted shortly after to force a DiscordApp notification
+        
+        /// <summary>
+        /// Creates a new message which is automatically deleted shortly after to force a DiscordApp notification
+        /// </summary>
+        /// <param name="content">Notification message content</param>
         private void NotifyClient(string content)
         {
             DiscordMessage message = SendMessageToAlertsChannel(content);
             DeleteMessage(message);
         }
-
-        //Contains information about the message as well as its content
+        
+        /// <summary>
+        /// Contains information about the message as well as its content
+        /// </summary>
         public class MessageQueueElement
         {
             public WarframeEvent WarframeEvent { get; set; }
