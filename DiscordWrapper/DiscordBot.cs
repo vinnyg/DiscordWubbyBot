@@ -45,7 +45,7 @@ namespace DiscordWrapper
         {
             //Client = new DiscordClient(tokenOverride: BotConfig.DiscordToken, isBotAccount: true, enableLogging: true);
             DiscordConfig config = new DiscordConfig();
-            config.AutoReconnect = true;
+            //config.AutoReconnect = true;
             config.Token = BotConfig.DiscordToken;
             config.LogLevel = LogLevel.Warning;
             Client = new DiscordClient(config);
