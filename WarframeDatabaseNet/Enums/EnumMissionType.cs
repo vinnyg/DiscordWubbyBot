@@ -13,6 +13,7 @@ namespace WarframeDatabaseNet.Enums.MissionType
         MT_CAPTURE,
         MT_COUNTER_INTEL,
         MT_DEFENSE,
+        MT_EVACUATION,
         MT_EXCAVATE,
         MT_EXTERMINATION,
         MT_GENERIC,

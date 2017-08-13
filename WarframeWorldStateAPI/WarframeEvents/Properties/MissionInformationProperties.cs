@@ -76,6 +76,7 @@ namespace WarframeWorldStateAPI.WarframeEvents.Properties
             { "MT_CAPTURE", "Capture" },
             { "MT_COUNTER_INTEL", "Deception" },
             { "MT_DEFENSE", "Defense" },
+            { "MT_EVACUATION", "Defection" },
             { "MT_EXCAVATE", "Excavation" },
             { "MT_EXTERMINATION", "Extermination" },
             { "MT_RETRIEVAL", "Hijack" },
