@@ -4,17 +4,19 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using System.Configuration;
 
 namespace WarframeWorldStateAPI.WarframeEvents
 {
-    //Base class for all Warframe Events to extend.
+    /// <summary>
+    /// Base class for all Warframe Events to extend.
+    /// </summary>
     public abstract class WarframeEvent
     {
-        private const int SECONDS_UNTIL_EVENT_NOT_NEW = 60;
-
         public string GUID { get; private set; }
         public string DestinationName { get; private set; }
         public DateTime StartTime { get; private set; }
+        private int _minutesUntilEventIsNowNew = int.Parse(ConfigurationManager.AppSettings["MinutesUntilEventIsNowNew"]);
 
         public WarframeEvent(string guid, string destinationName, DateTime startTime)
         {
@@ -30,10 +32,12 @@ namespace WarframeWorldStateAPI.WarframeEvents
             DestinationName = destination;
         }
 
-        //Check if the event started recently
+        /// <summary>
+        /// Check if the event started recently
+        /// </summary>
         public bool IsNew()
         {
-            var timeEventIsNotNew = StartTime.AddSeconds(SECONDS_UNTIL_EVENT_NOT_NEW);
+            var timeEventIsNotNew = StartTime.AddMinutes(_minutesUntilEventIsNowNew);
             return ((DateTime.Now >= StartTime) && (DateTime.Now < timeEventIsNotNew));
         }
     }
