@@ -213,7 +213,6 @@ namespace DiscordSharpTest
                 PostVoidTraderMessage();
                 PostTimeCycleMessage();
                 PostAcolyteMessage();
-                SetCurrentGame(false, "test");
             },
             null, EVENT_UPDATE_TIMER_DUE_TIME_MILLISECONDS, EVENT_UPDATE_INTERVAL_MILLISECONDS);
         }
