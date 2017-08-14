@@ -41,17 +41,17 @@ namespace DiscordWrapper
             LogChannelName = logChannelName;
             timeOfLastDiscordRequest = DateTime.Now;
 
-            //Instantiate config
-            DiscordConfig = new DiscordConfig();
-            DiscordConfig.AutoReconnect = true;
-            DiscordConfig.Token = BotConfig.DiscordToken;
-            DiscordConfig.LogLevel = LogLevel.Warning;
-
             string fileName = "discordbot.json";//ConfigurationManager.AppSettings["DiscordBotSettings"].ToString();
             if (File.Exists(fileName))
             {
                 BotConfig = JsonConvert.DeserializeObject<Config>(File.ReadAllText(fileName));
             }
+
+            //Instantiate config
+            DiscordConfig = new DiscordConfig();
+            DiscordConfig.AutoReconnect = true;
+            DiscordConfig.Token = BotConfig.DiscordToken;
+            DiscordConfig.LogLevel = LogLevel.Warning;
         }
 
         public void Login()
