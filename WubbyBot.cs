@@ -80,7 +80,7 @@ namespace DiscordSharpTest
         }
 
         //Start the task
-        override public void Init()
+        public void Init()
         {
 #if DEBUG
             Log("DEBUG MODE");

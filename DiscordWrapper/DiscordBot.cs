@@ -19,11 +19,18 @@ namespace DiscordWrapper
         private const int DELETE_REQUEST_TIME_LIMIT = 250;
 
         public DiscordClient Client { get; set; }
-        public string Name { get; set; }       //Display name of bot
+        /// <summary>
+        /// Display name of bot
+        /// </summary>
+        public string Name { get; set; }
         public DiscordMember Owner { get; set; }
+        public DiscordConfig DiscordConfig { get; internal set; }
         public Config BotConfig { get; internal set; }
         public StreamWriter LogFile { get; internal set; }
-        public string LogChannelName { get; internal set; }     //Name of channel to post log messages to
+        /// <summary>
+        /// Name of channel to post log messages to
+        /// </summary>
+        public string LogChannelName { get; internal set; }
 
         private DateTime timeOfLastDiscordRequest;
         private List<DiscordChannel> _channelList { get; set; }
@@ -34,6 +41,12 @@ namespace DiscordWrapper
             LogChannelName = logChannelName;
             timeOfLastDiscordRequest = DateTime.Now;
 
+            //Instantiate config
+            DiscordConfig = new DiscordConfig();
+            DiscordConfig.AutoReconnect = true;
+            DiscordConfig.Token = BotConfig.DiscordToken;
+            DiscordConfig.LogLevel = LogLevel.Warning;
+
             string fileName = "discordbot.json";//ConfigurationManager.AppSettings["DiscordBotSettings"].ToString();
             if (File.Exists(fileName))
             {
@@ -43,18 +56,9 @@ namespace DiscordWrapper
 
         public void Login()
         {
-            //Client = new DiscordClient(tokenOverride: BotConfig.DiscordToken, isBotAccount: true, enableLogging: true);
-            DiscordConfig config = new DiscordConfig();
-            //config.AutoReconnect = true;
-            config.Token = BotConfig.DiscordToken;
-            config.LogLevel = LogLevel.Warning;
-            Client = new DiscordClient(config);
-            //Client.RequestAllUsersOnStartup = true;
-            //Client.EnableVerboseLogging = true;
+            Client = new DiscordClient(DiscordConfig);
         }
 
-        public abstract void Init();
-        
         /// <summary>
         /// Send a message to the specified channel
         /// </summary>
@@ -72,14 +76,14 @@ namespace DiscordWrapper
             {
                 System.Threading.Thread.Sleep(GetTimeUntilCanRequest());
                 message = Client.SendMessageAsync(channel, content, false).Result;
-                
+
                 timeOfLastDiscordRequest = DateTime.Now;
             }
             catch (NullReferenceException)
             {
                 Log("SendMessage threw a NullReferenceException.");
             }
-            catch(Exception)
+            catch (Exception)
             {
                 Log("SendMessage threw an exception.");
             }
@@ -89,11 +93,6 @@ namespace DiscordWrapper
 
         virtual public void Connect()
         {
-            /*if (Client.SendLoginRequest() != null)
-            {
-                Client.Connect();
-            }*/
-
             Client.ConnectAsync().Wait();
         }
 
@@ -153,7 +152,7 @@ namespace DiscordWrapper
                 System.Threading.Thread.Sleep(GetTimeUntilCanRequest(DELETE_REQUEST_TIME_LIMIT));
                 if (targetMessage != null)
                 {
-                    targetMessage.DeleteAsync().Wait(); 
+                    targetMessage.DeleteAsync().Wait();
 
                     //Client.DeleteMessage(targetMessage);
                     timeOfLastDiscordRequest = DateTime.Now;
@@ -170,7 +169,7 @@ namespace DiscordWrapper
         }
 
         //Return a reference to the specific instance of a DiscordMessage using the message ID
-        virtual public DiscordMessage GetMessageByID(string messageID, DiscordChannel channel)
+        virtual public DiscordMessage GetMessageByID(DiscordChannel channel, ulong id)
         {
             /*var messageHistory = new List<DiscordMessage>();
             DiscordMessage targetMessage = null;
@@ -192,16 +191,14 @@ namespace DiscordWrapper
                 ++messageBatch;
             } while ((targetMessage == null) && (messageHistory.Count > 0));*/
 
-            return channel.GetMessageAsync(ulong.Parse(messageID)).Result;
+            return channel.GetMessageAsync(id).Result;
 
             //return targetMessage;
         }
 
         virtual public void SetCurrentGame(string gameName, bool isStreaming, string url = "")
         {
-            //Client.UpdateCurrentGame(gameName, isStreaming, url);
-
-            Client.UpdateStatusAsync(new Game(gameName) { Url = url }, UserStatus.Online);
+            Client.UpdateStatusAsync(new Game(gameName) { Url = url }, UserStatus.Online).Wait();
         }
 
         virtual public void Log(string message)
@@ -225,6 +222,26 @@ namespace DiscordWrapper
                     }
                 }
             }*/
+        }
+
+        virtual public DiscordChannel GetChannelByID(ulong id)
+        {
+            return Client.GetChannelAsync(id).Result;
+        }
+
+        virtual public DiscordGuild GetGuildByID(ulong id)
+        {
+            return Client.GetGuildAsync(id).Result;
+        }
+
+        virtual public DiscordApplication GetCurrentApplication()
+        {
+            return Client.GetCurrentAppAsync().Result;
+        }
+
+        virtual public DiscordInvite GetInviteByCode(string code)
+        {
+            return Client.GetInviteByCodeAsync(code).Result;
         }
 
         private int GetTimeUntilCanRequest(int limit = REQUEST_TIME_LIMIT)
