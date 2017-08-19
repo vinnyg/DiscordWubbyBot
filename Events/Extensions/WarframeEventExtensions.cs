@@ -11,22 +11,26 @@ using System.Configuration;
 
 namespace WubbyBot.Events.Extensions
 {
-    //Implemented as extension methods as they are not core responsibilities of the classes in question
     public static class WarframeEventExtensions
     {
-        private static string ParseMinutesAsTime(int minutes)
+        private static string ParseMinutesAsTime(int minutes, int minimumHoursForConversion = 1, bool showUnitsWhenZero = false)
         {
             var ts = TimeSpan.FromMinutes(minutes);
             int days = ts.Days;
             int hours = ts.Hours;
             int mins = ts.Minutes;
 
-            var result = new StringBuilder();
-            result.Append(days > 0 ? $"{days} Days " : string.Empty);
-            result.Append((hours > 0) || (days > 0) ? $"{hours}h " : string.Empty);
-            result.Append($"{mins}m");
+            if (hours >= minimumHoursForConversion || days > 0)
+            {
+                var result = new StringBuilder();
+                result.Append(days > 0 || showUnitsWhenZero ? $"{days} Days " : string.Empty);
+                result.Append((hours > 0) || (days > 0 || showUnitsWhenZero) ? $"{hours}h " : string.Empty);
+                result.Append($"{mins}m");
 
-            return result.ToString();
+                return result.ToString();
+            }
+
+            return $"{minutes}m";
         }
 
         //Parse the mission information into a readable presentation
@@ -35,16 +39,16 @@ namespace WubbyBot.Events.Extensions
             MissionInfo info = alert.MissionDetails;
             string rewardMessage = (!string.IsNullOrEmpty(info.Reward) ? info.Reward : string.Empty);
             string rewardQuantityMessage = (info.RewardQuantity > 1 ? info.RewardQuantity + "x" : string.Empty);
-            string creditMessage = (!string.IsNullOrEmpty(rewardMessage) ? ", " : "") + (info.Credits > 0 ? info.Credits + "cr" : string.Empty);
+            string creditMessage = (!string.IsNullOrEmpty(rewardMessage) ? ", " : string.Empty) + (info.Credits > 0 ? info.Credits + "cr" : string.Empty);
 
             var statusMessage = new StringBuilder();
 
             if (!alert.IsExpired())
             {
                 if (DateTime.Now < alert.StartTime)
-                    statusMessage.Append($"Starts {alert.StartTime:HH:mm} ({alert.GetMinutesRemaining(true)}m)");
+                    statusMessage.Append($"Starts {alert.StartTime:HH:mm} ({(alert.GetMinutesRemaining(true) > 0 ? alert.GetMinutesRemaining(true).ToString() : "<1")}m)");
                 else
-                    statusMessage.Append($"Expires {alert.ExpireTime:HH:mm} ({alert.GetMinutesRemaining(false)}m)");
+                    statusMessage.Append($"Expires {alert.ExpireTime:HH:mm} ({(alert.GetMinutesRemaining(false) > 0 ? alert.GetMinutesRemaining(false).ToString() : "<1")}m)");
             }
             else
             {
@@ -104,7 +108,7 @@ namespace WubbyBot.Events.Extensions
             }
 
             var winningFaction = (System.Math.Abs(invasion.Progress) / invasion.Progress) > 0 ? defenderInfo.Faction : attackerInfo.Faction;
-            string changeRateSign = (invasion.ChangeRate < 0 ? "" : "+");
+            string changeRateSign = (invasion.ChangeRate < 0 ? "-" : "+");
 
             var returnMessage = new StringBuilder();
 
@@ -112,14 +116,14 @@ namespace WubbyBot.Events.Extensions
             {
                 returnMessage.AppendLine(invasion.DestinationName);
                 returnMessage.AppendLine($"{defenderInfo.Faction} vs {attackerInfo.Faction}");
-                returnMessage.AppendLine($"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{defenderAllianceRewardMessage} / ") : "")}{attackerAllianceRewardMessage}");
+                returnMessage.AppendLine($"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{defenderAllianceRewardMessage} / ") : string.Empty)}{attackerAllianceRewardMessage}");
                 returnMessage.Append($"{string.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({changeRateSign + string.Format("{0:0.00}", invasion.ChangeRate * 100.0f)} p/hr){(defenderInfo.Faction != Faction.INFESTATION ? " (" + winningFaction + ")" : string.Empty)}");
             } 
             else
             {
                 returnMessage.AppendLine("New Invasion");
                 returnMessage.AppendLine($"{defenderInfo.Faction} vs {attackerInfo.Faction}");
-                returnMessage.Append($"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{defenderAllianceRewardMessage} / ") : "")}{attackerAllianceRewardMessage}");
+                returnMessage.Append($"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{defenderAllianceRewardMessage} / ") : string.Empty)}{attackerAllianceRewardMessage}");
             }
 
             return returnMessage.ToString();
@@ -309,7 +313,7 @@ namespace WubbyBot.Events.Extensions
             return returnMessage.ToString();
         }
 
-        //Encapsulates Discord Message formatting to aid with code reuse and maintainability
+        //Encapsulates Discord Message formatting for Warframe Event messages
         public static StringBuilder FormatMessage(string content, MessageMarkdownLanguageIdPreset preset, string customLanguageIdentifier = "xl", MessageFormat formatType = MessageFormat.CodeBlocks)
         {
             var formatString = string.Empty;
