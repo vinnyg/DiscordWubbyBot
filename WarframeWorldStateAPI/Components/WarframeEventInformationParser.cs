@@ -211,9 +211,6 @@ namespace WarframeWorldStateAPI.Components
                     }
                 }
 
-                var Time = long.Parse(worldState["Time"].ToString());
-                Console.WriteLine(Time);
-
                 _invasionsList.RemoveAll(x => x.IsExpired());
 
                 if (currentInvasion != null && !currentInvasion.IsExpired())
