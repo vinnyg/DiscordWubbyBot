@@ -46,9 +46,9 @@ namespace WubbyBot.Events.Extensions
             if (!alert.IsExpired())
             {
                 if (DateTime.Now < alert.StartTime)
-                    statusMessage.Append($"Starts {alert.StartTime:HH:mm} ({(alert.GetMinutesRemaining(true) > 0 ? alert.GetMinutesRemaining(true).ToString() : "<1")}m)");
+                    statusMessage.Append($"Starts {alert.StartTime:HH:mm} ({(alert.GetMinutesRemaining(true) > 0 ? ParseMinutesAsTime(alert.GetMinutesRemaining(true), 2) : "<1m")})");
                 else
-                    statusMessage.Append($"Expires {alert.ExpireTime:HH:mm} ({(alert.GetMinutesRemaining(false) > 0 ? alert.GetMinutesRemaining(false).ToString() : "<1")}m)");
+                    statusMessage.Append($"Expires {alert.ExpireTime:HH:mm} ({(alert.GetMinutesRemaining(false) > 0 ? ParseMinutesAsTime(alert.GetMinutesRemaining(false), 2) : "<1m")})");
             }
             else
             {
@@ -117,7 +117,17 @@ namespace WubbyBot.Events.Extensions
                 returnMessage.AppendLine(invasion.DestinationName);
                 returnMessage.AppendLine($"{defenderInfo.Faction} vs {attackerInfo.Faction}");
                 returnMessage.AppendLine($"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{defenderAllianceRewardMessage} / ") : string.Empty)}{attackerAllianceRewardMessage}");
-                returnMessage.Append($"{string.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({changeRateSign + string.Format("{0:0.00}", invasion.ChangeRate * 100.0f)} p/hr){(defenderInfo.Faction != Faction.INFESTATION ? " (" + winningFaction + ")" : string.Empty)}");
+                //Toggle between estimated end time and invasion change rate per minute
+                if (DateTime.Now.Minute % 2 == 0)
+                {
+                    //Invasion Progression
+                    returnMessage.Append($"{string.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({changeRateSign + string.Format("{0:0.00}", invasion.ChangeRate * 100.0f)} p/hr){(defenderInfo.Faction != Faction.INFESTATION ? " (" + winningFaction + ")" : string.Empty)}");
+                }
+                else
+                {
+                    //Estimated Completion Time
+                    returnMessage.Append($"Est. {invasion.EstimatedEndTime:HH:mm} ({(invasion.GetMinutesRemaining() > 0 ? ParseMinutesAsTime(invasion.GetMinutesRemaining(), 2) : "<1m")})");
+                }
             } 
             else
             {

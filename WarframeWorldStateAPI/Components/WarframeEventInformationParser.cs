@@ -56,10 +56,10 @@ namespace WarframeWorldStateAPI.Components
                         nodeName = unit.WFSolarNodes.GetNodeName(loc);
                     }
 
-                    var secondsUntilStart = long.Parse(jsonAlert["Activation"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
-                    var secondsUntilExpire = long.Parse(jsonAlert["Expiry"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
-                    var startTime = DateTime.Now.AddSeconds(secondsUntilStart / TIME_TO_LONG_MULTIPLIER);
-                    var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire / TIME_TO_LONG_MULTIPLIER);
+                    var millisecondsUntilStart = long.Parse(jsonAlert["Activation"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
+                    var millisecondsUntilExpire = long.Parse(jsonAlert["Expiry"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
+                    var startTime = DateTime.Now.AddMilliseconds(millisecondsUntilStart);
+                    var expireTime = DateTime.Now.AddMilliseconds(millisecondsUntilExpire);
 
                     var creditReward = int.Parse(jsonAlert["MissionInfo"]["missionReward"]["credits"].ToString());
                     var reqArchwingData = jsonAlert["MissionInfo"]["archwingRequired"];
@@ -196,9 +196,9 @@ namespace WarframeWorldStateAPI.Components
                                 0, 0,
                                 false);
 
-                            var secondsUntilStart = long.Parse(jsonInvasion["Activation"]["$date"]["$numberLong"].ToString()) - long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER;
-                            var startTime = DateTime.Now.AddSeconds(secondsUntilStart);
-
+                            var secondsUntilStart = long.Parse(jsonInvasion["Activation"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
+                            var startTime = DateTime.Now.AddMilliseconds(secondsUntilStart);
+                            
                             currentInvasion = new WarframeInvasion(attackerInfo, defenderInfo, id, nodeName, startTime, int.Parse(jsonInvasion["Goal"].ToString()));
                             _invasionsList.Add(currentInvasion);
                         }
@@ -210,6 +210,9 @@ namespace WarframeWorldStateAPI.Components
 #endif
                     }
                 }
+
+                var Time = long.Parse(worldState["Time"].ToString());
+                Console.WriteLine(Time);
 
                 _invasionsList.RemoveAll(x => x.IsExpired());
 
@@ -277,10 +280,10 @@ namespace WarframeWorldStateAPI.Components
                     var id = jsonTrader["_id"]["$oid"].ToString();
                     var loc = jsonTrader["Node"].ToString();
 
-                    var secondsUntilStart = long.Parse(jsonTrader["Activation"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
-                    var secondsUntilExpire = long.Parse(jsonTrader["Expiry"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
-                    var startTime = DateTime.Now.AddSeconds(secondsUntilStart / TIME_TO_LONG_MULTIPLIER);
-                    var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire / TIME_TO_LONG_MULTIPLIER);
+                    var millisecondsUntilStart = long.Parse(jsonTrader["Activation"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
+                    var millisecondsUntilExpire = long.Parse(jsonTrader["Expiry"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
+                    var startTime = DateTime.Now.AddMilliseconds(millisecondsUntilStart);
+                    var expireTime = DateTime.Now.AddMilliseconds(millisecondsUntilExpire);
 
                     if (DateTime.Now < expireTime)
                     {
@@ -335,10 +338,10 @@ namespace WarframeWorldStateAPI.Components
                     var id = jsonFissure["_id"]["$oid"].ToString();
                     var loc = jsonFissure["Node"].ToString();
 
-                    var secondsUntilStart = long.Parse(jsonFissure["Activation"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
-                    var secondsUntilExpire = long.Parse(jsonFissure["Expiry"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
-                    var startTime = DateTime.Now.AddSeconds(secondsUntilStart / TIME_TO_LONG_MULTIPLIER);
-                    var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire / TIME_TO_LONG_MULTIPLIER);
+                    var millisecondsUntilStart = long.Parse(jsonFissure["Activation"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
+                    var millisecondsUntilExpire = long.Parse(jsonFissure["Expiry"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
+                    var startTime = DateTime.Now.AddMilliseconds(millisecondsUntilStart);
+                    var expireTime = DateTime.Now.AddMilliseconds(millisecondsUntilExpire);
 
                     var nodeName = loc;
                     var faction = string.Empty;
@@ -399,10 +402,10 @@ namespace WarframeWorldStateAPI.Components
                     var varMissions = new List<MissionInfo>();
                     var varConditions = new List<string>();
 
-                    var secondsUntilStart = long.Parse(jsonSortie["Activation"]["$date"]["$numberLong"].ToString()) - long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER;
-                    var secondsUntilExpire = long.Parse(jsonSortie["Expiry"]["$date"]["$numberLong"].ToString()) - long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER;
-                    var startTime = DateTime.Now.AddSeconds(secondsUntilStart / TIME_TO_LONG_MULTIPLIER);
-                    var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire / TIME_TO_LONG_MULTIPLIER);
+                    var millisecondsUntilStart = long.Parse(jsonSortie["Activation"]["$date"]["$numberLong"].ToString()) - long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER;
+                    var millisecondsUntilExpire = long.Parse(jsonSortie["Expiry"]["$date"]["$numberLong"].ToString()) - long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER;
+                    var startTime = DateTime.Now.AddMilliseconds(millisecondsUntilStart);
+                    var expireTime = DateTime.Now.AddMilliseconds(millisecondsUntilExpire);
 
                     //If this sortie doesn't exist in the current list, then loop through the variant node to get mission info for all variants
                     foreach (var variant in jsonSortie["Variants"])

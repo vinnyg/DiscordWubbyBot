@@ -14,8 +14,34 @@ namespace WarframeWorldStateAPI.WarframeEvents
         public string Type { get; private set; }
         public MissionInfo AttackerDetails { get; private set; }
         public MissionInfo DefenderDetails { get; private set; }
+        /// <summary>
+        /// Percent of invasion progress
+        /// </summary>
         public float Progress { get; private set; }
+        /// <summary>
+        /// Absolute change rate of invasion progress
+        /// </summary>
         public float ChangeRate { get; private set; }
+        /// <summary>
+        /// Direction of invasion progress
+        /// </summary>
+        public int ProgressDirection { get; private set; }
+        /// <summary>
+        /// Estimated time of invasion completion
+        /// </summary>
+        public DateTime EstimatedEndTime
+        {
+            get
+            {
+                float hoursUntilEnd = (ProgressDirection > 0 ? (1.0f - Progress) : (1.0f + Progress)) / ChangeRate;
+                return DateTime.Now.AddHours(hoursUntilEnd);
+            }
+
+            private set
+            {
+                EstimatedEndTime = value;
+            }
+        }
 
         private int _goal;
         private Queue<float> _changeRateHistory;
@@ -35,10 +61,10 @@ namespace WarframeWorldStateAPI.WarframeEvents
         public void UpdateProgress(int progress)
         {
             //Calculates the faction which has greater progression.
-            int direction = progress != 0 ? (System.Math.Abs(progress) / progress) : 1;
+            ProgressDirection = progress != 0 ? (System.Math.Abs(progress) / progress) : 1;
             float prevProg = Progress;
-            //We want the absolute progress towards goal regardless of the direction.
-            Progress = (((float)Math.Abs(progress) / (float)_goal) * direction);
+            //Absolute progress towards goal ignoring direction.
+            Progress = (((float)Math.Abs(progress) / (float)_goal) * ProgressDirection);
             //If there is no previous history, calculate an estimated progression rate based on when the invasion started.
             if (_changeRateHistory.Count() == 0)
             {
@@ -49,23 +75,49 @@ namespace WarframeWorldStateAPI.WarframeEvents
 
                 //Prevent divide by zero when a new invasion has started
                 if (totalMins > 0)
-                    _changeRateHistory.Enqueue((Progress / totalMins) * direction);
+                {
+                    _changeRateHistory.Enqueue((Progress / totalMins) * ProgressDirection);
+                }
                 else
+                {
                     _changeRateHistory.Enqueue(0);
+                }
             }
             else
+            {
                 //Enqueue new entries every minute so that a more accurate average can be calculated.
-                _changeRateHistory.Enqueue((Progress - prevProg) * direction);
+                _changeRateHistory.Enqueue((Progress - prevProg) * ProgressDirection);
+            }
+
             //We are only measuring the past hour.
             if (_changeRateHistory.Count > CHANGE_RATE_MAX_HISTORY)
+            {
                 _changeRateHistory.Dequeue();
-            float sigmaChange = .0f;
+            }
+
+            float changeRateSigma = .0f;
             foreach(var i in _changeRateHistory)
             {
-                sigmaChange = sigmaChange + i;
+                changeRateSigma = changeRateSigma + i;
             }
-            ChangeRate = (sigmaChange / _changeRateHistory.Count()) * CHANGE_RATE_MAX_HISTORY;
+
+            ChangeRate = (changeRateSigma / _changeRateHistory.Count()) * CHANGE_RATE_MAX_HISTORY;
         }
+
+        public int GetMinutesRemaining()
+        {
+            TimeSpan ts = EstimatedEndTime.Subtract(DateTime.Now);
+            int days = ts.Days, hours = ts.Hours, mins = ts.Minutes;
+            return (days * 1440) + (hours * 60) + ts.Minutes;
+        }
+
+        /*public DateTime GetEstimatedEndTime()
+        {
+            float hoursUntilEnd = (ChangeRate > 0 ? (1.0f - Progress) : (1.0f + Progress)) / ChangeRate;
+            EstimatedEndTime = DateTime.Now.AddHours(hoursUntilEnd);
+
+            return EstimatedEndTime;
+        }*/
 
         override public bool IsExpired()
         {
