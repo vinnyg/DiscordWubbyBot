@@ -12,6 +12,16 @@ namespace WarframeWorldStateAPI.Components
     //Parses the contents of a JSON file for Warframe events
     public class WarframeEventInformationParser
     {
+        public WarframeEventInformationParser() : this(new WarframeJSONScraper())
+        {
+
+        }
+
+        public WarframeEventInformationParser(IWarframeJSONScraper scraper)
+        {
+            _scraper = scraper;
+        }
+
         private const int SECONDS_PER_DAY_CYCLE = 14400;
         private const int TIME_TO_LONG_MULTIPLIER = 1000;
 
@@ -22,7 +32,7 @@ namespace WarframeWorldStateAPI.Components
         private List<WarframeVoidFissure> _voidFissures = new List<WarframeVoidFissure>();
         private List<WarframeSortie> _sortieList = new List<WarframeSortie>();
         private List<WarframeAcolyte> _acolytesList = new List<WarframeAcolyte>();
-        private WarframeJSONScraper _scraper = new WarframeJSONScraper();
+        private IWarframeJSONScraper _scraper;
 
         #region ParseJSONMethods
         public IEnumerable<WarframeAlert> GetAlerts()

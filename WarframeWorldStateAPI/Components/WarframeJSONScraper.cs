@@ -7,7 +7,7 @@ using System.Configuration;
 namespace WarframeWorldStateAPI.Components
 {
     //This class parses a JSON file and raises events regarding the contents
-    internal class WarframeJSONScraper
+    internal class WarframeJSONScraper : IWarframeJSONScraper
     {
         private const int SECONDS_PER_DAY_CYCLE = 14400;
         //Limit how often we can scrape the URL
@@ -18,7 +18,7 @@ namespace WarframeWorldStateAPI.Components
         private DateTime _lastScraped;
 
         //Download Warframe content informatino
-        internal JObject ScrapeWorldState()
+        public JObject ScrapeWorldState()
         {
             const int NUMBER_OF_RETRIES = 3;
             const int RETRY_DELAY_IN_MILLISECONDS = 2000;

@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Components\IWarframeJSONScraper.cs" />
     <Compile Include="Extensions\JsonExtensions.cs" />
     <Compile Include="Components\WarframeEventInformationParser.cs" />
     <Compile Include="Components\WarframeJSONScraper.cs" />
