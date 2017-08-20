@@ -394,7 +394,7 @@ namespace DiscordSharpTest
                 //Core content of the Discord message without any formatting
                 var coreMessageContent = new StringBuilder();
                 coreMessageContent.AppendLine(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
-                MessageMarkdownLanguageIdPreset markdownPreset = MessageMarkdownLanguageIdPreset.ActiveEvent;
+                var markdownPreset = MessageMarkdownLanguageIdPreset.ActiveEvent;
 
                 if (message.NotifyClient)
                 {
