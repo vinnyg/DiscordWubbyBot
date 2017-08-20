@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordSharpTest", "DiscordSharpTest.csproj", "{FBE0D6C0-1614-4B40-B724-4C702B03F4BD}"
 EndProject
@@ -14,6 +14,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WarframeWorldStateAPI", "WarframeWorldStateAPI\WarframeWorldStateAPI.csproj", "{47301CF9-3C42-4026-B0E6-E167EF22C0B0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WubbyWeb", "WubbyWeb\WubbyWeb.csproj", "{72349D43-8525-4CCF-BF1E-063B6C7BC81D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WubbyBot.Tests", "WubbyBot.Tests\WubbyBot.Tests.csproj", "{278718AA-C2C5-4EA1-9A4B-502C18712B88}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -71,6 +73,14 @@ Global
 		{72349D43-8525-4CCF-BF1E-063B6C7BC81D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{72349D43-8525-4CCF-BF1E-063B6C7BC81D}.Release|x86.ActiveCfg = Release|Any CPU
 		{72349D43-8525-4CCF-BF1E-063B6C7BC81D}.Release|x86.Build.0 = Release|Any CPU
+		{278718AA-C2C5-4EA1-9A4B-502C18712B88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{278718AA-C2C5-4EA1-9A4B-502C18712B88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{278718AA-C2C5-4EA1-9A4B-502C18712B88}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{278718AA-C2C5-4EA1-9A4B-502C18712B88}.Debug|x86.Build.0 = Debug|Any CPU
+		{278718AA-C2C5-4EA1-9A4B-502C18712B88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{278718AA-C2C5-4EA1-9A4B-502C18712B88}.Release|Any CPU.Build.0 = Release|Any CPU
+		{278718AA-C2C5-4EA1-9A4B-502C18712B88}.Release|x86.ActiveCfg = Release|Any CPU
+		{278718AA-C2C5-4EA1-9A4B-502C18712B88}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
