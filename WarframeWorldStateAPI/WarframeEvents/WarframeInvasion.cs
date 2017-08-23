@@ -33,13 +33,25 @@ namespace WarframeWorldStateAPI.WarframeEvents
         {
             get
             {
-                float hoursUntilEnd = (ProgressDirection > 0 ? (1.0f - Progress) : (1.0f + Progress)) / ChangeRate;
-                return DateTime.Now.AddHours(hoursUntilEnd);
-            }
+                float hoursUntilEnd = 0;
+                DateTime estimatedEndTime = DateTime.Now.AddYears(1);
 
-            private set
-            {
-                EstimatedEndTime = value;
+                if (ChangeRate > 0)
+                {
+                    hoursUntilEnd = (ProgressDirection > 0 ? (1.0f - Progress) : (1.0f + Progress)) / ChangeRate;
+
+                    try
+                    {
+                        estimatedEndTime = DateTime.Now.AddHours(hoursUntilEnd);
+                    }
+                    catch (ArgumentOutOfRangeException e)
+                    {
+                        Console.WriteLine(e.Message);
+                        Console.WriteLine($"hoursUntilEnd: {hoursUntilEnd} || ProgressDirection: {ProgressDirection} || Progress: {Progress} || ChangeRate: {ChangeRate}");
+                    }
+                }
+
+                return estimatedEndTime;
             }
         }
 
