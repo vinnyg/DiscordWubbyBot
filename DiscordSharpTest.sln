@@ -15,10 +15,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WarframeWorldStateAPI", "Wa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WubbyWeb", "WubbyWeb\WubbyWeb.csproj", "{72349D43-8525-4CCF-BF1E-063B6C7BC81D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WubbyBot.Tests_", "WubbyBot.Tests\WubbyBot.Tests_.csproj", "{278718AA-C2C5-4EA1-9A4B-502C18712B88}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordWubbyBot.Tests", "DiscordWubbyBot.Tests\DiscordWubbyBot.Tests.csproj", "{0330E598-36ED-40B3-8856-E1E41339AC14}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,21 +71,6 @@ Global
 		{72349D43-8525-4CCF-BF1E-063B6C7BC81D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{72349D43-8525-4CCF-BF1E-063B6C7BC81D}.Release|x86.ActiveCfg = Release|Any CPU
 		{72349D43-8525-4CCF-BF1E-063B6C7BC81D}.Release|x86.Build.0 = Release|Any CPU
-		{278718AA-C2C5-4EA1-9A4B-502C18712B88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{278718AA-C2C5-4EA1-9A4B-502C18712B88}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{278718AA-C2C5-4EA1-9A4B-502C18712B88}.Debug|x86.Build.0 = Debug|Any CPU
-		{278718AA-C2C5-4EA1-9A4B-502C18712B88}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{278718AA-C2C5-4EA1-9A4B-502C18712B88}.Release|Any CPU.Build.0 = Release|Any CPU
-		{278718AA-C2C5-4EA1-9A4B-502C18712B88}.Release|x86.ActiveCfg = Release|Any CPU
-		{278718AA-C2C5-4EA1-9A4B-502C18712B88}.Release|x86.Build.0 = Release|Any CPU
-		{0330E598-36ED-40B3-8856-E1E41339AC14}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0330E598-36ED-40B3-8856-E1E41339AC14}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0330E598-36ED-40B3-8856-E1E41339AC14}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{0330E598-36ED-40B3-8856-E1E41339AC14}.Debug|x86.Build.0 = Debug|Any CPU
-		{0330E598-36ED-40B3-8856-E1E41339AC14}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0330E598-36ED-40B3-8856-E1E41339AC14}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0330E598-36ED-40B3-8856-E1E41339AC14}.Release|x86.ActiveCfg = Release|Any CPU
-		{0330E598-36ED-40B3-8856-E1E41339AC14}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
