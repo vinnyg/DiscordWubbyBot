@@ -25,6 +25,7 @@ namespace WarframeDatabaseNet.Enums.MissionType
         MT_RESCUE,
         MT_SABOTAGE,
         MT_SURVIVAL,
-        MT_TERRITORY
+        MT_TERRITORY,
+        MT_LANDSCAPE
     }
 }
