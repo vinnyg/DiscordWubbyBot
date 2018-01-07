@@ -80,6 +80,7 @@ namespace WarframeWorldStateAPI.WarframeEvents.Properties
             { "MT_EXCAVATE", "Excavation" },
             { "MT_EXTERMINATION", "Extermination" },
             { "MT_RETRIEVAL", "Hijack" },
+            { "MT_LANDSCAPE", "Free Roam"},
             { "MT_TERRITORY", "Interception" },
             { "MT_HIVE", "Hive" },
             { "MT_MOBILE_DEFENSE", "Mobile Defense" },

@@ -1,6 +1,8 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using WarframeDatabaseNet;
 using WarframeDatabaseNet.Persistence;
@@ -32,12 +34,13 @@ namespace WarframeWorldStateAPI.Components
         private List<WarframeVoidFissure> _voidFissures = new List<WarframeVoidFissure>();
         private List<WarframeSortie> _sortieList = new List<WarframeSortie>();
         private List<WarframeAcolyte> _acolytesList = new List<WarframeAcolyte>();
+        private List<WarframeOstronBounty> _ostronBountyList = new List<WarframeOstronBounty>();
         private IWarframeJSONScraper _scraper;
 
         #region ParseJSONMethods
         public IEnumerable<WarframeAlert> GetAlerts()
         {
-            JObject worldState = _scraper.ScrapeWorldState();
+            JObject worldState = _scraper.WorldState;
             var resultAlerts = new List<WarframeAlert>();
 
             //Find Alerts
@@ -114,7 +117,7 @@ namespace WarframeWorldStateAPI.Components
 
         public IEnumerable<WarframeInvasion> GetInvasions()
         {
-            JObject worldState = _scraper.ScrapeWorldState();
+            JObject worldState = _scraper.WorldState;
             var resultInvasions = new List<WarframeInvasion>();
 
             //Find Invasions
@@ -193,7 +196,7 @@ namespace WarframeWorldStateAPI.Components
                             var attackerInfo = new MissionInfo(jsonInvasion["AttackerMissionInfo"]["faction"].ToString(),
                                 string.Empty,
                                 attackerCredits,
-                                string.IsNullOrEmpty(attackerRewardStr) ? "" : attackerRewardStr,
+                                string.IsNullOrEmpty(attackerRewardStr) ? string.Empty : attackerRewardStr,
                                 attackerRewardQuantityParam,
                                 0, 0,
                                 false);
@@ -201,7 +204,7 @@ namespace WarframeWorldStateAPI.Components
                             var defenderInfo = new MissionInfo(jsonInvasion["DefenderMissionInfo"]["faction"].ToString(),
                                 string.Empty,
                                 defenderCredits,
-                                string.IsNullOrEmpty(defenderRewardStr) ? "" : defenderRewardStr,
+                                string.IsNullOrEmpty(defenderRewardStr) ? string.Empty : defenderRewardStr,
                                 defenderRewardQuantityParam,
                                 0, 0,
                                 false);
@@ -213,15 +216,9 @@ namespace WarframeWorldStateAPI.Components
                             _invasionsList.Add(currentInvasion);
                         }
                     }
-                    else
-                    {
-#if DEBUG
-                        Console.WriteLine("An Invasion was discarded due to its lack of rewards");
-#endif
-                    }
                 }
 
-                _invasionsList.RemoveAll(x => x.IsExpired());
+                _invasionsList.RemoveAll(x => x.IsExpired());  
 
                 if (currentInvasion != null && !currentInvasion.IsExpired())
                 {
@@ -229,7 +226,12 @@ namespace WarframeWorldStateAPI.Components
                     resultInvasions.Add(currentInvasion);
                 }
             }
-            
+
+#if DEBUG
+            //Rewards expired because of expiration or lack of rewards
+            Console.WriteLine($"{worldState["Invasions"].Count() - _invasionsList.Count} Invasion(s) were discarded");
+#endif
+
             return _invasionsList;
         }
 
@@ -237,7 +239,7 @@ namespace WarframeWorldStateAPI.Components
         public IEnumerable<WarframeInvasionConstruction> GetInvasionConstruction()
         {
             const string IDENTIFIER_PREFIX = "ProjectPct";
-            JObject worldState = _scraper.ScrapeWorldState();
+            JObject worldState = _scraper.WorldState;
             var resultConstructionProjects = new List<WarframeInvasionConstruction>();
 
             var currentIteration = 0;
@@ -276,7 +278,7 @@ namespace WarframeWorldStateAPI.Components
 
         public IEnumerable<WarframeVoidTrader> GetVoidTrader()
         {
-            JObject worldState = _scraper.ScrapeWorldState();
+            JObject worldState = _scraper.WorldState;
             var resultVoidTraders = new List<WarframeVoidTrader>();
 
             foreach (var jsonTrader in worldState["VoidTraders"])
@@ -332,7 +334,7 @@ namespace WarframeWorldStateAPI.Components
 
         public IEnumerable<WarframeVoidFissure> GetVoidFissures()
         {
-            JObject worldState = _scraper.ScrapeWorldState();
+            JObject worldState = _scraper.WorldState;
             var resultVoidFissures = new List<WarframeVoidFissure>();
 
             //Find Alerts
@@ -391,7 +393,7 @@ namespace WarframeWorldStateAPI.Components
 
         public IEnumerable<WarframeSortie> GetSorties()
         {
-            JObject worldState = _scraper.ScrapeWorldState();
+            JObject worldState = _scraper.WorldState;
             var resultSorties = new List<WarframeSortie>();
 
             //Find Sorties
@@ -454,16 +456,100 @@ namespace WarframeWorldStateAPI.Components
 
         public WarframeTimeCycleInfo GetTimeCycle()
         {
-            JObject worldState = _scraper.ScrapeWorldState();
+            JObject worldState = _scraper.WorldState;
 
             var currentTime = long.Parse(worldState["Time"].ToString());
             var cycleInfo = new WarframeTimeCycleInfo(currentTime);
             return cycleInfo;
         }
 
+        public WarframeOstronBountyCycle GetOstronBountyCycle()
+        {
+            JObject worldState = _scraper.WorldState;
+            JObject warframeStatusWorldState = _scraper.WarframeStatusWorldState;
+
+            var currentTime = long.Parse(worldState["Time"].ToString());
+            var cycleInfo = new WarframeOstronBountyCycle(currentTime);
+            return cycleInfo;
+        }
+
+        public IEnumerable<WarframeOstronBounty> GetOstronBounties()
+        {
+            JObject worldState = _scraper.WarframeStatusWorldState;
+            var resultBounties = new List<WarframeOstronBounty>();
+            JToken ostronSyndicate = worldState["syndicateMissions"].Single(x => x["syndicate"].ToString() == "Ostrons");
+            JToken ostronSyndicateBounties = ostronSyndicate["jobs"];
+
+            var bountyCycleStartTime = DateTime.Parse(ostronSyndicate["activation"].ToString());
+            var bountyCycleExpireTime = DateTime.Parse(ostronSyndicate["expiry"].ToString());
+
+            //Find Bounties
+            foreach (var jsonBounty in ostronSyndicateBounties)
+            {
+                WarframeOstronBounty currentBounty = _ostronBountyList.Find(x => x.GUID == jsonBounty["id"].ToString());
+
+                if (currentBounty == null)
+                {
+                    var id = jsonBounty["id"].ToString();
+                    var loc = "Cetus (Earth)";
+
+                    var rewardStr = string.Empty;
+                    var nodeName = loc;
+
+                    //var millisecondsUntilStart = long.Parse(jsonBounty["Activation"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
+                    //var millisecondsUntilExpire = long.Parse(jsonBounty["Expiry"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
+                    //var startTime = DateTime.Now.AddMilliseconds(millisecondsUntilStart);
+                    //var expireTime = DateTime.Now.AddMilliseconds(millisecondsUntilExpire);
+                    var startTime = bountyCycleStartTime;
+                    var expireTime = bountyCycleExpireTime;
+
+                    if (DateTime.Now < expireTime)
+                    {
+                        MissionInfo bountyInfo = new MissionInfo(string.Empty,
+                            string.Empty,
+                            0,  
+                            rewardStr,
+                            0,
+                            int.Parse(jsonBounty["enemyLevels"][0].ToString()),
+                            int.Parse(jsonBounty["enemyLevels"][1].ToString()),
+                            false);
+
+                        var jobType = jsonBounty["type"].ToString();
+
+                        var ostronStanding = new List<int>();
+                        foreach (var standing in jsonBounty["standingStages"])
+                        {
+                            ostronStanding.Add(int.Parse(standing.ToString()));
+                        }
+
+                        var rewards = new List<string>();
+                        foreach (var reward in jsonBounty["rewardPool"])
+                        {
+                            rewards.Add(reward.ToString());
+                        }
+
+                        currentBounty = new WarframeOstronBounty(bountyInfo, id, nodeName, startTime, expireTime, jobType, ostronStanding, rewards);
+                        _ostronBountyList.Add(currentBounty);
+#if DEBUG
+                        Console.WriteLine("New Bounty Event");
+#endif
+                    }
+                }
+
+                _ostronBountyList.RemoveAll(x => x.ExpireTime < DateTime.Now);
+
+                if ((_ostronBountyList != null) && (currentBounty.ExpireTime > DateTime.Now))
+                {
+                    resultBounties.Add(currentBounty);
+                }
+            }
+
+            return _ostronBountyList;
+        }
+
         public IEnumerable<WarframeAcolyte> GetAcolytes()
         {
-            JObject worldState = _scraper.ScrapeWorldState();
+            JObject worldState = _scraper.WorldState;
             var resultAcolytes = new List<WarframeAcolyte>();
 
             //Find Alerts

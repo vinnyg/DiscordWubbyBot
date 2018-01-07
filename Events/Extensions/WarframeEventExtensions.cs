@@ -8,6 +8,7 @@ using DiscordSharpTest.Events.Extensions;
 using WarframeWorldStateAPI.WarframeEvents;
 using WarframeWorldStateAPI.WarframeEvents.Properties;
 using System.Configuration;
+using System.Text.RegularExpressions;
 
 namespace WubbyBot.Events.Extensions
 {
@@ -117,16 +118,24 @@ namespace WubbyBot.Events.Extensions
                 returnMessage.AppendLine(invasion.DestinationName);
                 returnMessage.AppendLine($"{defenderInfo.Faction} vs {attackerInfo.Faction}");
                 returnMessage.AppendLine($"{(defenderInfo.Faction != Faction.INFESTATION ? ($"{defenderAllianceRewardMessage} / ") : string.Empty)}{attackerAllianceRewardMessage}");
-                //Toggle between estimated end time and invasion change rate per minute
-                if (DateTime.Now.Minute % 2 == 0)
+                //Toggle between estimated end time and invasion change rate
+                //if (DateTime.Now.Minute % 2 == 0)
+                //Invasion Progression
+                returnMessage.AppendLine($"{string.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({changeRateSign + string.Format("{0:0.00}", invasion.ChangeRate * 100.0f)} p/hr){(defenderInfo.Faction != Faction.INFESTATION ? " (" + winningFaction + ")" : string.Empty)}");
+
+                var minutesRemaining = invasion.GetMinutesRemaining();
+                var daysRemaining = TimeSpan.FromMinutes(minutesRemaining).TotalDays;
+                if (minutesRemaining > 0)
                 {
-                    //Invasion Progression
-                    returnMessage.Append($"{string.Format("{0:0.00}", System.Math.Abs(invasion.Progress * 100.0f))}% ({changeRateSign + string.Format("{0:0.00}", invasion.ChangeRate * 100.0f)} p/hr){(defenderInfo.Faction != Faction.INFESTATION ? " (" + winningFaction + ")" : string.Empty)}");
-                }
-                else
-                {
-                    //Estimated Completion Time
-                    returnMessage.Append($"Est. {invasion.EstimatedEndTime:HH:mm} ({(invasion.GetMinutesRemaining() > 0 ? ParseMinutesAsTime(invasion.GetMinutesRemaining(), 2) : "<1m")})");
+                    if (daysRemaining < 60)
+                    {
+                        returnMessage.Append($"Est. {invasion.EstimatedEndTime:HH:mm} ({(invasion.GetMinutesRemaining() > 0 ? ParseMinutesAsTime(invasion.GetMinutesRemaining(), 2) : "<1m")})");
+                        //returnMessage.Append($"Est. {invasion.EstimatedEndTime:HH:mm} ({invasion.GetMinutesRemaining() > 0 ? ParseMinutesAsTime(invasion.GetMinutesRemaining(), 2) : < 1m)"});
+                    }
+                    else
+                    {
+                        returnMessage.Append("Est. ∞");
+                    }
                 }
             } 
             else
@@ -276,6 +285,48 @@ namespace WubbyBot.Events.Extensions
             var returnMessage = new StringBuilder();
             returnMessage.AppendLine($"The current cycle is {timeOfDay}.");
             returnMessage.AppendLine($"The next cycle begins at {cycleStatus}.");
+
+            return returnMessage.ToString();
+        }
+
+        public static string DiscordMessage(this WarframeOstronBountyCycle cycleInfo, bool isNotification)
+        {
+            //var timeOfDay = cycleInfo.TimeIsDay() ? "Day" : "Night";
+            var cycleStatus = $"{cycleInfo.TimeOfNextCycleChange:HH:mm} ({(cycleInfo.TimeUntilNextCycleChange.Hours > 0 ? $"{cycleInfo.TimeUntilNextCycleChange.Hours}h " : string.Empty)}{cycleInfo.TimeUntilNextCycleChange.Minutes}m)";
+
+            var returnMessage = new StringBuilder();
+            //returnMessage.AppendLine($"The current cycle is {timeOfDay}.");
+            returnMessage.AppendLine($"Ostron bounties reset in {cycleStatus}.");
+
+            return returnMessage.ToString();
+        }
+
+        public static string DiscordMessage(this WarframeOstronBounty bounty, bool isNotification)
+        {
+            MissionInfo info = bounty.MissionDetails;
+            var returnMessage = new StringBuilder();
+
+            if (!isNotification)
+            {
+                returnMessage.AppendLine(bounty.JobType);
+                returnMessage.AppendLine($"Enemy Level: {info.MinimumLevel}-{info.MaximumLevel}");
+                returnMessage.AppendLine($"{bounty.OstronStanding.Take(bounty.OstronStanding.Count).Sum()} Standing");
+                returnMessage.AppendLine("[----Rewards----]");
+                foreach (var reward in bounty.RewardTable)
+                {
+                    //var rewardQuantity = new Regex(" X\\d+", RegexOptions.IgnoreCase).Match(reward).ToString();
+                    //var quantity = rewardQuantity;
+
+                    //reward.Replace(rewardQuantity, string.Empty);
+
+                    var rewardRegexMatch = new Regex("^(.+?)( X(\\d+))?$").Match(reward);
+                    var rewardQuantity = rewardRegexMatch.Groups[3].Value;
+                    var item = rewardRegexMatch.Groups[1].Value;
+
+                    var newRewardText = $"{rewardQuantity}{(!string.IsNullOrEmpty(rewardQuantity) ? "x" : string.Empty)}{item}";
+                    returnMessage.AppendLine(newRewardText);
+                }
+            }
 
             return returnMessage.ToString();
         }

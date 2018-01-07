@@ -9,11 +9,18 @@ namespace WarframeWorldStateAPI.WarframeEvents
     public class WarframeTimeCycleInfo : WarframeEvent
     {
         const long SECONDS_PER_DAY_CYCLE = 14400;
+        const long SECONDS_PER_CETUS_DAY_CYCLE = 6000;
+        const long SECONDS_PER_CETUS_NIGHT_CYCLE = 3000;
+
+        private long CurrentTimeInSeconds { get; set; }
+
         public TimeSpan TimeUntilNextCycleChange { get; private set; }
         public DateTime TimeOfNextCycleChange { get; private set; }
         public TimeSpan TimeSinceLastCycleChange { get; private set; }
-        private long CurrentTimeInSeconds { get; set; }
-        private bool _isDay { get; set; }
+        //Cetus Time
+        //public TimeSpan TimeUntilNextCycleChangeCetus { get; private set; }
+        //public DateTime TimeOfNextCycleChangeCetus { get; private set; }
+        private bool _isDayCetus { get; set; }
 
         public WarframeTimeCycleInfo(long currentWarframeServerTime) : base(string.Empty, "Earth", DateTime.Now)
         {
@@ -28,8 +35,11 @@ namespace WarframeWorldStateAPI.WarframeEvents
             TimeSinceLastCycleChange = TimeSpan.FromSeconds(currentTime % SECONDS_PER_DAY_CYCLE);
             TimeUntilNextCycleChange = TimeSpan.FromSeconds(SECONDS_PER_DAY_CYCLE - secondsSinceLastCycleChange);
             TimeOfNextCycleChange = DateTime.Now.Add(TimeUntilNextCycleChange);
+
+            //TimeSinceLastCycleChangeCetus = TimeSpan.FromSeconds(currentTime )
+            TimeUntilNextCycleChangeCetus = TimeSpan.FromSeconds();
         }
-        
+
         //TODO Finish this
         public bool TimeIsDay()
         {

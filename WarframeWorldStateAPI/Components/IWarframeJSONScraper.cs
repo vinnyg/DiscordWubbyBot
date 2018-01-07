@@ -4,7 +4,8 @@ namespace WarframeWorldStateAPI.Components
 {
     public interface IWarframeJSONScraper
     {
-        bool CanScrape();
-        JObject ScrapeWorldState();
+        //JObject ScrapeWorldState();
+        JObject WorldState { get; }
+        JObject WarframeStatusWorldState { get; }
     }
 }

@@ -36,6 +36,7 @@
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Caching" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -51,11 +52,13 @@
     <Compile Include="WarframeEvents\MissionInfo.cs" />
     <Compile Include="WarframeEvents\Properties\MissionInformationProperties.cs" />
     <Compile Include="WarframeEvents\WarframeAcolyte.cs" />
+    <Compile Include="WarframeEvents\WarframeOstronBounty.cs" />
     <Compile Include="WarframeEvents\WarframeAlert.cs" />
     <Compile Include="WarframeEvents\WarframeEvent.cs" />
     <Compile Include="WarframeEvents\WarframeInvasion.cs" />
     <Compile Include="WarframeEvents\WarframeInvasionConstruction.cs" />
     <Compile Include="WarframeEvents\WarframeSortie.cs" />
+    <Compile Include="WarframeEvents\WarframeOstronBountyCycle.cs" />
     <Compile Include="WarframeEvents\WarframeTimeCycleInfo.cs" />
     <Compile Include="WarframeEvents\WarframeVoidFissure.cs" />
     <Compile Include="WarframeEvents\WarframeVoidTrader.cs" />
