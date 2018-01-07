@@ -5,7 +5,7 @@ using System.IO;
 using System.Configuration;
 using Newtonsoft.Json;
 using DSharpPlus;
-using DSharpPlus.Objects;
+using DSharpPlus.Entities;
 
 namespace DiscordWrapper
 {
@@ -24,7 +24,7 @@ namespace DiscordWrapper
         /// </summary>
         public string Name { get; set; }
         public DiscordMember Owner { get; set; }
-        public DiscordConfig DiscordConfig { get; internal set; }
+        public DiscordConfiguration DiscordConfig { get; internal set; }
         public Config BotConfig { get; internal set; }
         public StreamWriter LogFile { get; internal set; }
         /// <summary>
@@ -48,7 +48,7 @@ namespace DiscordWrapper
             }
 
             //Instantiate config
-            DiscordConfig = new DiscordConfig();
+            DiscordConfig = new DiscordConfiguration();
             DiscordConfig.AutoReconnect = true;
             DiscordConfig.Token = BotConfig.DiscordToken;
             DiscordConfig.LogLevel = LogLevel.Warning;
@@ -130,8 +130,11 @@ namespace DiscordWrapper
             try
             {
                 System.Threading.Thread.Sleep(GetTimeUntilCanRequest());
-                message = Client.GetMessageAsync(channel, targetMessage.Id).Result;
-                message.EditAsync(newContent).Wait();
+                //message = Client.GetMessageAsync(channel, targetMessage.Id).Result;
+                //message.EditAsync(newContent).Wait();
+
+                message.ModifyAsync(newContent).Wait();
+
                 timeOfLastDiscordRequest = DateTime.Now;
             }
             catch (NullReferenceException)
@@ -168,6 +171,35 @@ namespace DiscordWrapper
             }
         }
 
+        /*virtual public void DeleteAllMessagesFromChannel(DiscordChannel channel)
+        {
+            try
+            {
+                var messages = channel.GetMessagesAsync();
+
+                foreach (var message in messages)
+                {
+                    System.Threading.Thread.Sleep(GetTimeUntilCanRequest(DELETE_REQUEST_TIME_LIMIT));
+                    if (message != null)
+                    {
+                        targetMessage.DeleteAsync().Wait();
+
+                        //Client.DeleteMessage(targetMessage);
+                        timeOfLastDiscordRequest = DateTime.Now;
+                    }
+                }
+                
+            }
+            catch (NullReferenceException)
+            {
+                Log("DeleteMessage threw a NullReferenceException.");
+            }
+            catch (Exception)
+            {
+                Log("DeleteMessage threw an exception.");
+            }
+        }*/
+
         //Return a reference to the specific instance of a DiscordMessage using the message ID
         virtual public DiscordMessage GetMessageByID(DiscordChannel channel, ulong id)
         {
@@ -198,7 +230,7 @@ namespace DiscordWrapper
 
         virtual public void SetCurrentGame(string gameName, bool isStreaming, string url = "")
         {
-            Client.UpdateStatusAsync(new Game(gameName) { Url = url }, UserStatus.Online).Wait();
+            Client.UpdateStatusAsync(new DiscordGame(gameName) { Url = url }, UserStatus.Online).Wait();
         }
 
         virtual public void Log(string message)
@@ -236,7 +268,7 @@ namespace DiscordWrapper
 
         virtual public DiscordApplication GetCurrentApplication()
         {
-            return Client.GetCurrentAppAsync().Result;
+            return Client.GetCurrentApplicationAsync().Result;
         }
 
         virtual public DiscordInvite GetInviteByCode(string code)
