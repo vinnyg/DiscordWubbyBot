@@ -7,31 +7,28 @@ using System.Runtime.Caching;
 
 namespace WarframeWorldStateAPI.Components
 {
-    //This class parses a JSON file and raises events regarding the contents
+    ///This class parses a JSON file and raises events regarding the contents
     internal class WarframeJSONScraper : IWarframeJSONScraper
     {
         private MemoryCache jsonCache = MemoryCache.Default;
         private const int SECONDS_PER_DAY_CYCLE = 14400;
 
-        //Store the JSON file
-        private JObject _worldState { get; set; }
+        private JObject _worldState { get; set; } = new JObject();
 
         public JObject WorldState
         {
             get => ScrapeWorldState("http://content.warframe.com/dynamic/worldState.php") ?? _worldState;
             private set => _worldState = value;
         }
-
-        //Store the JSON file
+        
         private JObject _warframeStatusWorldState { get; set; }
 
         public JObject WarframeStatusWorldState
         {
-            get => ScrapeWorldState("http://ws.warframestat.us/pc") ?? _worldState;
-            private set => _worldState = value;
+            get => ScrapeWorldState("http://ws.warframestat.us/pc") ?? _warframeStatusWorldState;
+            private set => _warframeStatusWorldState = value;
         }
-
-        //Download Warframe content information
+        
         private JObject ScrapeWorldState(string warframeApiUrl)
         {
             var jsonObject = jsonCache.Get(warframeApiUrl) as JObject;
@@ -48,7 +45,14 @@ namespace WarframeWorldStateAPI.Components
         {
             using (WebClient wc = new WebClient())
             {
-                _worldState = JObject.Parse(wc.DownloadString(url));
+                try
+                {
+                    _worldState = JObject.Parse(wc.DownloadString(url));
+                }
+                catch (WebException)
+                {
+                    //Log error
+                }
 
                 return _worldState;
             }
