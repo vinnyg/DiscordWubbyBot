@@ -159,6 +159,7 @@ namespace DiscordWrapper
 
                     //Client.DeleteMessage(targetMessage);
                     timeOfLastDiscordRequest = DateTime.Now;
+                    Log($"Message {targetMessage.Id} from {targetMessage.Channel.Name} was deleted.");
                 }
             }
             catch (NullReferenceException)
