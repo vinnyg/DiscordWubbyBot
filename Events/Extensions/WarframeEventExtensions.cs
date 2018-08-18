@@ -279,24 +279,29 @@ namespace WubbyBot.Events.Extensions
 
         public static string DiscordMessage(this WarframeTimeCycleInfo cycleInfo, bool isNotification)
         {
-            var timeOfDay = cycleInfo.TimeIsDay() ? "Day" : "Night";
-            var cycleStatus = $"{cycleInfo.TimeOfNextCycleChange:HH:mm} ({(cycleInfo.TimeUntilNextCycleChange.Hours > 0 ? $"{cycleInfo.TimeUntilNextCycleChange.Hours}h " : string.Empty)}{cycleInfo.TimeUntilNextCycleChange.Minutes}m)";
+            var timeOfDay = cycleInfo.EarthIsDay() ? "Day" : "Night";
+            var cycleStatus =
+                $"{cycleInfo.TimeOfNextCycleChange:HH:mm} ({(cycleInfo.TimeUntilNextCycleChange.Hours > 0 ? $"{cycleInfo.TimeUntilNextCycleChange.Hours}h " : string.Empty)}{cycleInfo.TimeUntilNextCycleChange.Minutes}m)";
+            var cetusTimeOfDay = cycleInfo.CetusIsDay() ? "Day" : "Night";
+            var cetusStatus =
+                $"{cycleInfo.TimeOfNextCycleChangeCetus:HH:mm} ({(cycleInfo.TimeUntilNextCycleChangeCetus.Hours > 0 ? $"{cycleInfo.TimeUntilNextCycleChangeCetus.Hours}h " : string.Empty)}{cycleInfo.TimeUntilNextCycleChangeCetus.Minutes}m)";
 
             var returnMessage = new StringBuilder();
-            returnMessage.AppendLine($"The current cycle is {timeOfDay}.");
-            returnMessage.AppendLine($"The next cycle begins at {cycleStatus}.");
+            returnMessage.AppendLine($"Earth: {timeOfDay.ToUpper()}");
+            returnMessage.AppendLine($"{(cycleInfo.EarthIsDay() ? "Night" : "Day")} on Earth begins at {cycleStatus}.{Environment.NewLine}");
+            
+            returnMessage.AppendLine($"Cetus: {cetusTimeOfDay.ToUpper()}");
+            returnMessage.AppendLine($"{(cycleInfo.CetusIsDay() ? "Night" : "Day")} on Cetus begins at {cetusStatus}.");
 
             return returnMessage.ToString();
         }
 
         public static string DiscordMessage(this WarframeOstronBountyCycle cycleInfo, bool isNotification)
         {
-            //var timeOfDay = cycleInfo.TimeIsDay() ? "Day" : "Night";
             var cycleStatus = $"{cycleInfo.TimeOfNextCycleChange:HH:mm} ({(cycleInfo.TimeUntilNextCycleChange.Hours > 0 ? $"{cycleInfo.TimeUntilNextCycleChange.Hours}h " : string.Empty)}{cycleInfo.TimeUntilNextCycleChange.Minutes}m)";
 
             var returnMessage = new StringBuilder();
-            //returnMessage.AppendLine($"The current cycle is {timeOfDay}.");
-            returnMessage.AppendLine($"Ostron bounties reset in {cycleStatus}.");
+            returnMessage.AppendLine($"Ostron bounties reset at {cycleStatus}.");
 
             return returnMessage.ToString();
         }
@@ -311,14 +316,9 @@ namespace WubbyBot.Events.Extensions
                 returnMessage.AppendLine(bounty.JobType);
                 returnMessage.AppendLine($"Enemy Level: {info.MinimumLevel}-{info.MaximumLevel}");
                 returnMessage.AppendLine($"{bounty.OstronStanding.Take(bounty.OstronStanding.Count).Sum()} Standing");
-                returnMessage.AppendLine("[----Rewards----]");
+                returnMessage.AppendLine("_____________________________");
                 foreach (var reward in bounty.RewardTable)
                 {
-                    //var rewardQuantity = new Regex(" X\\d+", RegexOptions.IgnoreCase).Match(reward).ToString();
-                    //var quantity = rewardQuantity;
-
-                    //reward.Replace(rewardQuantity, string.Empty);
-
                     var rewardRegexMatch = new Regex("^(.+?)( X(\\d+))?$").Match(reward);
                     var rewardQuantity = rewardRegexMatch.Groups[3].Value;
                     var item = rewardRegexMatch.Groups[1].Value;
@@ -334,27 +334,9 @@ namespace WubbyBot.Events.Extensions
         //Parse the mission information into a readable presentation
         public static string DiscordMessage(this WarframeAcolyte acolyte, bool isNotification)
         {
-            //MissionInfo info = acolyte.MissionDetails;
-            //string rewardMessage = (!string.IsNullOrEmpty(info.Reward) ? info.Reward : string.Empty);
-            //string rewardQuantityMessage = (info.RewardQuantity > 1 ? info.RewardQuantity + "x" : string.Empty);
-            //string creditMessage = (!string.IsNullOrEmpty(rewardMessage) ? ", " : "") + (info.Credits > 0 ? info.Credits + "cr" : string.Empty);
-
             var statusMessage = new StringBuilder();
 
-            /*if (!acolyte.IsExpired())
-            {
-                if (acolyte.Health > .0f)
-                    statusMessage.Append($"Health: {acolyte.Health}%");
-                else
-                    statusMessage.Append($"Expires {acolyte.ExpireTime:HH:mm} ({acolyte.GetMinutesRemaining(false)}m)");
-            }*/
-            /*else
-            {
-                statusMessage.Append($"Expired ({acolyte.ExpireTime:HH:mm})");
-            }*/
-
             var returnMessage = new StringBuilder();
-            //var expireMessage = $"Expires {acolyte.ExpireTime:HH:mm} ({acolyte.GetMinutesRemaining(false)}m)";
 
             if (!isNotification)
             {
@@ -362,7 +344,6 @@ namespace WubbyBot.Events.Extensions
                 returnMessage.AppendLine($"Health: {string.Format("{0:0.00}", acolyte.Health * 100.0f)}%");
                 var discoveryMessage = acolyte.IsDiscovered ? acolyte.DestinationName : "Location: Unknown";
                 returnMessage.AppendLine(discoveryMessage);
-                //returnMessage.Append(statusMessage.ToString());
             }
             else
             {

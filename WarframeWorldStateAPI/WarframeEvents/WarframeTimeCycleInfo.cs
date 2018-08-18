@@ -12,44 +12,44 @@ namespace WarframeWorldStateAPI.WarframeEvents
         const long SECONDS_PER_CETUS_DAY_CYCLE = 6000;
         const long SECONDS_PER_CETUS_NIGHT_CYCLE = 3000;
 
-        private long CurrentTimeInSeconds { get; set; }
-
         public TimeSpan TimeUntilNextCycleChange { get; private set; }
         public DateTime TimeOfNextCycleChange { get; private set; }
         public TimeSpan TimeSinceLastCycleChange { get; private set; }
-        //Cetus Time
-        //public TimeSpan TimeUntilNextCycleChangeCetus { get; private set; }
-        //public DateTime TimeOfNextCycleChangeCetus { get; private set; }
+
+        public TimeSpan TimeUntilNextCycleChangeCetus { get; private set; }
+        public DateTime TimeOfNextCycleChangeCetus { get; private set; }
+
+        private long CurrentTimeInSeconds { get; set; }
+
+        private bool _isDayEarth { get; set; }
         private bool _isDayCetus { get; set; }
 
-        public WarframeTimeCycleInfo(long currentWarframeServerTime) : base(string.Empty, "Earth", DateTime.Now)
+        public WarframeTimeCycleInfo() : base(string.Empty, "Earth", DateTime.Now)
         {
-            UpdateTimeInformation(currentWarframeServerTime);
         }
 
-        public void UpdateTimeInformation(long currentTime)
+        public void UpdateEarthTime(DateTime expirationTime, string timeRemaining, bool isDayEarth)
         {
-            long secondsSinceLastCycleChange = currentTime % SECONDS_PER_DAY_CYCLE;
-
-            CurrentTimeInSeconds = currentTime;
-            TimeSinceLastCycleChange = TimeSpan.FromSeconds(currentTime % SECONDS_PER_DAY_CYCLE);
-            TimeUntilNextCycleChange = TimeSpan.FromSeconds(SECONDS_PER_DAY_CYCLE - secondsSinceLastCycleChange);
-            TimeOfNextCycleChange = DateTime.Now.Add(TimeUntilNextCycleChange);
-
-            //TimeSinceLastCycleChangeCetus = TimeSpan.FromSeconds(currentTime )
-            TimeUntilNextCycleChangeCetus = TimeSpan.FromSeconds();
+            TimeUntilNextCycleChange = expirationTime.Subtract(DateTime.Now);
+            TimeOfNextCycleChange = expirationTime;
+            _isDayEarth = isDayEarth;
         }
 
-        //TODO Finish this
-        public bool TimeIsDay()
+        public void UpdateCetusTime(DateTime expirationTime, string timeRemaining, bool isDayCetus)
         {
-            //Store the seconds since last change; we don't want this as a TimeSpan yet.
-            long secondsSinceLastCycleChange = CurrentTimeInSeconds % SECONDS_PER_DAY_CYCLE;
-            //Time information is updated every minute, so using old info has negligible effects
-            long timeOfLastChangeInSeconds = CurrentTimeInSeconds - secondsSinceLastCycleChange;
-            //Check whether the cycle is day/night
-            long cycleCountMod = ((timeOfLastChangeInSeconds / SECONDS_PER_DAY_CYCLE) % 2);
-            return (cycleCountMod == 0);
+            TimeUntilNextCycleChangeCetus = expirationTime.Subtract(DateTime.Now);
+            TimeOfNextCycleChangeCetus = expirationTime;
+            _isDayCetus = isDayCetus;
+        }
+        
+        public bool EarthIsDay()
+        {
+            return _isDayEarth;
+        }
+
+        public bool CetusIsDay()
+        {
+            return _isDayCetus;
         }
 
         override public bool IsExpired()

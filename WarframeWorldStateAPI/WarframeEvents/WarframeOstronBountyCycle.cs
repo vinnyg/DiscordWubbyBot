@@ -15,10 +15,17 @@ namespace WarframeWorldStateAPI.WarframeEvents
         public List<Bounty> Bounties { get; private set; }
         private long CurrentTimeInSeconds { get; set; }
         private bool _isDay { get; set; }
+        public string ExpiryTime { get; private set; }
 
         public WarframeOstronBountyCycle(long currentWarframeServerTime) : base(string.Empty, "Earth", DateTime.Now)
         {
             UpdateTimeInformation(currentWarframeServerTime);
+        }
+
+        public WarframeOstronBountyCycle(DateTime expiryTime) : base(string.Empty, "Earth", DateTime.Now)
+        {
+            TimeOfNextCycleChange = expiryTime;
+            TimeUntilNextCycleChange = expiryTime.Subtract(DateTime.Now);
         }
 
         public void UpdateTimeInformation(long currentTime)
@@ -26,7 +33,6 @@ namespace WarframeWorldStateAPI.WarframeEvents
             long secondsSinceLastCycleChange = ((currentTime + BOUNTY_CYCLE_OFFSET) % SECONDS_PER_DAY_CYCLE);
 
             CurrentTimeInSeconds = currentTime;
-            //TimeSinceLastCycleChange = TimeSpan.FromSeconds((currentTime - BOUNTY_CYCLE_OFFSET) % SECONDS_PER_DAY_CYCLE);
             TimeUntilNextCycleChange = TimeSpan.FromSeconds(SECONDS_PER_DAY_CYCLE - secondsSinceLastCycleChange);
             TimeOfNextCycleChange = DateTime.Now.Add(TimeUntilNextCycleChange);
         }
