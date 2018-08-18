@@ -459,29 +459,44 @@ namespace WarframeWorldStateAPI.Components
             JObject worldState = _scraper.WorldState;
 
             var currentTime = long.Parse(worldState["Time"].ToString());
-            var cycleInfo = new WarframeTimeCycleInfo(currentTime);
+            var cycleInfo = new WarframeTimeCycleInfo();
+
+            cycleInfo.UpdateEarthTime(DateTime.Parse(_scraper.WarframeStatusWorldState["earthCycle"]["expiry"].ToString()).ToLocalTime(),
+                _scraper.WarframeStatusWorldState["earthCycle"]["timeLeft"].ToString(),
+                (bool)_scraper.WarframeStatusWorldState["earthCycle"]["isDay"] ? true : false);
+
+            cycleInfo.UpdateCetusTime(
+                DateTime.Parse(_scraper.WarframeStatusWorldState["cetusCycle"]["expiry"].ToString()).ToLocalTime(),
+                _scraper.WarframeStatusWorldState["cetusCycle"]["timeLeft"].ToString(),
+                (bool)_scraper.WarframeStatusWorldState["cetusCycle"]["isDay"] ? true : false);
+
             return cycleInfo;
         }
 
         public WarframeOstronBountyCycle GetOstronBountyCycle()
         {
-            JObject worldState = _scraper.WorldState;
             JObject warframeStatusWorldState = _scraper.WarframeStatusWorldState;
+            var bountyDetails = warframeStatusWorldState["syndicateMissions"].Single(x => x["syndicate"].ToString().Equals("Ostrons"));
+            
+            var currentTime = DateTime.Parse(bountyDetails["expiry"].ToString()).ToLocalTime();
 
-            var currentTime = long.Parse(worldState["Time"].ToString());
-            var cycleInfo = new WarframeOstronBountyCycle(currentTime);
-            return cycleInfo;
+            return new WarframeOstronBountyCycle(currentTime);
         }
 
         public IEnumerable<WarframeOstronBounty> GetOstronBounties()
         {
             JObject worldState = _scraper.WarframeStatusWorldState;
             var resultBounties = new List<WarframeOstronBounty>();
-            JToken ostronSyndicate = worldState["syndicateMissions"].Single(x => x["syndicate"].ToString() == "Ostrons");
-            JToken ostronSyndicateBounties = ostronSyndicate["jobs"];
+            JToken ostronSyndicate = worldState["syndicateMissions"].SingleOrDefault(x => x["syndicate"].ToString() == "Ostrons");
+            JToken ostronSyndicateBounties = ostronSyndicate != null ? ostronSyndicate["jobs"] : null;
 
-            var bountyCycleStartTime = DateTime.Parse(ostronSyndicate["activation"].ToString());
-            var bountyCycleExpireTime = DateTime.Parse(ostronSyndicate["expiry"].ToString());
+            if (ostronSyndicateBounties == null)
+            {
+                return _ostronBountyList;
+            }
+
+            var bountyCycleStartTime = ostronSyndicate != null ? DateTime.Parse(ostronSyndicate["activation"].ToString()).ToLocalTime() : DateTime.Now;
+            var bountyCycleExpireTime = ostronSyndicate != null ? DateTime.Parse(ostronSyndicate["expiry"].ToString()).ToLocalTime() : DateTime.Now;
 
             //Find Bounties
             foreach (var jsonBounty in ostronSyndicateBounties)
@@ -495,11 +510,6 @@ namespace WarframeWorldStateAPI.Components
 
                     var rewardStr = string.Empty;
                     var nodeName = loc;
-
-                    //var millisecondsUntilStart = long.Parse(jsonBounty["Activation"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
-                    //var millisecondsUntilExpire = long.Parse(jsonBounty["Expiry"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
-                    //var startTime = DateTime.Now.AddMilliseconds(millisecondsUntilStart);
-                    //var expireTime = DateTime.Now.AddMilliseconds(millisecondsUntilExpire);
                     var startTime = bountyCycleStartTime;
                     var expireTime = bountyCycleExpireTime;
 
@@ -538,7 +548,7 @@ namespace WarframeWorldStateAPI.Components
 
                 _ostronBountyList.RemoveAll(x => x.ExpireTime < DateTime.Now);
 
-                if ((_ostronBountyList != null) && (currentBounty.ExpireTime > DateTime.Now))
+                if ((_ostronBountyList != null) && (bountyCycleExpireTime > DateTime.Now))
                 {
                     resultBounties.Add(currentBounty);
                 }
@@ -578,41 +588,8 @@ namespace WarframeWorldStateAPI.Components
                     var lastDiscoveredTime = jsonAcolyte["LastDiscoveredTime"]["$date"]["$numberLong"].ToString();
                     var regionIndex = isDiscovered ? int.Parse(jsonAcolyte["Region"].ToString()) : -1;
 
-
-                    //Loot - Can be countable (Alertium etc.) or single (Blueprints) items
-                    //JToken countables = (jsonAcolyte["MissionInfo"]["missionReward"]["countedItems"]),
-                    //    nonCountables = (jsonAcolyte["MissionInfo"]["missionReward"]["items"]);
-
-                    //var rewardStr = string.Empty;
-                    
-
-                    //var secondsUntilStart = long.Parse(jsonAcolyte["Activation"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
-                    //var secondsUntilExpire = long.Parse(jsonAcolyte["Expiry"]["$date"]["$numberLong"].ToString()) - (long.Parse(worldState["Time"].ToString()) * TIME_TO_LONG_MULTIPLIER);
-                    //var startTime = DateTime.Now.AddSeconds(secondsUntilStart / TIME_TO_LONG_MULTIPLIER);
-                    //var expireTime = DateTime.Now.AddSeconds(secondsUntilExpire / TIME_TO_LONG_MULTIPLIER);
-
-                    //var creditReward = int.Parse(jsonAcolyte["MissionInfo"]["missionReward"]["credits"].ToString());
-                    //var reqArchwingData = jsonAcolyte["MissionInfo"]["archwingRequired"];
-                    //bool requiresArchwing = reqArchwingData != null ? bool.Parse(reqArchwingData.ToString()) : false;
-
-                    //JToken rewardParam = null;
-                    //if (countables != null) rewardParam = countables[0]["ItemType"].ToString();
-                    //else if (nonCountables != null) rewardParam = nonCountables[0].ToString();
-
-                    //if (RewardIsNotIgnored(creditReward, (rewardParam != null) ? rewardParam.ToString() : null))
                     if (acolyteHealth > .0f)
                     {
-                        /*MissionInfo alertInfo = new MissionInfo(jsonAcolyte["MissionInfo"]["faction"].ToString(),
-                            jsonAcolyte["MissionInfo"]["missionType"].ToString(),
-                            creditReward,
-                            //If for whatever reason, an alert returns both countables and non-countables, currently only the countables will be returned.
-                            //In addition, if an alert returns multiple different countables, only the first instance will be returned. This affects invasions as well!
-                            rewardStr,
-                            int.Parse((countables != null ? countables[0]["ItemCount"] : 1).ToString()),
-                            int.Parse(jsonAcolyte["MissionInfo"]["minEnemyLevel"].ToString()),
-                            int.Parse(jsonAcolyte["MissionInfo"]["maxEnemyLevel"].ToString()),
-                            requiresArchwing);*/
-
                         currentAcolyte = new WarframeAcolyte(id, acolyteName, nodeName, acolyteHealth, regionIndex, isDiscovered);
                         _acolytesList.Add(currentAcolyte);
 #if DEBUG
