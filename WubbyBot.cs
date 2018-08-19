@@ -1,26 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.IO;
+﻿using DiscordWrapper;
+using DSharpPlus.Entities;
 using Newtonsoft.Json;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Threading;
-using System.Collections.Concurrent;
-using Newtonsoft.Json.Linq;
-using System.Net;
-using System.Xml;
-using System.Xml.Linq;
-using WubbyBot.Events.Extensions;
-using DiscordWrapper;
-using System.Reflection;
+using System;
+using System.Collections.Generic;
 using System.Configuration;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using WarframeWorldStateAPI.Components;
 using WarframeWorldStateAPI.WarframeEvents;
-using DSharpPlus;
-using System.Threading.Tasks;
-using DSharpPlus.Entities;
+using WubbyBot.Events.Extensions;
 
 namespace DiscordSharpTest
 {
@@ -29,18 +21,16 @@ namespace DiscordSharpTest
     /// </summary>
     public class WubbyBot : DiscordBot
     {
-#if DEBUG
-        //private ulong _alertsChannelID = ulong.Parse(ConfigurationManager.AppSettings["WubbyBotAlertsChannelDebug"]);
-        private ulong _alertChannelId = ulong.Parse(ConfigurationManager.AppSettings["WubbyBotAlertChannelDebug"]);
-        private ulong _invasionChannelId = ulong.Parse(ConfigurationManager.AppSettings["WubbyBotInvasionChannelDebug"]);
-        private ulong _sortieChannelId = ulong.Parse(ConfigurationManager.AppSettings["WubbyBotSortieChannelDebug"]);
-        private ulong _fissureChannelId = ulong.Parse(ConfigurationManager.AppSettings["WubbyBotFissureChannelDebug"]);
-        private ulong _voidTraderChannelId = ulong.Parse(ConfigurationManager.AppSettings["WubbyBotVoidTraderChannelDebug"]);
-        private ulong _earthChannelId = ulong.Parse(ConfigurationManager.AppSettings["WubbyBotEarthChannelDebug"]);
-        private ulong _acolyteChannelId = ulong.Parse(ConfigurationManager.AppSettings["WubbyBotAcolyteChannelDebug"]);
-#else
+
         private long _alertsChannelID = long.Parse(ConfigurationManager.AppSettings["WubbyBotAlertsChannel"]);
-#endif
+        private ulong _alertChannelId = ulong.Parse(ConfigurationManager.AppSettings["WubbyBotAlertChannel"]);
+        private ulong _invasionChannelId = ulong.Parse(ConfigurationManager.AppSettings["WubbyBotInvasionChannel"]);
+        private ulong _sortieChannelId = ulong.Parse(ConfigurationManager.AppSettings["WubbyBotSortieChannel"]);
+        private ulong _fissureChannelId = ulong.Parse(ConfigurationManager.AppSettings["WubbyBotFissureChannel"]);
+        private ulong _voidTraderChannelId = ulong.Parse(ConfigurationManager.AppSettings["WubbyBotVoidTraderChannel"]);
+        private ulong _earthChannelId = ulong.Parse(ConfigurationManager.AppSettings["WubbyBotEarthChannel"]);
+        private ulong _acolyteChannelId = ulong.Parse(ConfigurationManager.AppSettings["WubbyBotAcolyteChannel"]);
+
         private const string ALERTS_ARCHIVE_CHANNEL = "wf-alert-archive";
 
         private const int EVENT_UPDATE_TIMER_DUE_TIME_MILLISECONDS = 3000;
@@ -104,20 +94,15 @@ namespace DiscordSharpTest
         private void SetupEvents()
         {
             Console.ForegroundColor = ConsoleColor.White;
-            //Client.MessageCreated += (e) =>
-            //{
 
-            //    //Don't log messages posted in the log channel
-            //    if (e.Channel.Name != LogChannelName)
-            //        Log($"Message from {e.Author.Username} in #{e.Channel.Name} on {e.Channel.Parent.Name}: {e.Message.ID}");
-
-            //};
             Client.MessageCreated += e =>
             {
                 var task = new Task(() =>
                 {
                     if (e.Channel.Name != LogChannelName)
-                        Log($"Message from {e.Author.Username} in #{e.Channel.Name} on {e.Guild.Name}: {e.Message.Id}");
+                    {
+                        Log($"Message from {e.Author.Username} in #{e.Channel.Name} on {e.Guild?.Name}: {e.Message.Id}");
+                    }
                 });
                 task.Start();
                 return task;
@@ -125,9 +110,10 @@ namespace DiscordSharpTest
 
             Client.Ready += e =>
             {
-                var task = new Task(() =>
+                var task = new Task(async () =>
                 {
                     Log($"Connected as {e.Client.CurrentUser.Username}");
+                    await AssignExistingChannelMessagesAsync();
                     StartPostTimer();
 
                     SetCurrentGame(false);
@@ -136,39 +122,21 @@ namespace DiscordSharpTest
                 return task;
             };
 
-#if DEBUG
-            /*Client.SocketOpened += () =>
-            {
-                var t = new Tasks.Task();
-                Log("Socket was opened!");
-                return new Task();
-            };
-
-            Client.SocketClosed += () =>
-            {
-                Log("Socket was closed!");
-            };*/
-#endif
             Connect();
         }
 
-        /*private void CleanChannels()
+        private async Task AssignExistingChannelMessagesAsync()
         {
-            var alertChannel = GetChannelByID(_alertChannelId);
-            DeleteMessage(GetMessageByID(alertChannel, alertChannel.LastMessageId));
-
-            var invasionChannel = GetChannelByID(_invasionChannelId);
-            DeleteMessage(GetMessageByID(invasionChannel, invasionChannel.LastMessageId));
-
-            var  = GetChannelByID(_alertChannelId);
-            DeleteMessage(GetMessageByID(alertChannel, alertChannel.LastMessageId));
-            var alertChannel = GetChannelByID(_alertChannelId);
-            DeleteMessage(GetMessageByID(alertChannel, alertChannel.LastMessageId));
-            var alertChannel = GetChannelByID(_alertChannelId);
-            DeleteMessage(GetMessageByID(alertChannel, alertChannel.LastMessageId));
-            var alertChannel = GetChannelByID(_alertChannelId);
-            DeleteMessage(GetMessageByID(alertChannel, alertChannel.LastMessageId));
-        }*/
+            _alertMessage = (await GetChannelMessagesAsync(GetChannelByID(_alertChannelId))).FirstOrDefault();
+            _invasionMessages = (await GetChannelMessagesAsync(GetChannelByID(_invasionChannelId))).ToList();
+            _sortieMessage = (await GetChannelMessagesAsync(GetChannelByID(_sortieChannelId))).FirstOrDefault();
+            _fissureMessage = (await GetChannelMessagesAsync(GetChannelByID(_fissureChannelId))).FirstOrDefault();
+            _traderMessage = (await GetChannelMessagesAsync(GetChannelByID(_voidTraderChannelId))).FirstOrDefault();
+            _timeCycleMessage = (await GetChannelMessagesAsync(GetChannelByID(_earthChannelId))).FirstOrDefault();
+            _ostronBountyMessage = (await GetChannelMessagesAsync(GetChannelByID(_earthChannelId))).FirstOrDefault();
+            _ostronBountyCycleMessage = (await GetChannelMessagesAsync(GetChannelByID(_earthChannelId))).FirstOrDefault();
+            _acolyteMessage = (await GetChannelMessagesAsync(GetChannelByID(_acolyteChannelId))).FirstOrDefault();
+        }
 
         private void CheckForWarframeEvents()
         {
@@ -243,7 +211,6 @@ namespace DiscordSharpTest
                 PostVoidFissureMessage();
                 PostVoidTraderMessage();
                 PostTimeCycleMessage();
-                PostOstronBountyMessage();
                 PostOstronBountyCycleMessage();
                 PostAcolyteMessage();
             },
@@ -257,16 +224,17 @@ namespace DiscordSharpTest
         {
             var finalMessage = new StringBuilder();
             var messagesToNotify = new List<string>();
-            //Build all alert strings into a single message
-            finalMessage.Append(WarframeEventExtensions.FormatMessage($"{(_alertMessagePostQueue.Count > 0 ? string.Empty : "NO ")}ACTIVE ALERTS", preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.Bold));
+
+            if (_alertMessagePostQueue.Count == 0)
+            {
+                finalMessage.Append(WarframeEventExtensions.FormatMessage("NO ACTIVE ALERTS", preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.CodeBlocks));
+            }
 
             _alertMessagePostQueue = _alertMessagePostQueue
                 .OrderBy(s => s.WarframeEvent.GetMinutesRemaining(false)).ToList();
 
             foreach (var message in _alertMessagePostQueue)
             {
-                //Provides code block formatting for Discord Messages
-                //Core content of the Discord message without any formatting
                 var coreMessageContent = new StringBuilder();
                 coreMessageContent.AppendLine(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
                 var messageMarkdownPreset = MessageMarkdownLanguageIdPreset.ActiveEvent;
@@ -282,7 +250,6 @@ namespace DiscordSharpTest
 
             if (_alertMessage == null)
             {
-                //_alertMessage = SendMessageToAlertsChannel(finalMessage.ToString());
                 _alertMessage = SendMessageToChannel(finalMessage.ToString(), _alertChannelId);
             }
             else
@@ -301,7 +268,6 @@ namespace DiscordSharpTest
         /// </summary>
         private void PostInvasionMessage()
         {
-            //Build all invasion strings into a single message
             var finalMessagesToPost = new List<StringBuilder>();
             var messagesToNotify = new List<string>();
 
@@ -310,20 +276,9 @@ namespace DiscordSharpTest
             var entryForFinalMessage = new StringBuilder();
             finalMessagesToPost.Add(entryForFinalMessage);
 
-            //var invasionConstructionMessageQueue = new List<MessageQueueElement>(_invasionConstructionMessagePostQueue);
-
-            entryForFinalMessage.Append(WarframeEventExtensions.FormatMessage($"{(_invasionMessagePostQueue.Count > 0 ? string.Empty : "NO ")}ACTIVE INVASIONS", preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.Bold));
-
-            //Project Construction Information
-            var constructionMessage = new StringBuilder();
-            if (_invasionConstructionMessagePostQueue.Count > 0)
+            if (_invasionMessagePostQueue.Count == 0)
             {
-                foreach (var message in _invasionConstructionMessagePostQueue)
-                {
-                    constructionMessage.Append(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
-                }
-
-                entryForFinalMessage.Append(WarframeEventExtensions.FormatMessage(constructionMessage.ToString(), preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.CodeBlocks));
+                entryForFinalMessage.Append(WarframeEventExtensions.FormatMessage("NO ACTIVE INVASIONS", preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.CodeBlocks));
             }
 
             _invasionMessagePostQueue = _invasionMessagePostQueue
@@ -346,12 +301,26 @@ namespace DiscordSharpTest
 
                 //Create a new entry in the post queue if the character length of the current message hits the character limit
                 if (entryForFinalMessage.Length + coreMessageContentEntry.Length < MESSAGE_CHAR_LIMIT)
+                {
                     entryForFinalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContentEntry.ToString(), preset: markdownPreset, formatType: MessageFormat.CodeBlocks));
+                }
                 else
                 {
                     entryForFinalMessage.Append(coreMessageContentEntry.ToString());
                     finalMessagesToPost.Add(entryForFinalMessage);
                 }
+            }
+
+            //Project Construction Information
+            var constructionMessage = new StringBuilder();
+            if (_invasionConstructionMessagePostQueue.Count > 0)
+            {
+                foreach (var message in _invasionConstructionMessagePostQueue)
+                {
+                    constructionMessage.Append(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
+                }
+
+                entryForFinalMessage.Append(WarframeEventExtensions.FormatMessage(constructionMessage.ToString(), preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.CodeBlocks));
             }
 
             if (_invasionMessages.Count > 0)
@@ -435,7 +404,10 @@ namespace DiscordSharpTest
             var finalMessage = new StringBuilder();
             var messagesToNotify = new List<string>();
 
-            finalMessage.Append(WarframeEventExtensions.FormatMessage($"{(_voidFissureMessagePostQueue.Count > 0 ? string.Empty : "NO ")}VOID FISSURES", preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.Bold));
+            if (_voidFissureMessagePostQueue.Count == 0)
+            {
+                finalMessage.Append(WarframeEventExtensions.FormatMessage("NO VOID FISSURES", preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.CodeBlocks));
+            }
 
             _voidFissureMessagePostQueue = _voidFissureMessagePostQueue
                 .OrderBy(s => s.WarframeEvent.GetFissureIndex())
@@ -481,7 +453,10 @@ namespace DiscordSharpTest
             var finalMessage = new StringBuilder();
             var messagesToNotify = new List<string>();
 
-            finalMessage.Append(WarframeEventExtensions.FormatMessage($"{(_sortieMessagePostQueue.Count > 0 ? string.Empty : "NO ")}SORTIES", preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.Bold));
+            if (_sortieMessagePostQueue.Count == 0)
+            {
+                finalMessage.Append(WarframeEventExtensions.FormatMessage("NO SORTIES", preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.CodeBlocks));
+            }
 
             foreach (var message in _sortieMessagePostQueue)
             {
@@ -565,13 +540,19 @@ namespace DiscordSharpTest
                 var coreMessageContent = new StringBuilder();
                 coreMessageContent.AppendLine(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
 
-                /*if (message.NotifyClient)
-                {
-                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
-                }*/
-
                 finalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContent.ToString(), preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.CodeBlocks));
             }
+            
+            if (_ostronBountyMessagePostQueue.Count > 0)
+            {
+                foreach (var message in _ostronBountyMessagePostQueue)
+                {
+                    var bountiesMessage = new StringBuilder().AppendLine(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
+                    finalMessage.Append(WarframeEventExtensions.FormatMessage(bountiesMessage.ToString(), preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.CodeBlocks));
+                }
+            }
+            var t = finalMessage.ToString();
+            var p = t.Length;
 
             if (_ostronBountyCycleMessage == null)
             {
@@ -586,44 +567,8 @@ namespace DiscordSharpTest
                 }
             }
 
-            _ostronBountyCyclePostQueue.Clear();
-        }
-
-        private void PostOstronBountyMessage()
-        {
-            var finalMessage = new StringBuilder();
-            var messagesToNotify = new List<string>();
-
-            finalMessage.Append(WarframeEventExtensions.FormatMessage("OSTRON BOUNTIES BOARD", preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.Bold));
-
-            foreach (var message in _ostronBountyMessagePostQueue)
-            {
-                //Core content of the Discord message without any formatting
-                var coreMessageContent = new StringBuilder();
-                coreMessageContent.AppendLine(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
-
-                if (message.NotifyClient)
-                {
-                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
-                }
-
-                finalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContent.ToString(), preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.CodeBlocks));
-            }
-
-            if (_ostronBountyMessage == null)
-            {
-                _ostronBountyMessage = SendMessageToChannel(finalMessage.ToString(), _earthChannelId);
-            }
-            else
-            {
-                EditEventMessage(finalMessage.ToString(), _ostronBountyMessage);
-                foreach (var item in messagesToNotify)
-                {
-                    NotifyClient(item, _earthChannelId);
-                }
-            }
-
             _ostronBountyMessagePostQueue.Clear();
+            _ostronBountyCyclePostQueue.Clear();
         }
 
         private void PostAcolyteMessage()
@@ -636,13 +581,9 @@ namespace DiscordSharpTest
 
             var finalMessage = new StringBuilder();
             var messagesToNotify = new List<string>();
-            //Build all acolyte messages into a single message
-            finalMessage.Append(WarframeEventExtensions.FormatMessage($"{(_acolyteMessagePostQueue.Count > 0 ? string.Empty : "NO ")}ACTIVE ACOLYTES", preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.Bold));
 
             foreach (var message in _acolyteMessagePostQueue)
             {
-                //Provides code block formatting for Discord Messages
-                //Core content of the Discord message without any formatting
                 var coreMessageContent = new StringBuilder();
                 coreMessageContent.AppendLine(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
                 var markdownPreset = MessageMarkdownLanguageIdPreset.ActiveEvent;
@@ -735,19 +676,19 @@ namespace DiscordSharpTest
             }
         }
 
+        private void AddToBountyPostQueue(WarframeOstronBounty bounty, bool notifyClient, bool bountyHasExpired)
+        {
+            if (!_ostronBountyMessagePostQueue.Any(x => x.WarframeEvent.GUID == bounty.GUID))
+            {
+                _ostronBountyMessagePostQueue.Add(new MessageQueueElement<WarframeOstronBounty>(bounty, notifyClient, bountyHasExpired));
+            }
+        }
+
         private void AddToAcolytePostQueue(WarframeAcolyte acolyte, bool notifyClient, bool acolyteHasExpired)
         {
             if (!_acolyteMessagePostQueue.Any(x => x.WarframeEvent.GUID == acolyte.GUID))
             {
                 _acolyteMessagePostQueue.Add(new MessageQueueElement<WarframeAcolyte>(acolyte, notifyClient, acolyteHasExpired));
-            }
-        }
-
-        private void AddToBountyPostQueue(WarframeOstronBounty bounty, bool notifyClient, bool bountyHasExpired)
-        {
-            if (!_alertMessagePostQueue.Any(x => x.WarframeEvent.GUID == bounty.GUID))
-            {
-                _ostronBountyMessagePostQueue.Add(new MessageQueueElement<WarframeOstronBounty>(bounty, notifyClient, bountyHasExpired));
             }
         }
 
@@ -765,7 +706,9 @@ namespace DiscordSharpTest
 
             //Sometimes the invasions message may be split up over multiple Discord messages so each one needs to be deleted.
             foreach (var i in _invasionMessages)
+            {
                 DeleteMessage(i);
+            }
 
             Logout();
         }
@@ -795,40 +738,15 @@ namespace DiscordSharpTest
 #endif
         }
 
-        private int RollDice(int min, int max)
-        {
-            throw new NotImplementedException();
-        }
-
         private DiscordMessage SendMessageToChannel(string content, ulong channelId)
         {
             return SendMessage(content, Client.GetChannelAsync((ulong)channelId).Result);
         }
 
-        /*private DiscordMessage SendMessageToAlertsChannel(string content)
-        {
-            return SendMessage(content, Client.GetChannelAsync(_alertsChannelID).Result);
-        }*/
-
-        /*private DiscordMessage EditEventMessage(string newContent, DiscordMessage targetMessage)
-        {
-            return EditMessage(newContent, targetMessage, Client.GetChannelAsync((ulong)_alertsChannelID).Result);
-        }*/
-
         private DiscordMessage EditEventMessage(string newContent, DiscordMessage targetMessage)
         {
             return EditMessage(newContent, targetMessage, targetMessage.Channel);
         }
-
-        /// <summary>
-        /// Creates a new message which is automatically deleted shortly after to force a DiscordApp notification
-        /// </summary>
-        /// <param name="content">Notification message content</param>
-        /*private void NotifyClient(string content)
-        {
-            DiscordMessage message = SendMessageToAlertsChannel(content);
-            DeleteMessage(message);
-        }*/
 
         /// <summary>
         /// Creates a new message which is automatically deleted shortly after to force a DiscordApp notification
