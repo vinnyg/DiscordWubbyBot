@@ -13,9 +13,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordWrapper", "DiscordWr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WarframeWorldStateAPI", "WarframeWorldStateAPI\WarframeWorldStateAPI.csproj", "{47301CF9-3C42-4026-B0E6-E167EF22C0B0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WubbyWeb", "..\WubbyWeb\WubbyWeb.csproj", "{F25A574A-22DD-4EC2-9A89-A2F6F32C7B9F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WarframeEventServices", "WarframeEventParser\WarframeEventServices.csproj", "{DA5F8F42-DEE1-480C-8135-D529A9AAC6E7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WarframeEventBot", "..\WarframeEventBot\WarframeEventBot.csproj", "{80154E15-EEC0-46D7-B5DE-4FE91618566F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WarframeEventServices.Tests", "WarframeEventParser.Tests\WarframeEventServices.Tests.csproj", "{9D06B51A-2589-47A0-9401-62998D2BBA48}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -65,22 +65,22 @@ Global
 		{47301CF9-3C42-4026-B0E6-E167EF22C0B0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{47301CF9-3C42-4026-B0E6-E167EF22C0B0}.Release|x86.ActiveCfg = Release|Any CPU
 		{47301CF9-3C42-4026-B0E6-E167EF22C0B0}.Release|x86.Build.0 = Release|Any CPU
-		{F25A574A-22DD-4EC2-9A89-A2F6F32C7B9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F25A574A-22DD-4EC2-9A89-A2F6F32C7B9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F25A574A-22DD-4EC2-9A89-A2F6F32C7B9F}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{F25A574A-22DD-4EC2-9A89-A2F6F32C7B9F}.Debug|x86.Build.0 = Debug|Any CPU
-		{F25A574A-22DD-4EC2-9A89-A2F6F32C7B9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F25A574A-22DD-4EC2-9A89-A2F6F32C7B9F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F25A574A-22DD-4EC2-9A89-A2F6F32C7B9F}.Release|x86.ActiveCfg = Release|Any CPU
-		{F25A574A-22DD-4EC2-9A89-A2F6F32C7B9F}.Release|x86.Build.0 = Release|Any CPU
-		{80154E15-EEC0-46D7-B5DE-4FE91618566F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{80154E15-EEC0-46D7-B5DE-4FE91618566F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{80154E15-EEC0-46D7-B5DE-4FE91618566F}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{80154E15-EEC0-46D7-B5DE-4FE91618566F}.Debug|x86.Build.0 = Debug|Any CPU
-		{80154E15-EEC0-46D7-B5DE-4FE91618566F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{80154E15-EEC0-46D7-B5DE-4FE91618566F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{80154E15-EEC0-46D7-B5DE-4FE91618566F}.Release|x86.ActiveCfg = Release|Any CPU
-		{80154E15-EEC0-46D7-B5DE-4FE91618566F}.Release|x86.Build.0 = Release|Any CPU
+		{DA5F8F42-DEE1-480C-8135-D529A9AAC6E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DA5F8F42-DEE1-480C-8135-D529A9AAC6E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DA5F8F42-DEE1-480C-8135-D529A9AAC6E7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DA5F8F42-DEE1-480C-8135-D529A9AAC6E7}.Debug|x86.Build.0 = Debug|Any CPU
+		{DA5F8F42-DEE1-480C-8135-D529A9AAC6E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DA5F8F42-DEE1-480C-8135-D529A9AAC6E7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DA5F8F42-DEE1-480C-8135-D529A9AAC6E7}.Release|x86.ActiveCfg = Release|Any CPU
+		{DA5F8F42-DEE1-480C-8135-D529A9AAC6E7}.Release|x86.Build.0 = Release|Any CPU
+		{9D06B51A-2589-47A0-9401-62998D2BBA48}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9D06B51A-2589-47A0-9401-62998D2BBA48}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9D06B51A-2589-47A0-9401-62998D2BBA48}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9D06B51A-2589-47A0-9401-62998D2BBA48}.Debug|x86.Build.0 = Debug|Any CPU
+		{9D06B51A-2589-47A0-9401-62998D2BBA48}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9D06B51A-2589-47A0-9401-62998D2BBA48}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9D06B51A-2589-47A0-9401-62998D2BBA48}.Release|x86.ActiveCfg = Release|Any CPU
+		{9D06B51A-2589-47A0-9401-62998D2BBA48}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
