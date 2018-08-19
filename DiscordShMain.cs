@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 //using DiscordSharp;
 using System.Reflection;
 using System.IO;
+using DiscordSharpTest.WarframeEventInfoStringBuilders;
 
 namespace DiscordSharpTest
 {
@@ -40,7 +41,7 @@ namespace DiscordSharpTest
         {
             Console.Title = GetLinkerTime().ToString();
 
-            WubbyBot bot = new WubbyBot("wubbybot", "log-wubby");
+            WubbyBot bot = new WubbyBot("wubbybot", new WarframeEventInfoStringBuilder(), "log-wubby");
             bot.Login();
             bot.Init();
 
