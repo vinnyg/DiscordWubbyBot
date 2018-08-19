@@ -6,6 +6,8 @@ using System.Configuration;
 using Newtonsoft.Json;
 using DSharpPlus;
 using DSharpPlus.Entities;
+using System.Threading.Tasks;
+using System.Collections.ObjectModel;
 
 namespace DiscordWrapper
 {
@@ -68,7 +70,6 @@ namespace DiscordWrapper
         virtual public DiscordMessage SendMessage(string content, DiscordChannel channel)
         {
 #if DEBUG
-            //Log($"SendMessage({content})");
             Console.WriteLine($"SendMessage({content})");
 #endif
             DiscordMessage message = null;
@@ -130,8 +131,6 @@ namespace DiscordWrapper
             try
             {
                 System.Threading.Thread.Sleep(GetTimeUntilCanRequest());
-                //message = Client.GetMessageAsync(channel, targetMessage.Id).Result;
-                //message.EditAsync(newContent).Wait();
 
                 message.ModifyAsync(newContent).Wait();
 
@@ -156,8 +155,7 @@ namespace DiscordWrapper
                 if (targetMessage != null)
                 {
                     targetMessage.DeleteAsync().Wait();
-
-                    //Client.DeleteMessage(targetMessage);
+                    
                     timeOfLastDiscordRequest = DateTime.Now;
                     Log($"Message {targetMessage.Id} from {targetMessage.Channel.Name} was deleted.");
                 }
@@ -172,61 +170,30 @@ namespace DiscordWrapper
             }
         }
 
-        /*virtual public void DeleteAllMessagesFromChannel(DiscordChannel channel)
+
+        virtual public DiscordMessage GetMessageById(DiscordChannel channel, ulong id)
         {
-            try
-            {
-                var messages = channel.GetMessagesAsync();
-
-                foreach (var message in messages)
-                {
-                    System.Threading.Thread.Sleep(GetTimeUntilCanRequest(DELETE_REQUEST_TIME_LIMIT));
-                    if (message != null)
-                    {
-                        targetMessage.DeleteAsync().Wait();
-
-                        //Client.DeleteMessage(targetMessage);
-                        timeOfLastDiscordRequest = DateTime.Now;
-                    }
-                }
-                
-            }
-            catch (NullReferenceException)
-            {
-                Log("DeleteMessage threw a NullReferenceException.");
-            }
-            catch (Exception)
-            {
-                Log("DeleteMessage threw an exception.");
-            }
-        }*/
-
-        //Return a reference to the specific instance of a DiscordMessage using the message ID
-        virtual public DiscordMessage GetMessageByID(DiscordChannel channel, ulong id)
-        {
-            /*var messageHistory = new List<DiscordMessage>();
-            DiscordMessage targetMessage = null;
-            var lastDiscordMessage = string.Empty;
-            var messageBatch = 0;
-
-            do
-            {
-                //messageHistory = Client.GetMessageHistory(channel, 40, lastDiscordMessage);
-                channel.GetMessagesAsync(40);
-#if DEBUG
-                Log($"Looping for message ({messageID}) in batch {messageBatch * 40}-{((messageBatch * 40) + 39)}");
-#endif
-
-                targetMessage = messageHistory.Find(x => x.ID == messageID);
-                if (messageHistory.Count > 0)
-                    lastDiscordMessage = messageHistory.Last().ID;
-
-                ++messageBatch;
-            } while ((targetMessage == null) && (messageHistory.Count > 0));*/
-
             return channel.GetMessageAsync(id).Result;
+        }
 
-            //return targetMessage;
+        virtual public async Task<IReadOnlyList<DiscordMessage>> GetChannelMessagesAsync(DiscordChannel channel, int limit = 100)
+        {
+            return await channel.GetMessagesAsync(limit);
+        }
+
+        virtual public async Task<IReadOnlyList<DiscordMessage>> GetChannelMessagesBeforeAsync(DiscordChannel channel, ulong before, int limit = 100)
+        {
+             return await channel.GetMessagesAsync(limit, before: before);
+        }
+
+        virtual public async Task<IReadOnlyList<DiscordMessage>> GetChannelMessagesAfterAsync(DiscordChannel channel, ulong after, int limit = 100)
+        {
+            return await channel.GetMessagesAsync(limit, after: after);
+        }
+
+        virtual public async Task<IReadOnlyList<DiscordMessage>> GetChannelMessagesAroundAsync(DiscordChannel channel, ulong around, int limit = 100)
+        {
+            return await channel.GetMessagesAsync(limit, around: around);
         }
 
         virtual public void SetCurrentGame(string gameName, bool isStreaming, string url = "")
@@ -238,23 +205,6 @@ namespace DiscordWrapper
         {
             Console.WriteLine($"[{DateTime.Now}] {message}");
             return;
-
-            /*var r = Client.GetServersList();
-
-            if ((Client != null) && (Client.GetServersList() != null) && (Client.GetServersList().Count > 0))
-            {
-                DiscordChannel chan = Client.GetChannelByName(LogChannelName);
-                if (chan != null)
-                {
-                    if (LogChannelName.Length > 0)
-                        SendMessage(message, chan);
-
-                    if (LogFile != null)
-                    {
-                        //LogFile.
-                    }
-                }
-            }*/
         }
 
         virtual public DiscordChannel GetChannelByID(ulong id)

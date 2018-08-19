@@ -16,7 +16,6 @@ namespace WarframeWorldStateAPI.Components
     {
         public WarframeEventInformationParser() : this(new WarframeJSONScraper())
         {
-
         }
 
         public WarframeEventInformationParser(IWarframeJSONScraper scraper)
