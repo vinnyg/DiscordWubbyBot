@@ -67,8 +67,7 @@ namespace DiscordSharpTest
         private DiscordMessage _fissureMessage;
         private DiscordMessage _sortieMessage;
         private DiscordMessage _timeCycleMessage;
-        private DiscordMessage _ostronBountyMessage;
-        private DiscordMessage _ostronBountyCycleMessage;
+        private DiscordMessage _ostronBountyInformationMessage;
         private DiscordMessage _acolyteMessage;
 
         /// <summary>
@@ -133,8 +132,7 @@ namespace DiscordSharpTest
             _fissureMessage = (await GetChannelMessagesAsync(GetChannelByID(_fissureChannelId))).FirstOrDefault();
             _traderMessage = (await GetChannelMessagesAsync(GetChannelByID(_voidTraderChannelId))).FirstOrDefault();
             _timeCycleMessage = (await GetChannelMessagesAsync(GetChannelByID(_earthChannelId))).FirstOrDefault();
-            _ostronBountyMessage = (await GetChannelMessagesAsync(GetChannelByID(_earthChannelId))).FirstOrDefault();
-            _ostronBountyCycleMessage = (await GetChannelMessagesAsync(GetChannelByID(_earthChannelId))).FirstOrDefault();
+            _ostronBountyInformationMessage = (await GetChannelMessagesAsync(GetChannelByID(_earthChannelId))).FirstOrDefault();
             _acolyteMessage = (await GetChannelMessagesAsync(GetChannelByID(_acolyteChannelId))).FirstOrDefault();
         }
 
@@ -554,13 +552,13 @@ namespace DiscordSharpTest
             var t = finalMessage.ToString();
             var p = t.Length;
 
-            if (_ostronBountyCycleMessage == null)
+            if (_ostronBountyInformationMessage == null)
             {
-                _ostronBountyCycleMessage = SendMessageToChannel(finalMessage.ToString(), _earthChannelId);
+                _ostronBountyInformationMessage = SendMessageToChannel(finalMessage.ToString(), _earthChannelId);
             }
             else
             {
-                EditEventMessage(finalMessage.ToString(), _ostronBountyCycleMessage);
+                EditEventMessage(finalMessage.ToString(), _ostronBountyInformationMessage);
                 foreach (var item in messagesToNotify)
                 {
                     NotifyClient(item, _earthChannelId);
@@ -700,8 +698,7 @@ namespace DiscordSharpTest
             DeleteMessage(_sortieMessage);
             DeleteMessage(_traderMessage);
             DeleteMessage(_timeCycleMessage);
-            DeleteMessage(_ostronBountyMessage);
-            DeleteMessage(_ostronBountyCycleMessage);
+            DeleteMessage(_ostronBountyInformationMessage);
             DeleteMessage(_acolyteMessage);
 
             //Sometimes the invasions message may be split up over multiple Discord messages so each one needs to be deleted.
@@ -760,7 +757,7 @@ namespace DiscordSharpTest
         }
 
         /// <summary>
-        /// Contains information about the message as well as its content
+        /// Contains information about the message and its contents
         /// </summary>
         public class MessageQueueElement<T> where T : WarframeEvent
         {
