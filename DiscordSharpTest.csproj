@@ -226,8 +226,7 @@
     <Compile Include="DiscordShMain.cs" />
     <Compile Include="Events\Extensions\WarframeEventExtensions.cs" />
     <Compile Include="Events\Extensions\WarframeMessageMarkdownLanguage.cs" />
-    <Compile Include="WarframeEventStringBuilders\WarframeAlertStringBuilder.cs" />
-    <Compile Include="WarframeEventStringBuilders\WarframeEventStringBuilder_old.cs" />
+    <Compile Include="WarframeEventInformationBuilders\WarframeEventInformationBuilder.cs" />
     <Compile Include="WarframeEventStringBuilder.cs" />
     <Compile Include="WarframeEventToDiscordMessageBuilder.cs" />
     <Compile Include="WubbyBot.cs" />
@@ -240,6 +239,10 @@
     <ProjectReference Include="WarframeDatabaseNet\WarframeDatabaseNET.csproj">
       <Project>{71eef9c5-1871-4489-b6e2-38b8da3e6c32}</Project>
       <Name>WarframeDatabaseNET</Name>
+    </ProjectReference>
+    <ProjectReference Include="WarframeEventParser\WarframeEventServices.csproj">
+      <Project>{da5f8f42-dee1-480c-8135-d529a9aac6e7}</Project>
+      <Name>WarframeEventServices</Name>
     </ProjectReference>
     <ProjectReference Include="WarframeWorldStateAPI\WarframeWorldStateAPI.csproj">
       <Project>{47301cf9-3c42-4026-b0e6-e167ef22c0b0}</Project>

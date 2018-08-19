@@ -13,6 +13,8 @@ using System.Threading.Tasks;
 using WarframeWorldStateAPI.Components;
 using WarframeWorldStateAPI.WarframeEvents;
 using WubbyBot.Events.Extensions;
+using DiscordSharpTest.WarframeEventInfoStringBuilders;
+using WarframeEventServices;
 
 namespace DiscordSharpTest
 {
@@ -21,8 +23,9 @@ namespace DiscordSharpTest
     /// </summary>
     public class WubbyBot : DiscordBot
     {
-
-        private long _alertsChannelID = long.Parse(ConfigurationManager.AppSettings["WubbyBotAlertsChannel"]);
+        public WarframeEventInfoStringBuilder eventInformationBuilder { get; set; }
+        public WarframeEventParser eventParser { get; set; }
+        
         private ulong _alertChannelId = ulong.Parse(ConfigurationManager.AppSettings["WubbyBotAlertChannel"]);
         private ulong _invasionChannelId = ulong.Parse(ConfigurationManager.AppSettings["WubbyBotInvasionChannel"]);
         private ulong _sortieChannelId = ulong.Parse(ConfigurationManager.AppSettings["WubbyBotSortieChannel"]);
@@ -75,8 +78,9 @@ namespace DiscordSharpTest
         /// </summary>
         private List<DiscordMessage> _invasionMessages = new List<DiscordMessage>();
 
-        public WubbyBot(string name, string devLogName = "") : base(name, devLogName)
+        public WubbyBot(string name, WarframeEventInfoStringBuilder eventInformationBuilder, string devLogName = "") : base(name, devLogName)
         {
+            this.eventInformationBuilder = eventInformationBuilder;
             _randomNumGen = new Random((int)DateTime.Now.Ticks);
         }
 
@@ -138,10 +142,10 @@ namespace DiscordSharpTest
 
         private void CheckForWarframeEvents()
         {
-            foreach (var alert in _eventsParser.GetAlerts())
-            {
-                AddToAlertPostQueue(alert, alert.IsNew(), alert.IsExpired());
-            }
+            //foreach (var alert in _eventsParser.GetAlerts())
+            //{
+            //    AddToAlertPostQueue(alert, alert.IsNew(), alert.IsExpired());
+            //}
 
             foreach (var invasion in _eventsParser.GetInvasions())
             {
@@ -204,6 +208,7 @@ namespace DiscordSharpTest
             _eventUpdateTimer = new Timer((e) =>
             {
                 PostAlertMessage();
+                
                 PostInvasionMessage();
                 PostSortieMessage();
                 PostVoidFissureMessage();
@@ -220,43 +225,24 @@ namespace DiscordSharpTest
         /// </summary>
         private void PostAlertMessage()
         {
-            var finalMessage = new StringBuilder();
-            var messagesToNotify = new List<string>();
+            //var finalMessage = new StringBuilder();
+            //var messagesToNotify = new List<string>();
 
-            if (_alertMessagePostQueue.Count == 0)
-            {
-                finalMessage.Append(WarframeEventExtensions.FormatMessage("NO ACTIVE ALERTS", preset: MessageMarkdownLanguageIdPreset.ActiveEvent, formatType: MessageFormat.CodeBlocks));
-            }
+            //SendMessage(eventInformationBuilder.BuildAlertInformation(_eventsParser.GetAlerts().ToList()), GetChannelByID(_alertChannelId));
 
-            _alertMessagePostQueue = _alertMessagePostQueue
-                .OrderBy(s => s.WarframeEvent.GetMinutesRemaining(false)).ToList();
-
-            foreach (var message in _alertMessagePostQueue)
-            {
-                var coreMessageContent = new StringBuilder();
-                coreMessageContent.AppendLine(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, false));
-                var messageMarkdownPreset = MessageMarkdownLanguageIdPreset.ActiveEvent;
-
-                if (message.NotifyClient)
-                {
-                    coreMessageContent.Append("( new )");
-                    messagesToNotify.Add(WarframeEventExtensions.DiscordMessage(message.WarframeEvent as dynamic, true));
-                    messageMarkdownPreset = MessageMarkdownLanguageIdPreset.NewEvent;
-                }
-                finalMessage.Append(WarframeEventExtensions.FormatMessage(coreMessageContent.ToString(), preset: messageMarkdownPreset, formatType: MessageFormat.CodeBlocks));
-            }
+            var message = eventInformationBuilder.BuildAlertInformation(_eventsParser.GetAlerts().ToList());
 
             if (_alertMessage == null)
             {
-                _alertMessage = SendMessageToChannel(finalMessage.ToString(), _alertChannelId);
+                _alertMessage = SendMessageToChannel(message.ToString(), _alertChannelId);
             }
             else
             {
-                EditEventMessage(finalMessage.ToString(), _alertMessage);
-                foreach (var item in messagesToNotify)
+                EditEventMessage(message.ToString(), _alertMessage);
+                /*foreach (var item in messagesToNotify)
                 {
                     NotifyClient(item, _alertChannelId);
-                }
+                }*/
             }
             _alertMessagePostQueue.Clear();
         }
