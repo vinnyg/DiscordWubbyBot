@@ -36,6 +36,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="App.release.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="App.config">
       <SubType>Designer</SubType>
     </None>
@@ -247,6 +250,13 @@
     <Folder Include="WarframeEventStringConsolidators\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>IF $(ConfigurationName) == Release COPY /Y "$(ProjectDir)App.config" "$(ProjectDir)App.debug.config"
+IF $(ConfigurationName) == Release COPY /Y "$(ProjectDir)App.release.config" "$(ProjectDir)App.config"</PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent>IF $(ConfigurationName) == Release COPY /Y "$(ProjectDir)App.debug.config" "$(ProjectDir)App.config"</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
